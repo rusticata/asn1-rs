@@ -84,6 +84,24 @@ fn from_der_octetstring() {
 }
 
 #[test]
+fn from_der_oid() {
+    let input = &hex!("06 09 2a 86 48 86 f7 0d 01 01 05");
+    let (rem, result) = Oid::from_der(input).expect("parsing failed");
+    let expected = Oid::from(&[1, 2, 840, 113_549, 1, 1, 5]).unwrap();
+    assert_eq!(result, expected);
+    assert_eq!(rem, &[]);
+}
+
+#[test]
+fn from_der_relative_oid() {
+    let input = &hex!("0d 04 c2 7b 03 02");
+    let (rem, result) = Oid::from_der_relative(input).expect("parsing failed");
+    let expected = Oid::from_relative(&[8571, 3, 2]).unwrap();
+    assert_eq!(result, expected);
+    assert_eq!(rem, &[]);
+}
+
+#[test]
 fn from_der_sequence() {
     let input = &hex!("30 05 02 03 01 00 01");
     let (rem, result) = Sequence::from_der(input).expect("parsing failed");

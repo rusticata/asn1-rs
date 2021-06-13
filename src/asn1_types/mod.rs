@@ -7,6 +7,7 @@ mod ia5string;
 mod integer;
 mod null;
 mod octetstring;
+mod oid;
 mod optional;
 mod real;
 mod sequence;
@@ -15,5 +16,5 @@ mod tagged;
 
 pub use {
     any::*, bitstring::*, boolean::*, end_of_content::*, enumerated::*, ia5string::*, integer::*,
-    null::*, octetstring::*, optional::*, real::*, sequence::*, sequence_of::*, tagged::*,
+    null::*, octetstring::*, oid::*, optional::*, real::*, sequence::*, sequence_of::*, tagged::*,
 };

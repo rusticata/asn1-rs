@@ -26,6 +26,7 @@ serialize = ["cookie-factory"]
 cookie-factory = { version="0.3.0", optional=true }
 nom = "6.1.2"
 num-bigint = { version = "0.4", optional = true }
+num-traits = "0.2.14"
 rusticata-macros = "3.0.1"
 thiserror = "1.0.25"
 
