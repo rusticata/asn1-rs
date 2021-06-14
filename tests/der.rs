@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use asn1_rs::*;
 use hex_literal::hex;
 use nom::Needed;
@@ -156,6 +158,23 @@ fn from_der_iter_sequence_incomplete() {
     assert_eq!(iter.next(), Some(Ok(65537)));
     assert_eq!(iter.next(), Some(Err(Error::Incomplete(Needed::new(1)))));
     assert_eq!(iter.next(), None);
+}
+
+#[test]
+fn from_der_set() {
+    let input = &hex!("31 05 02 03 01 00 01");
+    let (rem, result) = Set::from_der(input).expect("parsing failed");
+    assert_eq!(result.as_ref(), &input[2..]);
+    assert_eq!(rem, &[]);
+}
+
+#[test]
+fn from_der_set_btreeset() {
+    let input = &hex!("31 05 02 03 01 00 01");
+    let (rem, result) = <BTreeSet<u32>>::from_der(input).expect("parsing failed");
+    assert!(result.contains(&65537));
+    assert_eq!(result.len(), 1);
+    assert_eq!(rem, &[]);
 }
 
 #[test]
