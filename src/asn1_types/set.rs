@@ -109,10 +109,7 @@ impl<'a> TryFrom<Any<'a>> for Set<'a> {
 }
 
 impl<'a> CheckDerConstraints for Set<'a> {
-    fn check_constraints(any: &Any) -> Result<()> {
-        if !any.header.length.is_definite() {
-            return Err(Error::IndefiniteLengthUnexpected);
-        }
+    fn check_constraints(_any: &Any) -> Result<()> {
         Ok(())
     }
 }

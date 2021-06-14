@@ -124,10 +124,7 @@ impl<'a> TryFrom<Any<'a>> for Sequence<'a> {
 }
 
 impl<'a> CheckDerConstraints for Sequence<'a> {
-    fn check_constraints(any: &Any) -> Result<()> {
-        if !any.header.length.is_definite() {
-            return Err(Error::IndefiniteLengthUnexpected);
-        }
+    fn check_constraints(_any: &Any) -> Result<()> {
         Ok(())
     }
 }
