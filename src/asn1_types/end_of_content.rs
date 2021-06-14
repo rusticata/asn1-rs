@@ -1,7 +1,7 @@
-use crate::CheckDerConstraints;
 use crate::{Any, Error, Result, Tag, Tagged};
 use std::convert::TryFrom;
 
+// No `FromDer` implementation, type is not valid in DER
 #[derive(Debug)]
 pub struct EndOfContent {}
 
@@ -20,12 +20,6 @@ impl<'a> TryFrom<Any<'a>> for EndOfContent {
             return Err(Error::InvalidLength);
         }
         Ok(EndOfContent {})
-    }
-}
-
-impl<'a> CheckDerConstraints for EndOfContent {
-    fn check_constraints(_any: &Any) -> Result<()> {
-        Ok(())
     }
 }
 

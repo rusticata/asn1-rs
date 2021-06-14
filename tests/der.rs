@@ -55,13 +55,6 @@ fn from_der_bool() {
 }
 
 #[test]
-fn from_der_endofcontent() {
-    let input = &hex!("00 00");
-    let (rem, _result) = EndOfContent::from_der(input).expect("parsing failed");
-    assert_eq!(rem, &[]);
-}
-
-#[test]
 fn from_der_enumerated() {
     let input = &hex!("0a 01 02");
     let (rem, result) = Enumerated::from_der(input).expect("parsing failed");

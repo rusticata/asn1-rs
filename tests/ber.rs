@@ -40,6 +40,13 @@ fn from_ber_bitstring() {
 }
 
 #[test]
+fn from_ber_endofcontent() {
+    let input = &hex!("00 00");
+    let (rem, _result) = EndOfContent::from_ber(input).expect("parsing failed");
+    assert_eq!(rem, &[]);
+}
+
+#[test]
 fn from_ber_int() {
     let input = &hex!("02 01 02 ff ff");
     let (rem, result) = u8::from_ber(input).expect("parsing failed");

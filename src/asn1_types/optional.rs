@@ -1,4 +1,4 @@
-use crate::{CheckDerConstraints, Error, FromBer, FromDer, ParseResult};
+use crate::{Any, CheckDerConstraints, Error, FromBer, FromDer, ParseResult};
 
 impl<'a, T> FromBer<'a> for Option<T>
 where
@@ -36,7 +36,7 @@ impl<T> CheckDerConstraints for Option<T>
 where
     T: CheckDerConstraints,
 {
-    fn check_constraints(any: &crate::Any) -> crate::Result<()> {
+    fn check_constraints(any: &Any) -> crate::Result<()> {
         T::check_constraints(any)
     }
 }
