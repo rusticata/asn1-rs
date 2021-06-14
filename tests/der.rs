@@ -3,6 +3,7 @@ use hex_literal::hex;
 use nom::sequence::pair;
 use nom::Needed;
 use std::collections::BTreeSet;
+use std::convert::TryInto;
 
 #[test]
 fn from_der_any() {
@@ -11,6 +12,20 @@ fn from_der_any() {
     // dbg!(&result);
     assert_eq!(rem, &[0xff, 0xff]);
     assert_eq!(result.header.tag, Tag::Integer);
+}
+
+#[test]
+fn from_der_any_into() {
+    let input = &hex!("02 01 02 ff ff");
+    let (rem, result) = Any::from_der(input).expect("parsing failed");
+    assert_eq!(rem, &[0xff, 0xff]);
+    assert_eq!(result.header.tag, Tag::Integer);
+    let i: u32 = result.try_into().unwrap();
+    assert_eq!(i, 2);
+    //
+    let (_, result) = Any::from_der(input).expect("parsing failed");
+    let i = result.u32().unwrap();
+    assert_eq!(i, 2);
 }
 
 #[test]

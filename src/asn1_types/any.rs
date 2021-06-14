@@ -1,5 +1,8 @@
-use crate::{ber::*, FromBer, FromDer, Header, ParseResult, Tag, ToStatic};
-use std::borrow::Cow;
+use crate::{
+    ber::*, BitString, Boolean, Enumerated, FromBer, FromDer, Header, Ia5String, Integer, Length,
+    Null, OctetString, Oid, ParseResult, Result, Sequence, Set, Tag, ToStatic, Utf8String,
+};
+use std::{borrow::Cow, convert::TryInto};
 
 #[derive(Debug)]
 pub struct Any<'a> {
@@ -8,6 +11,27 @@ pub struct Any<'a> {
 }
 
 impl<'a> Any<'a> {
+    pub const fn new(header: Header<'a>, data: Cow<'a, [u8]>) -> Self {
+        Any { header, data }
+    }
+
+    pub const fn from_tag_and_data(tag: Tag, data: &'a [u8]) -> Self {
+        let structured = match tag {
+            Tag::Sequence | Tag::Set => 1,
+            _ => 0,
+        };
+        Any {
+            header: Header {
+                tag,
+                structured,
+                class: crate::Class::Universal,
+                length: Length::Definite(data.len()),
+                raw_tag: None,
+            },
+            data: Cow::Borrowed(data),
+        }
+    }
+
     pub const fn tag(&self) -> Tag {
         self.header.tag
     }
@@ -40,6 +64,48 @@ impl<'a> Any<'a> {
     {
         T::from_der(&self.data)
     }
+}
+
+macro_rules! impl_any_into {
+    (IMPL $sname:expr, $fn_name:ident => $ty:ty, $asn1:expr) => {
+        #[doc = "Attempt to convert object to `"]
+        #[doc = $sname]
+        #[doc = "` (ASN.1 type: `"]
+        #[doc = $asn1]
+        #[doc = "`)."]
+        pub fn $fn_name(self) -> Result<$ty> {
+            self.try_into()
+        }
+    };
+    ($fn_name:ident => $ty:ty, $asn1:expr) => {
+        impl_any_into! {
+            IMPL stringify!($ty), $fn_name => $ty, $asn1
+        }
+    };
+}
+
+impl<'a> Any<'a> {
+    impl_any_into!(bitstring => BitString<'a>, "BIT STRING");
+    impl_any_into!(bool => bool, "BOOLEAN");
+    impl_any_into!(boolean => Boolean, "BOOLEAN");
+    impl_any_into!(enumerated => Enumerated, "ENUMERATED");
+    impl_any_into!(ia5string => Ia5String<'a>, "IA5String");
+    impl_any_into!(integer => Integer<'a>, "INTEGER");
+    impl_any_into!(null => Null, "NULL");
+    impl_any_into!(octetstring => OctetString<'a>, "OCTET STRING");
+    impl_any_into!(oid => Oid<'a>, "OBJECT IDENTIFIER");
+    /// Attempt to convert object to `Oid` (ASN.1 type: `RELATIVE-OID`).
+    pub fn relative_oid(self) -> Result<Oid<'a>> {
+        self.header.assert_tag(Tag::RelativeOid)?;
+        self.try_into()
+    }
+    impl_any_into!(sequence => Sequence<'a>, "SEQUENCE");
+    impl_any_into!(set => Set<'a>, "SET");
+    impl_any_into!(u8 => u8, "INTEGER");
+    impl_any_into!(u16 => u16, "INTEGER");
+    impl_any_into!(u32 => u32, "INTEGER");
+    impl_any_into!(u64 => u64, "INTEGER");
+    impl_any_into!(utf8string => Utf8String<'a>, "UTF8String");
 }
 
 impl<'a> FromBer<'a> for Any<'a> {
