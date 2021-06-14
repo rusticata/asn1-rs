@@ -14,6 +14,10 @@ impl<'a> Ia5String<'a> {
             data: Cow::Borrowed(s),
         }
     }
+
+    pub fn string(self) -> String {
+        self.data.into_owned()
+    }
 }
 
 impl<'a> AsRef<str> for Ia5String<'a> {

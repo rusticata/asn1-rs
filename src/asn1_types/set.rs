@@ -49,7 +49,7 @@ impl<'a> Set<'a> {
         self.der_iter().collect()
     }
 
-    pub fn into_ber_set_of<T, U>(self) -> Result<Vec<T>>
+    pub fn into_ber_set_of<T>(self) -> Result<Vec<T>>
     where
         for<'b> T: FromBer<'b>,
         T: ToStatic<Owned = T>,
@@ -64,7 +64,7 @@ impl<'a> Set<'a> {
         }
     }
 
-    pub fn into_der_set_of<T, U>(self) -> Result<Vec<T>>
+    pub fn into_der_set_of<T>(self) -> Result<Vec<T>>
     where
         for<'b> T: FromDer<'b>,
         T: ToStatic<Owned = T>,
@@ -76,6 +76,16 @@ impl<'a> Set<'a> {
                 let v2 = v1.iter().map(|t| t.to_static()).collect::<Vec<_>>();
                 Ok(v2)
             }
+        }
+    }
+
+    pub fn into_der_set_of_ref<T>(self) -> Result<Vec<T>>
+    where
+        T: FromDer<'a>,
+    {
+        match self.content {
+            Cow::Borrowed(bytes) => SetIterator::<T, DerParser>::new(bytes).collect(),
+            Cow::Owned(_) => Err(Error::LifetimeError),
         }
     }
 }

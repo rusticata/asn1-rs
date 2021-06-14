@@ -22,6 +22,16 @@ impl<'a> Sequence<'a> {
         f(input)
     }
 
+    pub fn parse_ref<F, T>(self, mut f: F) -> ParseResult<'a, T>
+    where
+        F: FnMut(&'a [u8]) -> ParseResult<'a, T>,
+    {
+        match self.content {
+            Cow::Borrowed(b) => f(b),
+            _ => Err(nom::Err::Failure(Error::LifetimeError)),
+        }
+    }
+
     pub fn ber_iter<T>(&'a self) -> SequenceIterator<'a, T, BerParser>
     where
         T: FromBer<'a>,

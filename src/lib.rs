@@ -31,12 +31,5 @@ pub use error::*;
 pub use header::*;
 pub use traits::*;
 
+pub use nom;
 pub use nom::{Err, IResult, Needed};
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn trait_fromder() {
-        //
-    }
-}

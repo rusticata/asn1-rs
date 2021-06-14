@@ -103,6 +103,7 @@ impl<'a> Any<'a> {
     impl_any_into!(printablestring => PrintableString<'a>, "PrintableString");
     impl_any_into!(sequence => Sequence<'a>, "SEQUENCE");
     impl_any_into!(set => Set<'a>, "SET");
+    impl_any_into!(string => String, "UTF8String");
     impl_any_into!(u8 => u8, "INTEGER");
     impl_any_into!(u16 => u16, "INTEGER");
     impl_any_into!(u32 => u32, "INTEGER");
