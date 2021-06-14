@@ -3,7 +3,7 @@
 //! This is mostly used to verify that required types and functions are implemented,
 //! and that provided API is convenient.
 
-use asn1_rs::{nom, Any, Error, FromDer, Oid, ParseResult, Sequence, Set, Tag, ToStatic};
+use asn1_rs::{nom, Any, Error, FromDer, Oid, ParseResult, Sequence, SetOf, Tag, ToStatic};
 use hex_literal::hex;
 use nom::sequence::pair;
 
@@ -28,7 +28,6 @@ pub struct Name<'a> {
 
 impl<'a> FromDer<'a> for Name<'a> {
     fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
-        // let (rem, seq) = Sequence::from_der(bytes)?;
         let (rem, rdn_sequence) = <Vec<RelativeDistinguishedName>>::from_der(bytes)?;
         let dn = Name { rdn_sequence };
         Ok((rem, dn))
@@ -44,8 +43,11 @@ pub struct RelativeDistinguishedName<'a> {
 
 impl<'a> FromDer<'a> for RelativeDistinguishedName<'a> {
     fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
-        let (rem, set) = Set::from_der(bytes)?;
-        let v = set.into_der_set_of_ref::<AttributeTypeAndValue>()?;
+        let (rem, set) = SetOf::<AttributeTypeAndValue>::from_der(bytes)?;
+        let v: Vec<_> = set.into();
+        if v.is_empty() {
+            return Err(nom::Err::Failure(Error::InvalidLength));
+        }
         Ok((rem, RelativeDistinguishedName { v }))
     }
 }
