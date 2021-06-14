@@ -1,8 +1,8 @@
-use std::collections::BTreeSet;
-
 use asn1_rs::*;
 use hex_literal::hex;
+use nom::sequence::pair;
 use nom::Needed;
+use std::collections::BTreeSet;
 
 #[test]
 fn from_der_any() {
@@ -126,11 +126,7 @@ fn from_der_iter_sequence_parse() {
     assert_eq!(result.as_ref(), &input[2..]);
     assert_eq!(rem, &[]);
     let (rem, v) = result
-        .parse(|i| {
-            let (i, i1) = u32::from_der(i)?;
-            let (i, i2) = u32::from_der(i)?;
-            Ok((i, (i1, i2)))
-        })
+        .parse(pair(u32::from_der, u32::from_der))
         .expect("parse sequence data");
     assert_eq!(v, (65537, 65537));
     assert!(rem.is_empty());
