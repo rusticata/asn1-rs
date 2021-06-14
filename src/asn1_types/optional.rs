@@ -32,7 +32,10 @@ where
     }
 }
 
-impl<T> CheckDerConstraints for Option<T> where T: CheckDerConstraints {
+impl<T> CheckDerConstraints for Option<T>
+where
+    T: CheckDerConstraints,
+{
     fn check_constraints(any: &crate::Any) -> crate::Result<()> {
         T::check_constraints(any)
     }

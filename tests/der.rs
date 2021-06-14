@@ -204,7 +204,7 @@ fn from_der_opt_int() {
     assert_eq!(result, Some(2));
     assert_eq!(rem, &[0xff, 0xff]);
     // non-fatal error
-    let (rem, result) = <Option<IA5String>>::from_der(input).expect("parsing failed");
+    let (rem, result) = <Option<Ia5String>>::from_der(input).expect("parsing failed");
     assert!(result.is_none());
     assert_eq!(rem, input);
     // fatal error (correct tag, but incomplete)
@@ -229,7 +229,7 @@ fn from_der_tagged_implicit() {
     let (rem, result) = TaggedValue::<Implicit>::from_der(input).expect("parsing failed");
     assert!(rem.is_empty());
     let (rem, s) = result
-        .parse_der::<IA5String>()
+        .parse_der::<Ia5String>()
         .expect("inner parsing failed");
     assert!(rem.is_empty());
     assert_eq!(s.as_ref(), "pass");

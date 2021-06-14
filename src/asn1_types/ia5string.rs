@@ -4,28 +4,28 @@ use std::borrow::Cow;
 use std::convert::TryFrom;
 
 #[derive(Debug)]
-pub struct IA5String<'a> {
+pub struct Ia5String<'a> {
     data: Cow<'a, str>,
 }
 
-impl<'a> IA5String<'a> {
+impl<'a> Ia5String<'a> {
     pub const fn new(s: &'a str) -> Self {
-        IA5String {
+        Ia5String {
             data: Cow::Borrowed(s),
         }
     }
 }
 
-impl<'a> AsRef<str> for IA5String<'a> {
+impl<'a> AsRef<str> for Ia5String<'a> {
     fn as_ref(&self) -> &str {
         &self.data
     }
 }
 
-impl<'a> TryFrom<Any<'a>> for IA5String<'a> {
+impl<'a> TryFrom<Any<'a>> for Ia5String<'a> {
     type Error = Error;
 
-    fn try_from(any: Any<'a>) -> Result<IA5String<'a>> {
+    fn try_from(any: Any<'a>) -> Result<Ia5String<'a>> {
         any.tag().assert_eq(Self::TAG)?;
         if !any.data.iter().all(u8::is_ascii) {
             return Err(Error::StringInvalidCharset);
@@ -40,17 +40,17 @@ impl<'a> TryFrom<Any<'a>> for IA5String<'a> {
                 Cow::Owned(s)
             }
         };
-        Ok(IA5String { data })
+        Ok(Ia5String { data })
     }
 }
 
-impl<'a> CheckDerConstraints for IA5String<'a> {
+impl<'a> CheckDerConstraints for Ia5String<'a> {
     fn check_constraints(any: &Any) -> Result<()> {
         any.header.assert_primitive()?;
         Ok(())
     }
 }
 
-impl<'a> Tagged for IA5String<'a> {
+impl<'a> Tagged for Ia5String<'a> {
     const TAG: Tag = Tag::Ia5String;
 }
