@@ -1,10 +1,10 @@
-use crate::{Error, FromBer, FromDer};
+use crate::{Error, FromBer, FromDer, ParseResult};
 
 impl<'a, T> FromBer<'a> for Option<T>
 where
     T: FromBer<'a>,
 {
-    fn from_ber(bytes: &'a [u8]) -> crate::ParseResult<Self> {
+    fn from_ber(bytes: &'a [u8]) -> ParseResult<Self> {
         if bytes.is_empty() {
             return Ok((bytes, None));
         }
@@ -20,7 +20,7 @@ impl<'a, T> FromDer<'a> for Option<T>
 where
     T: FromDer<'a>,
 {
-    fn from_der(bytes: &'a [u8]) -> crate::ParseResult<Self> {
+    fn from_der(bytes: &'a [u8]) -> ParseResult<Self> {
         if bytes.is_empty() {
             return Ok((bytes, None));
         }

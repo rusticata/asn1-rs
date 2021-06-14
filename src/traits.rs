@@ -24,7 +24,7 @@ pub trait Tagged {
 }
 
 pub trait FromBer<'a>: Sized {
-    fn from_ber(bytes: &'a [u8]) -> ParseResult<Self>;
+    fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self>;
 }
 
 impl<'a, T> FromBer<'a> for T
@@ -39,7 +39,7 @@ where
 }
 
 pub trait FromDer<'a>: Sized {
-    fn from_der(bytes: &'a [u8]) -> ParseResult<Self>;
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self>;
 }
 
 impl<'a, T> FromDer<'a> for T
@@ -64,4 +64,9 @@ pub trait ToDer {
 
     // XXX to be adjusted
     fn to_der(&self, writer: &mut dyn Write) -> ParseResult<usize>;
+}
+
+pub trait ToStatic {
+    type Owned: 'static;
+    fn to_static(&self) -> Self::Owned;
 }

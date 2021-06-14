@@ -4,16 +4,14 @@ use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::marker::PhantomData;
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Sequence<'a> {
     pub content: Cow<'a, [u8]>,
 }
 
 impl<'a> Sequence<'a> {
-    pub const fn new(s: &'a [u8]) -> Self {
-        Sequence {
-            content: Cow::Borrowed(s),
-        }
+    pub const fn new(content: Cow<'a, [u8]>) -> Self {
+        Sequence { content }
     }
 
     pub fn parse<F, T>(&'a self, mut f: F) -> ParseResult<'a, T>
@@ -50,6 +48,60 @@ impl<'a> Sequence<'a> {
         T: FromDer<'a>,
     {
         self.der_iter().collect()
+    }
+
+    pub fn into_ber_sequence_of<T, U>(self) -> Result<Vec<T>>
+    where
+        for<'b> T: FromBer<'b>,
+        T: ToStatic<Owned = T>,
+    {
+        match self.content {
+            Cow::Borrowed(bytes) => SequenceIterator::<T, BerParser>::new(bytes).collect(),
+            Cow::Owned(data) => {
+                let v1 =
+                    SequenceIterator::<T, BerParser>::new(&data).collect::<Result<Vec<T>>>()?;
+                let v2 = v1.iter().map(|t| t.to_static()).collect::<Vec<_>>();
+                Ok(v2)
+            }
+        }
+    }
+
+    pub fn into_der_sequence_of<T, U>(self) -> Result<Vec<T>>
+    where
+        for<'b> T: FromDer<'b>,
+        T: ToStatic<Owned = T>,
+    {
+        match self.content {
+            Cow::Borrowed(bytes) => SequenceIterator::<T, DerParser>::new(bytes).collect(),
+            Cow::Owned(data) => {
+                let v1 =
+                    SequenceIterator::<T, DerParser>::new(&data).collect::<Result<Vec<T>>>()?;
+                let v2 = v1.iter().map(|t| t.to_static()).collect::<Vec<_>>();
+                Ok(v2)
+            }
+        }
+    }
+}
+
+impl<'a> ToStatic for Sequence<'a> {
+    type Owned = Sequence<'static>;
+
+    fn to_static(&self) -> Self::Owned {
+        Sequence {
+            content: Cow::Owned(self.content.to_vec()),
+        }
+    }
+}
+
+impl<'a, T, U> ToStatic for Vec<T>
+where
+    T: ToStatic<Owned = U>,
+    U: 'static,
+{
+    type Owned = Vec<U>;
+
+    fn to_static(&self) -> Self::Owned {
+        self.iter().map(|t| t.to_static()).collect()
     }
 }
 

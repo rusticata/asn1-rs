@@ -110,6 +110,14 @@ fn from_der_sequence() {
 }
 
 #[test]
+fn from_der_sequence_vec() {
+    let input = &hex!("30 05 02 03 01 00 01");
+    let (rem, result) = <Vec<u32>>::from_der(input).expect("parsing failed");
+    assert_eq!(&result, &[65537]);
+    assert_eq!(rem, &[]);
+}
+
+#[test]
 fn from_der_iter_sequence_parse() {
     let input = &hex!("30 0a 02 03 01 00 01 02 03 01 00 01");
     let (rem, result) = Sequence::from_der(input).expect("parsing failed");
