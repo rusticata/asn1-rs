@@ -67,6 +67,7 @@ impl<'a> TryFrom<Any<'a>> for String {
 
 impl<'a> CheckDerConstraints for String {
     fn check_constraints(any: &Any) -> Result<()> {
+        // X.690 section 10.2
         any.header.assert_primitive()?;
         Ok(())
     }
@@ -91,6 +92,7 @@ impl<'a> TryFrom<Any<'a>> for &'a str {
 
 impl<'a> CheckDerConstraints for &'a str {
     fn check_constraints(any: &Any) -> Result<()> {
+        // X.690 section 10.2
         any.header.assert_primitive()?;
         Ok(())
     }

@@ -86,6 +86,14 @@ fn from_der_octetstring() {
 }
 
 #[test]
+fn from_der_octetstring_as_slice() {
+    let input = &hex!("04 05 41 41 41 41 41");
+    let (rem, result) = <&[u8]>::from_der(input).expect("parsing failed");
+    assert_eq!(result, b"AAAAA");
+    assert_eq!(rem, &[]);
+}
+
+#[test]
 fn from_der_oid() {
     let input = &hex!("06 09 2a 86 48 86 f7 0d 01 01 05");
     let (rem, result) = Oid::from_der(input).expect("parsing failed");
