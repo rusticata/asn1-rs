@@ -3,9 +3,10 @@
 //! This is mostly used to verify that required types and functions are implemented,
 //! and that provided API is convenient.
 
-use asn1_rs::{nom, Any, Error, FromDer, Oid, ParseResult, Sequence, SetOf, Tag, ToStatic};
+use asn1_rs::{nom, Any, Choice, Error, FromDer, Oid, ParseResult, Sequence, SetOf, Tag};
 use hex_literal::hex;
 use nom::sequence::pair;
+use std::convert::{TryFrom, TryInto};
 
 const DN: &[u8] = &hex!(
     "
@@ -58,23 +59,16 @@ impl<'a> FromDer<'a> for RelativeDistinguishedName<'a> {
 #[derive(Debug)]
 pub struct AttributeTypeAndValue<'a> {
     pub oid: Oid<'a>,
-    pub value: AttributeValue,
+    pub value: AttributeValue<'a>,
 }
 
 impl<'a> FromDer<'a> for AttributeTypeAndValue<'a> {
     fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
         let (rem, seq) = Sequence::from_der(bytes)?;
-        let (_, (oid, value)) = seq.parse_ref(pair(Oid::from_der, AttributeValue::from_der))?;
+        let (_, (oid, value)) =
+            seq.parse_ref(|i| pair(Oid::from_der, AttributeValue::from_der)(i))?;
         let attr = AttributeTypeAndValue { oid, value };
         Ok((rem, attr))
-    }
-}
-
-impl<'a> ToStatic for AttributeTypeAndValue<'a> {
-    type Owned = AttributeTypeAndValue<'static>;
-
-    fn to_static(&self) -> Self::Owned {
-        todo!()
     }
 }
 
@@ -82,25 +76,20 @@ impl<'a> ToStatic for AttributeTypeAndValue<'a> {
 
 // AttributeValue ::= ANY -- DEFINED BY AttributeType
 #[derive(Debug)]
-pub enum AttributeValue {
-    Printable(String),
-    Utf8(String),
+pub enum AttributeValue<'a> {
+    DirectoryString(DirectoryString),
+    Other(Any<'a>),
 }
 
-impl<'a> FromDer<'a> for AttributeValue {
+impl<'a> FromDer<'a> for AttributeValue<'a> {
     fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
         let (rem, any) = Any::from_der(bytes)?;
-        match any.tag() {
-            Tag::PrintableString => {
-                let s = any.printablestring()?;
-                Ok((rem, AttributeValue::Printable(s.string())))
-            }
-            Tag::Utf8String => {
-                let s = any.string()?;
-                Ok((rem, AttributeValue::Utf8(s)))
-            }
-            _ => Err(nom::Err::Failure(Error::InvalidTag)),
-        }
+        let ds = if DirectoryString::can_decode(any.tag()) {
+            AttributeValue::DirectoryString(any.try_into()?)
+        } else {
+            AttributeValue::Other(any)
+        };
+        Ok((rem, ds))
     }
 }
 
@@ -110,6 +99,35 @@ impl<'a> FromDer<'a> for AttributeValue {
 //         universalString         UniversalString (SIZE (1..MAX)),
 //         utf8String              UTF8String (SIZE (1..MAX)),
 //         bmpString               BMPString (SIZE (1..MAX)) }
+#[derive(Debug)]
+pub enum DirectoryString {
+    Printable(String),
+    Utf8(String),
+}
+
+impl Choice for DirectoryString {
+    fn can_decode(tag: Tag) -> bool {
+        matches!(tag, Tag::PrintableString | Tag::Utf8String)
+    }
+}
+
+impl<'a> TryFrom<Any<'a>> for DirectoryString {
+    type Error = Error;
+
+    fn try_from(any: Any<'a>) -> Result<Self, Self::Error> {
+        match any.tag() {
+            Tag::PrintableString => {
+                let s = any.printablestring()?;
+                Ok(DirectoryString::Printable(s.string()))
+            }
+            Tag::Utf8String => {
+                let s = any.string()?;
+                Ok(DirectoryString::Utf8(s))
+            }
+            _ => Err(Error::InvalidTag),
+        }
+    }
+}
 
 #[test]
 fn x509_decode_dn() {

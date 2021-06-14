@@ -1,13 +1,13 @@
 use crate::{FromBer, FromDer, Tag, Tagged};
 
-pub trait Choice<'a> {
+pub trait Choice {
     /// Is the provided [`Tag`] decodable as a variant of this `CHOICE`?
     fn can_decode(tag: Tag) -> bool;
 }
 
 /// This blanket impl allows any [`Tagged`] type to function as a [`Choice`]
 /// with a single alternative.
-impl<'a, T> Choice<'a> for T
+impl<T> Choice for T
 where
     T: Tagged,
 {
@@ -16,6 +16,6 @@ where
     }
 }
 
-pub trait BerChoice<'a>: Choice<'a> + FromBer<'a> {}
+pub trait BerChoice<'a>: Choice + FromBer<'a> {}
 
-pub trait DerChoice<'a>: Choice<'a> + FromDer<'a> {}
+pub trait DerChoice<'a>: Choice + FromDer<'a> {}
