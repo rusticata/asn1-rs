@@ -178,6 +178,30 @@ fn from_der_set_btreeset() {
 }
 
 #[test]
+fn from_der_utf8string() {
+    let input = &hex!("0c 0a 53 6f 6d 65 2d 53 74 61 74 65");
+    let (rem, result) = Utf8String::from_der(input).expect("parsing failed");
+    assert_eq!(result.as_ref(), "Some-State");
+    assert_eq!(rem, &[]);
+}
+
+#[test]
+fn from_der_utf8string_as_str() {
+    let input = &hex!("0c 0a 53 6f 6d 65 2d 53 74 61 74 65");
+    let (rem, result) = <&str>::from_der(input).expect("parsing failed");
+    assert_eq!(result, "Some-State");
+    assert_eq!(rem, &[]);
+}
+
+#[test]
+fn from_der_utf8string_as_string() {
+    let input = &hex!("0c 0a 53 6f 6d 65 2d 53 74 61 74 65");
+    let (rem, result) = String::from_der(input).expect("parsing failed");
+    assert_eq!(&result, "Some-State");
+    assert_eq!(rem, &[]);
+}
+
+#[test]
 fn from_der_opt_int() {
     let input = &hex!("02 01 02 ff ff");
     let (rem, result) = <Option<u8>>::from_der(input).expect("parsing failed");

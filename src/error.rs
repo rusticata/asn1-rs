@@ -33,6 +33,8 @@ pub enum Error {
     #[error("DER Failed constraint")]
     DerConstraintFailed,
 
+    #[error("Requesting borrowed data from a temporary object")]
+    LifetimeError,
     #[error("Feature is not yet implemented")]
     Unsupported,
 
