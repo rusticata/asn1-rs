@@ -26,6 +26,20 @@ impl<'a> Any<'a> {
     pub fn as_bytes(&'a self) -> &'a [u8] {
         &self.data
     }
+
+    pub fn parse_ber<T>(&'a self) -> ParseResult<'a, T>
+    where
+        T: FromBer<'a>,
+    {
+        T::from_ber(&self.data)
+    }
+
+    pub fn parse_der<T>(&'a self) -> ParseResult<'a, T>
+    where
+        T: FromDer<'a>,
+    {
+        T::from_der(&self.data)
+    }
 }
 
 impl<'a> FromBer<'a> for Any<'a> {
