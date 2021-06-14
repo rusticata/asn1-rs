@@ -1,6 +1,7 @@
 use crate::{
     ber::*, BitString, Boolean, Enumerated, FromBer, FromDer, Header, Ia5String, Integer, Length,
-    Null, OctetString, Oid, ParseResult, Result, Sequence, Set, Tag, ToStatic, Utf8String,
+    Null, OctetString, Oid, ParseResult, PrintableString, Result, Sequence, Set, Tag, ToStatic,
+    Utf8String,
 };
 use std::{borrow::Cow, convert::TryInto};
 
@@ -99,6 +100,7 @@ impl<'a> Any<'a> {
         self.header.assert_tag(Tag::RelativeOid)?;
         self.try_into()
     }
+    impl_any_into!(printablestring => PrintableString<'a>, "PrintableString");
     impl_any_into!(sequence => Sequence<'a>, "SEQUENCE");
     impl_any_into!(set => Set<'a>, "SET");
     impl_any_into!(u8 => u8, "INTEGER");
