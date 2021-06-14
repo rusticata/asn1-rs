@@ -1,9 +1,11 @@
 use crate::ber::*;
 use crate::der_constraint_fail_if;
 use crate::error::*;
+use crate::ToStatic;
 use crate::{FromBer, FromDer};
 use nom::bytes::streaming::take;
 use rusticata_macros::newtype_enum;
+use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::fmt;
 
@@ -75,13 +77,13 @@ pub enum Length {
     Indefinite,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Header<'a> {
     pub class: Class,
     pub structured: u8,
     pub tag: Tag,
     pub length: Length,
-    pub(crate) raw_tag: Option<&'a [u8]>,
+    pub(crate) raw_tag: Option<Cow<'a, [u8]>>,
 }
 
 impl fmt::Display for Class {
@@ -180,7 +182,7 @@ impl<'a> Header<'a> {
 
     /// Update header to add reference to raw tag
     #[inline]
-    pub const fn with_raw_tag(self, raw_tag: Option<&'a [u8]>) -> Self {
+    pub fn with_raw_tag(self, raw_tag: Option<Cow<'a, [u8]>>) -> Self {
         Header { raw_tag, ..self }
     }
 
@@ -227,6 +229,22 @@ impl<'a> Header<'a> {
     }
 }
 
+impl<'a> ToStatic for Header<'a> {
+    type Owned = Header<'static>;
+
+    fn to_static(&self) -> Self::Owned {
+        let raw_tag: Option<Cow<'static, [u8]>> =
+            self.raw_tag.as_ref().map(|b| Cow::Owned(b.to_vec()));
+        Header {
+            tag: self.tag,
+            structured: self.structured,
+            class: self.class,
+            length: self.length,
+            raw_tag,
+        }
+    }
+}
+
 impl<'a> FromBer<'a> for Header<'a> {
     fn from_ber(bytes: &'a [u8]) -> ParseResult<Self> {
         let (i1, el) = parse_identifier(bytes)?;
@@ -266,7 +284,7 @@ impl<'a> FromBer<'a> for Header<'a> {
                 }
             }
         };
-        let hdr = Header::new(class, el.1, Tag(el.2), len).with_raw_tag(Some(el.3));
+        let hdr = Header::new(class, el.1, Tag(el.2), len).with_raw_tag(Some(el.3.into()));
         Ok((i3, hdr))
     }
 }
@@ -310,7 +328,7 @@ impl<'a> FromDer<'a> for Header<'a> {
                 }
             }
         };
-        let hdr = Header::new(class, el.1, Tag(el.2), len).with_raw_tag(Some(el.3));
+        let hdr = Header::new(class, el.1, Tag(el.2), len).with_raw_tag(Some(el.3.into()));
         Ok((i3, hdr))
     }
 }

@@ -1,4 +1,4 @@
-use crate::{ber::*, FromBer, FromDer, Header, ParseResult, Tag};
+use crate::{ber::*, FromBer, FromDer, Header, ParseResult, Tag, ToStatic};
 use std::borrow::Cow;
 
 #[derive(Debug)]
@@ -45,5 +45,16 @@ impl<'a> FromDer<'a> for Any<'a> {
         let (i, data) = ber_get_object_content(i, &header, MAX_RECURSION)?;
         let data = Cow::Borrowed(data);
         Ok((i, Any { header, data }))
+    }
+}
+
+impl<'a> ToStatic for Any<'a> {
+    type Owned = Any<'static>;
+
+    fn to_static(&self) -> Self::Owned {
+        Any {
+            header: self.header.to_static(),
+            data: Cow::Owned(self.data.to_vec()),
+        }
     }
 }

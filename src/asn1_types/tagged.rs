@@ -77,7 +77,7 @@ impl<'a> TaggedValue<'a, Implicit> {
         let any = Any {
             header: Header {
                 tag: T::TAG,
-                ..self.header
+                ..self.header.clone()
             },
             data: Cow::Borrowed(&self.data),
         };
@@ -96,7 +96,7 @@ impl<'a> TaggedValue<'a, Implicit> {
         let any = Any {
             header: Header {
                 tag: T::TAG,
-                ..self.header
+                ..self.header.clone()
             },
             data: Cow::Borrowed(&self.data),
         };
