@@ -27,6 +27,9 @@ impl<'a> TryFrom<Any<'a>> for IA5String<'a> {
 
     fn try_from(any: Any<'a>) -> Result<IA5String<'a>> {
         any.tag().assert_eq(Self::TAG)?;
+        if !any.data.iter().all(u8::is_ascii) {
+            return Err(Error::StringInvalidCharset);
+        }
         let data = match any.data {
             Cow::Borrowed(b) => {
                 let s = std::str::from_utf8(b)?;

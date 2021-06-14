@@ -27,11 +27,14 @@ pub enum Error {
     #[error("BER recursive parsing reached maximum depth")]
     BerMaxDepth,
 
-    #[error("Invalid string encoding")]
-    InvalidStringEncoding,
+    #[error("Invalid encoding or forbidden characters in string")]
+    StringInvalidCharset,
 
     #[error("DER Failed constraint")]
     DerConstraintFailed,
+
+    #[error("Feature is not yet implemented")]
+    Unsupported,
 
     #[error("incomplete data, missing: {0:?}")]
     Incomplete(nom::Needed),
@@ -57,13 +60,13 @@ impl From<Error> for nom::Err<Error> {
 
 impl From<str::Utf8Error> for Error {
     fn from(_: str::Utf8Error) -> Self {
-        Error::InvalidStringEncoding
+        Error::StringInvalidCharset
     }
 }
 
 impl From<string::FromUtf8Error> for Error {
     fn from(_: string::FromUtf8Error) -> Self {
-        Error::InvalidStringEncoding
+        Error::StringInvalidCharset
     }
 }
 
