@@ -1,4 +1,4 @@
-use crate::{Error, FromBer, FromDer, ParseResult};
+use crate::{CheckDerConstraints, Error, FromBer, FromDer, ParseResult};
 
 impl<'a, T> FromBer<'a> for Option<T>
 where
@@ -29,5 +29,11 @@ where
             Err(nom::Err::Failure(Error::UnexpectedTag(_))) => Ok((bytes, None)),
             Err(e) => Err(e),
         }
+    }
+}
+
+impl<T> CheckDerConstraints for Option<T> where T: CheckDerConstraints {
+    fn check_constraints(any: &crate::Any) -> crate::Result<()> {
+        T::check_constraints(any)
     }
 }
