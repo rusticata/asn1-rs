@@ -3,7 +3,7 @@ use crate::{Any, Error, Result, Tag, Tagged};
 use std::borrow::Cow;
 use std::convert::TryFrom;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct Utf8String<'a> {
     data: Cow<'a, str>,
 }
@@ -15,8 +15,8 @@ impl<'a> Utf8String<'a> {
         }
     }
 
-    pub fn string(self) -> String {
-        self.data.into_owned()
+    pub fn string(&self) -> String {
+        self.data.to_string()
     }
 }
 
