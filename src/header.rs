@@ -304,7 +304,7 @@ impl<'a> FromDer<'a> for Header<'a> {
             }
             (_, 0) => {
                 // Indefinite form is not allowed in DER (10.1)
-                return Err(::nom::Err::Error(Error::DerConstraintFailed));
+                return Err(::nom::Err::Error(Error::IndefiniteLengthUnexpected));
             }
             (_, l1) => {
                 // if len is 0xff -> error (8.1.3.5)
