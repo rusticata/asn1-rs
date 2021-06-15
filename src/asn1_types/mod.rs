@@ -4,6 +4,7 @@ mod boolean;
 mod choice;
 mod end_of_content;
 mod enumerated;
+mod generalstring;
 mod ia5string;
 mod integer;
 mod null;
@@ -20,7 +21,8 @@ mod tagged;
 mod utf8string;
 
 pub use {
-    any::*, bitstring::*, boolean::*, choice::*, end_of_content::*, enumerated::*, ia5string::*,
-    integer::*, null::*, octetstring::*, oid::*, optional::*, printablestring::*, real::*,
-    sequence::*, sequence_of::*, set::*, set_of::*, tagged::*, utf8string::*,
+    any::*, bitstring::*, boolean::*, choice::*, end_of_content::*, enumerated::*,
+    generalstring::*, ia5string::*, integer::*, null::*, octetstring::*, oid::*, optional::*,
+    printablestring::*, real::*, sequence::*, sequence_of::*, set::*, set_of::*, tagged::*,
+    utf8string::*,
 };
