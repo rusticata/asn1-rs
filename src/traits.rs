@@ -23,6 +23,11 @@ pub trait Tagged {
     const TAG: Tag;
 }
 
+/// Base trait for BER object parsers
+///
+/// Library authors should usually not directly implement this trait, but should prefer implementing the
+/// `TryFrom<Any>` trait,
+/// which offers greater flexibility and provides an equivalent `BerParser` implementation for free.
 pub trait FromBer<'a>: Sized {
     fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self>;
 }
@@ -37,6 +42,12 @@ where
         Ok((i, result))
     }
 }
+
+/// Base trait for DER object parsers
+///
+/// Library authors should usually not directly implement this trait, but should prefer implementing the
+/// `TryFrom<Any>` + `CheckDerConstraint` traits,
+/// which offers greater flexibility and provides an equivalent `DerParser` implementation for free.
 
 pub trait FromDer<'a>: Sized {
     fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self>;
@@ -59,6 +70,7 @@ where
     }
 }
 
+/// Verification of DER constraints
 pub trait CheckDerConstraints {
     fn check_constraints(any: &Any) -> Result<()>;
 }

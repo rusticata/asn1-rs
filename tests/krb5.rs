@@ -38,11 +38,12 @@ fn parse_principalname(bytes: &[u8]) -> ParseResult<PrincipalName> {
     let (rem, seq) = Sequence::from_ber(bytes)?;
     seq.parse_ref(|input| {
         //
-        let (i, name_type) = parse_der_tagged_explicit::<_, u32>(0)(input)?;
+        let (i, t) = parse_der_tagged_explicit::<_, u32>(0)(input)?;
+        let name_type = t.inner;
         // dbg!(name_type);
         let name_type = NameType(name_type as i32);
-        let (_, v) = parse_der_tagged_explicit::<_, KerberosStringList>(1)(i)?;
-        let name_string = v.iter().map(|s| s.string()).collect();
+        let (_, t) = parse_der_tagged_explicit::<_, KerberosStringList>(1)(i)?;
+        let name_string = t.inner.iter().map(|s| s.string()).collect();
         // dbg!(&name_string);
         Ok((
             rem,

@@ -62,37 +62,35 @@ impl<'a, TagKind, T> AsRef<T> for TaggedValue<'a, TagKind, T> {
     }
 }
 
-impl<'a, T> TryFrom<Any<'a>> for TaggedValue<'a, Explicit, T>
+impl<'a, T> FromBer<'a> for TaggedValue<'a, Explicit, T>
 where
-    T: TryFrom<Any<'a>, Error = Error>,
-    T: Tagged,
+    T: FromBer<'a>,
 {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<Self> {
-        let header = any.header.clone();
+    fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self> {
+        let (rem, any) = Any::from_ber(bytes)?;
+        let header = any.header;
         let data = match any.data {
             Cow::Borrowed(b) => b,
-            Cow::Owned(_) => return Err(Error::LifetimeError),
+            // Since 'any' is built from 'bytes', it is borrowed by construction
+            Cow::Owned(_) => unreachable!(),
         };
-        let (_, inner_any) = Any::from_ber(data)?;
-        let inner = T::try_from(inner_any)?;
-        Ok(TaggedValue {
+        let (_, inner) = T::from_ber(data)?;
+        let tagged = TaggedValue {
             header,
             inner,
             tag_kind: PhantomData,
-        })
+        };
+        Ok((rem, tagged))
     }
 }
 
-impl<'a, T> TryFrom<Any<'a>> for TaggedValue<'a, Implicit, T>
+impl<'a, T> FromBer<'a> for TaggedValue<'a, Implicit, T>
 where
     T: TryFrom<Any<'a>, Error = Error>,
     T: Tagged,
 {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<Self> {
+    fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self> {
+        let (rem, any) = Any::from_ber(bytes)?;
         let Any { header, data } = any;
         let any = Any {
             header: Header {
@@ -102,12 +100,68 @@ where
             data,
         };
         match T::try_from(any) {
-            Ok(t) => Ok(TaggedValue {
-                header,
-                inner: t,
-                tag_kind: PhantomData,
-            }),
-            Err(e) => Err(e),
+            Ok(t) => {
+                let tagged_value = TaggedValue {
+                    header,
+                    inner: t,
+                    tag_kind: PhantomData,
+                };
+                Ok((rem, tagged_value))
+            }
+            Err(e) => Err(e.into()),
+        }
+    }
+}
+
+impl<'a, T> FromDer<'a> for TaggedValue<'a, Explicit, T>
+where
+    T: FromDer<'a>,
+{
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
+        let (rem, any) = Any::from_der(bytes)?;
+        let header = any.header;
+        let data = match any.data {
+            Cow::Borrowed(b) => b,
+            // Since 'any' is built from 'bytes', it is borrowed by construction
+            Cow::Owned(_) => unreachable!(),
+        };
+        let (_, inner) = T::from_der(data)?;
+        let tagged = TaggedValue {
+            header,
+            inner,
+            tag_kind: PhantomData,
+        };
+        Ok((rem, tagged))
+    }
+}
+
+impl<'a, T> FromDer<'a> for TaggedValue<'a, Implicit, T>
+where
+    T: TryFrom<Any<'a>, Error = Error>,
+    T: CheckDerConstraints,
+    T: Tagged,
+{
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
+        let (rem, any) = Any::from_der(bytes)?;
+        let Any { header, data } = any;
+        let any = Any {
+            header: Header {
+                tag: T::TAG,
+                ..header.clone()
+            },
+            data,
+        };
+        T::check_constraints(&any)?;
+        match T::try_from(any) {
+            Ok(t) => {
+                let tagged_value = TaggedValue {
+                    header,
+                    inner: t,
+                    tag_kind: PhantomData,
+                };
+                Ok((rem, tagged_value))
+            }
+            Err(e) => Err(e.into()),
         }
     }
 }
@@ -230,19 +284,19 @@ impl<TagKind> TagParser<TagKind> {
 
 // helper functions for parsing tagged objects
 
-// XXX how to add Class (universal/application/context-specific/private)?
 pub fn parse_der_tagged_explicit<'a, IntoTag, T>(
     tag: IntoTag,
-) -> impl FnMut(&'a [u8]) -> ParseResult<T>
+) -> impl FnMut(&'a [u8]) -> ParseResult<TaggedValue<'a, Explicit, T>>
 where
     IntoTag: Into<Tag>,
-    T: FromDer<'a>,
+    TaggedValue<'a, Explicit, T>: FromDer<'a>,
 {
     let tag = tag.into();
-    parse_der_tagged_explicit_g(tag, |content, _header| {
-        let (rem, inner) = T::from_der(content)?;
-        Ok((rem, inner))
-    })
+    move |i| {
+        let (rem, tagged) = TaggedValue::from_der(i)?;
+        tagged.assert_tag(tag)?;
+        Ok((rem, tagged))
+    }
 }
 
 pub fn parse_der_tagged_explicit_g<'a, IntoTag, T, F, E>(
@@ -269,18 +323,18 @@ where
 
 pub fn parse_der_tagged_implicit<'a, IntoTag, T>(
     tag: IntoTag,
-) -> impl FnMut(&'a [u8]) -> ParseResult<T>
+) -> impl FnMut(&'a [u8]) -> ParseResult<TaggedValue<'a, Implicit, T>>
 where
     IntoTag: Into<Tag>,
-    T: TryFrom<Any<'a>, Error = Error> + Tagged,
+    // T: TryFrom<Any<'a>, Error = Error> + Tagged,
+    TaggedValue<'a, Implicit, T>: FromDer<'a>,
 {
     let tag = tag.into();
-    parse_der_tagged_implicit_g(tag, |content, _actual_tag, fake_header| {
-        let any = Any::new(fake_header, content.into());
-
-        let inner = T::try_from(any)?;
-        Ok((&[], inner))
-    })
+    move |i| {
+        let (rem, tagged) = TaggedValue::from_der(i)?;
+        tagged.assert_tag(tag)?;
+        Ok((rem, tagged))
+    }
 }
 
 pub fn parse_der_tagged_implicit_g<'a, IntoTag, T, F, E>(
