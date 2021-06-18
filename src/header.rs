@@ -51,6 +51,7 @@ impl display Tag {
     NumericString = 0x12,
     PrintableString = 0x13,
     T61String = 0x14,
+    TeletexString = 0x14,
     VideotexString = 0x15,
 
     Ia5String = 0x16,

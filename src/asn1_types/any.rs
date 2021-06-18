@@ -1,7 +1,7 @@
 use crate::{
     ber::*, BitString, Boolean, Enumerated, FromBer, FromDer, GeneralString, Header, Ia5String,
-    Integer, Length, Null, OctetString, Oid, ParseResult, PrintableString, Result, Sequence, Set,
-    Tag, ToStatic, Utf8String, VisibleString,
+    Integer, Length, Null, NumericString, OctetString, Oid, ParseResult, PrintableString, Result,
+    Sequence, Set, Tag, TeletexString, ToStatic, Utf8String, VisibleString,
 };
 use std::{borrow::Cow, convert::TryInto};
 
@@ -94,6 +94,7 @@ impl<'a> Any<'a> {
     impl_any_into!(ia5string => Ia5String<'a>, "IA5String");
     impl_any_into!(integer => Integer<'a>, "INTEGER");
     impl_any_into!(null => Null, "NULL");
+    impl_any_into!(numericstring => NumericString<'a>, "NumericString");
     impl_any_into!(octetstring => OctetString<'a>, "OCTET STRING");
     impl_any_into!(oid => Oid<'a>, "OBJECT IDENTIFIER");
     /// Attempt to convert object to `Oid` (ASN.1 type: `RELATIVE-OID`).
@@ -105,6 +106,7 @@ impl<'a> Any<'a> {
     impl_any_into!(sequence => Sequence<'a>, "SEQUENCE");
     impl_any_into!(set => Set<'a>, "SET");
     impl_any_into!(string => String, "UTF8String");
+    impl_any_into!(teletexstring => TeletexString<'a>, "TeletexString");
     impl_any_into!(u8 => u8, "INTEGER");
     impl_any_into!(u16 => u16, "INTEGER");
     impl_any_into!(u32 => u32, "INTEGER");
