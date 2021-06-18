@@ -2,7 +2,14 @@ use crate::traits::*;
 use crate::{Any, Error, ParseResult, Result, Tag};
 use std::borrow::Cow;
 use std::convert::TryFrom;
-use std::marker::PhantomData;
+
+mod iterator;
+mod sequence_of;
+mod vec;
+
+pub use iterator::*;
+pub use sequence_of::*;
+pub use vec::*;
 
 #[derive(Clone, Debug)]
 pub struct Sequence<'a> {
@@ -141,85 +148,4 @@ impl<'a> CheckDerConstraints for Sequence<'a> {
 
 impl<'a> Tagged for Sequence<'a> {
     const TAG: Tag = Tag::Sequence;
-}
-
-#[derive(Debug)]
-pub struct SequenceIterator<'a, T, F>
-where
-    F: ASN1Parser,
-{
-    data: &'a [u8],
-    has_error: bool,
-    _t: PhantomData<T>,
-    _f: PhantomData<F>,
-}
-
-impl<'a, T, F> SequenceIterator<'a, T, F>
-where
-    F: ASN1Parser,
-{
-    pub fn new(data: &'a [u8]) -> Self {
-        SequenceIterator {
-            data,
-            has_error: false,
-            _t: PhantomData,
-            _f: PhantomData,
-        }
-    }
-}
-
-impl<'a, T> Iterator for SequenceIterator<'a, T, BerParser>
-where
-    T: FromBer<'a>,
-{
-    type Item = Result<T>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.has_error || self.data.is_empty() {
-            return None;
-        }
-        match T::from_ber(&self.data) {
-            Ok((rem, obj)) => {
-                self.data = rem;
-                Some(Ok(obj))
-            }
-            Err(nom::Err::Error(e)) | Err(nom::Err::Failure(e)) => {
-                self.has_error = true;
-                Some(Err(e))
-            }
-
-            Err(nom::Err::Incomplete(n)) => {
-                self.has_error = true;
-                Some(Err(Error::Incomplete(n)))
-            }
-        }
-    }
-}
-
-impl<'a, T> Iterator for SequenceIterator<'a, T, DerParser>
-where
-    T: FromDer<'a>,
-{
-    type Item = Result<T>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.has_error || self.data.is_empty() {
-            return None;
-        }
-        match T::from_der(&self.data) {
-            Ok((rem, obj)) => {
-                self.data = rem;
-                Some(Ok(obj))
-            }
-            Err(nom::Err::Error(e)) | Err(nom::Err::Failure(e)) => {
-                self.has_error = true;
-                Some(Err(e))
-            }
-
-            Err(nom::Err::Incomplete(n)) => {
-                self.has_error = true;
-                Some(Err(Error::Incomplete(n)))
-            }
-        }
-    }
 }

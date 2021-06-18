@@ -1,7 +1,17 @@
-use crate::{traits::*, SequenceIterator};
+use crate::traits::*;
 use crate::{Any, Error, ParseResult, Result, Tag};
 use std::borrow::Cow;
 use std::convert::TryFrom;
+
+mod btreeset;
+mod hashset;
+mod iterator;
+mod set_of;
+
+pub use btreeset::*;
+pub use hashset::*;
+pub use iterator::*;
+pub use set_of::*;
 
 #[derive(Clone, Debug)]
 pub struct Set<'a> {
@@ -127,5 +137,3 @@ impl<'a> CheckDerConstraints for Set<'a> {
 impl<'a> Tagged for Set<'a> {
     const TAG: Tag = Tag::Set;
 }
-
-pub type SetIterator<'a, T, F> = SequenceIterator<'a, T, F>;
