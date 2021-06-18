@@ -76,6 +76,12 @@ impl From<string::FromUtf8Error> for Error {
     }
 }
 
+impl From<string::FromUtf16Error> for Error {
+    fn from(_: string::FromUtf16Error) -> Self {
+        Error::StringInvalidCharset
+    }
+}
+
 impl From<nom::Err<Error>> for Error {
     fn from(e: nom::Err<Error>) -> Self {
         match e {

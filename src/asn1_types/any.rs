@@ -1,7 +1,8 @@
 use crate::{
-    ber::*, BitString, Boolean, Enumerated, FromBer, FromDer, GeneralString, Header, Ia5String,
-    Integer, Length, Null, NumericString, OctetString, Oid, ParseResult, PrintableString, Result,
-    Sequence, Set, Tag, TeletexString, ToStatic, Utf8String, VisibleString,
+    ber::*, BitString, BmpString, Boolean, Enumerated, FromBer, FromDer, GeneralString, Header,
+    Ia5String, Integer, Length, Null, NumericString, OctetString, Oid, ParseResult,
+    PrintableString, Result, Sequence, Set, Tag, TeletexString, ToStatic, UniversalString,
+    Utf8String, VideotexString, VisibleString,
 };
 use std::{borrow::Cow, convert::TryInto};
 
@@ -87,6 +88,7 @@ macro_rules! impl_any_into {
 
 impl<'a> Any<'a> {
     impl_any_into!(bitstring => BitString<'a>, "BIT STRING");
+    impl_any_into!(bmpstring => BmpString<'a>, "BmpString");
     impl_any_into!(bool => bool, "BOOLEAN");
     impl_any_into!(boolean => Boolean, "BOOLEAN");
     impl_any_into!(enumerated => Enumerated, "ENUMERATED");
@@ -111,7 +113,9 @@ impl<'a> Any<'a> {
     impl_any_into!(u16 => u16, "INTEGER");
     impl_any_into!(u32 => u32, "INTEGER");
     impl_any_into!(u64 => u64, "INTEGER");
+    impl_any_into!(universalstring => UniversalString<'a>, "UniversalString");
     impl_any_into!(utf8string => Utf8String<'a>, "UTF8String");
+    impl_any_into!(videotexstring => VideotexString<'a>, "VideotexString");
     impl_any_into!(visiblestring => VisibleString<'a>, "VisibleString");
 }
 
