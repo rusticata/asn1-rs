@@ -1,7 +1,7 @@
 use crate::{
-    ber::*, BitString, Boolean, Enumerated, FromBer, FromDer, Header, Ia5String, Integer, Length,
-    Null, OctetString, Oid, ParseResult, PrintableString, Result, Sequence, Set, Tag, ToStatic,
-    Utf8String,
+    ber::*, BitString, Boolean, Enumerated, FromBer, FromDer, GeneralString, Header, Ia5String,
+    Integer, Length, Null, OctetString, Oid, ParseResult, PrintableString, Result, Sequence, Set,
+    Tag, ToStatic, Utf8String, VisibleString,
 };
 use std::{borrow::Cow, convert::TryInto};
 
@@ -90,6 +90,7 @@ impl<'a> Any<'a> {
     impl_any_into!(bool => bool, "BOOLEAN");
     impl_any_into!(boolean => Boolean, "BOOLEAN");
     impl_any_into!(enumerated => Enumerated, "ENUMERATED");
+    impl_any_into!(general5string => GeneralString<'a>, "GeneralString");
     impl_any_into!(ia5string => Ia5String<'a>, "IA5String");
     impl_any_into!(integer => Integer<'a>, "INTEGER");
     impl_any_into!(null => Null, "NULL");
@@ -109,6 +110,7 @@ impl<'a> Any<'a> {
     impl_any_into!(u32 => u32, "INTEGER");
     impl_any_into!(u64 => u64, "INTEGER");
     impl_any_into!(utf8string => Utf8String<'a>, "UTF8String");
+    impl_any_into!(visiblestring => VisibleString<'a>, "VisibleString");
 }
 
 impl<'a> FromBer<'a> for Any<'a> {

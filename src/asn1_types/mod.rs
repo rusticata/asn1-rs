@@ -17,9 +17,10 @@ mod sequence;
 mod set;
 mod tagged;
 mod utf8string;
+mod visiblestring;
 
 pub use {
     any::*, bitstring::*, boolean::*, choice::*, end_of_content::*, enumerated::*,
     generalstring::*, ia5string::*, integer::*, null::*, octetstring::*, oid::*, optional::*,
-    printablestring::*, real::*, sequence::*, set::*, tagged::*, utf8string::*,
+    printablestring::*, real::*, sequence::*, set::*, tagged::*, utf8string::*, visiblestring::*,
 };
