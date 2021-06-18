@@ -10,7 +10,7 @@ where
         }
         match T::from_ber(bytes) {
             Ok((rem, t)) => Ok((rem, Some(t))),
-            Err(nom::Err::Failure(Error::UnexpectedTag(_))) => Ok((bytes, None)),
+            Err(nom::Err::Failure(Error::UnexpectedTag { .. })) => Ok((bytes, None)),
             Err(e) => Err(e),
         }
     }
@@ -26,7 +26,7 @@ where
         }
         match T::from_der(bytes) {
             Ok((rem, t)) => Ok((rem, Some(t))),
-            Err(nom::Err::Failure(Error::UnexpectedTag(_))) => Ok((bytes, None)),
+            Err(nom::Err::Failure(Error::UnexpectedTag { .. })) => Ok((bytes, None)),
             Err(e) => Err(e),
         }
     }

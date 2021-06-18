@@ -1,4 +1,4 @@
-use crate::Tag;
+use crate::{Class, Tag};
 use nom::error::{ErrorKind, ParseError};
 use nom::IResult;
 use std::str;
@@ -11,8 +11,12 @@ pub enum Error {
     InvalidLength,
     #[error("Invalid Tag")]
     InvalidTag,
-    #[error("Unexpected Tag (expected: {0:?}")]
-    UnexpectedTag(Tag),
+    #[error("Unknown tag: {0:?}")]
+    UnknownTag(u32),
+    #[error("Unexpected Tag (expected: {expected:?}, actual: {actual:?})")]
+    UnexpectedTag { expected: Option<Tag>, actual: Tag },
+    #[error("Unexpected Class (expected: {0:?}")]
+    UnexpectedClass(Class),
 
     #[error("Indefinite length not allowed")]
     IndefiniteLengthUnexpected,
@@ -69,6 +73,15 @@ impl From<str::Utf8Error> for Error {
 impl From<string::FromUtf8Error> for Error {
     fn from(_: string::FromUtf8Error) -> Self {
         Error::StringInvalidCharset
+    }
+}
+
+impl From<nom::Err<Error>> for Error {
+    fn from(e: nom::Err<Error>) -> Self {
+        match e {
+            nom::Err::Incomplete(n) => Self::Incomplete(n),
+            nom::Err::Error(e) | nom::Err::Failure(e) => e,
+        }
     }
 }
 

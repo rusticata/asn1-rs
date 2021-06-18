@@ -26,11 +26,11 @@ pub enum Class {
 ///
 /// X.690 doesn't specify the maximum tag size so we're assuming that people
 /// aren't going to need anything more than a u32.
-#[derive(Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Tag(pub u32);
 
 newtype_enum! {
-impl debug Tag {
+impl display Tag {
     EndOfContent = 0x0,
     Boolean = 0x1,
     Integer = 0x2,
@@ -114,12 +114,14 @@ impl TryFrom<u8> for Class {
 }
 
 impl Tag {
-    #[inline]
-    pub fn assert_eq(&self, tag: Tag) -> Result<()> {
+    pub const fn assert_eq(&self, tag: Tag) -> Result<()> {
         if self.0 == tag.0 {
             Ok(())
         } else {
-            Err(Error::UnexpectedTag(tag))
+            Err(Error::UnexpectedTag {
+                expected: Some(tag),
+                actual: *self,
+            })
         }
     }
 }
@@ -198,14 +200,20 @@ impl<'a> Header<'a> {
         self.structured == 1
     }
 
+    /// Return error if class is not the expected class
+    #[inline]
+    pub const fn assert_class(&self, class: Class) -> Result<()> {
+        if self.class as u8 == class as u8 {
+            Ok(())
+        } else {
+            Err(Error::UnexpectedClass(class))
+        }
+    }
+
     /// Return error if tag is not the expected tag
     #[inline]
     pub const fn assert_tag(&self, tag: Tag) -> Result<()> {
-        if self.tag.0 == tag.0 {
-            Ok(())
-        } else {
-            Err(Error::UnexpectedTag(tag))
-        }
+        self.tag.assert_eq(tag)
     }
 
     /// Return error if object is not primitive
