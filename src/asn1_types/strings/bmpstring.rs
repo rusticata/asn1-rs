@@ -2,7 +2,6 @@
 // X.680 section 37.15
 
 use crate::{Any, CheckDerConstraints, Error, Result, Tag, Tagged};
-use bytemuck::try_cast_slice;
 use std::borrow::Cow;
 
 /// `BMPSTRING` ASN.1 string
@@ -38,12 +37,18 @@ impl<'a> std::convert::TryFrom<Any<'a>> for BmpString<'a> {
     fn try_from(any: Any<'a>) -> Result<BmpString<'a>> {
         any.tag().assert_eq(Self::TAG)?;
 
-        let u16_slice: &[u16] = match try_cast_slice(&any.data) {
-            Ok(s) => s,
-            Err(_) => return Err(Error::StringInvalidCharset),
-        };
+        // read slice as big-endian UTF-16 string
+        let v = &any
+            .data
+            .chunks(2)
+            .map(|s| match s {
+                [a, b] => ((*a as u16) << 8) | (*b as u16),
+                [a] => *a as u16,
+                _ => unreachable!(),
+            })
+            .collect::<Vec<_>>();
 
-        let s = std::string::String::from_utf16(u16_slice)?;
+        let s = std::string::String::from_utf16(&v)?;
         let data = Cow::Owned(s);
 
         Ok(BmpString { data })

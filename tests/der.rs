@@ -53,6 +53,15 @@ fn from_der_bitstring() {
 }
 
 #[test]
+fn from_der_bmpstring() {
+    // taken from https://docs.microsoft.com/en-us/windows/win32/seccertenroll/about-bmpstring
+    let input = &hex!("1e 08 00 55 00 73 00 65 00 72");
+    let (rem, result) = BmpString::from_der(input).expect("parsing failed");
+    assert_eq!(result.as_ref(), "User");
+    assert_eq!(rem, &[]);
+}
+
+#[test]
 fn from_der_bool() {
     let input = &hex!("01 01 00");
     let (rem, result) = Boolean::from_der(input).expect("parsing failed");
