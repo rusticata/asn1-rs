@@ -42,8 +42,13 @@ fn decode_slice(any: Any<'_>) -> Result<&[u8]> {
 fn decode_array_uint<const N: usize>(any: Any<'_>) -> Result<[u8; N]> {
     let input = decode_slice(any)?;
 
+    if input.len() > N {
+        return Err(Error::IntegerTooLarge);
+    }
+
     // Input has leading zeroes removed, so we need to add them back
     let mut output = [0u8; N];
+    assert!(input.len() <= N);
     output[N.saturating_sub(input.len())..].copy_from_slice(input);
     Ok(output)
 }
@@ -52,6 +57,10 @@ fn decode_array_uint<const N: usize>(any: Any<'_>) -> Result<[u8; N]> {
 ///
 /// Returns a byte array of the requested size containing a big endian integer.
 fn decode_array_int<const N: usize>(any: Any<'_>) -> Result<[u8; N]> {
+    if any.data.len() > N {
+        return Err(Error::IntegerTooLarge);
+    }
+
     // any.tag().assert_eq(Tag::Integer)?;
     let mut output = [0xFFu8; N];
     let offset = N.saturating_sub(any.as_bytes().len());
