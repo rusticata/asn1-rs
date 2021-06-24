@@ -47,7 +47,7 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
         eprintln!("File: {}", filename);
         let content = fs::read(&filename)?;
         // check for PEM file
-        if filename.ends_with(".pem") {
+        if filename.ends_with(".pem") || content.starts_with(b"----") {
             let pems = pem::parse_many(&content);
             if pems.is_empty() {
                 eprintln!("{}", "No PEM section decoded".red());
