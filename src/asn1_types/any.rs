@@ -1,8 +1,8 @@
 use crate::{
-    ber::*, BitString, BmpString, Boolean, Enumerated, FromBer, FromDer, GeneralString, Header,
-    Ia5String, Integer, Length, Null, NumericString, OctetString, Oid, ParseResult,
-    PrintableString, Result, Sequence, Set, Tag, TeletexString, ToStatic, UniversalString,
-    Utf8String, VideotexString, VisibleString,
+    ber::*, BitString, BmpString, Boolean, Enumerated, FromBer, FromDer, GeneralString,
+    GeneralizedTime, Header, Ia5String, Integer, Length, Null, NumericString, OctetString, Oid,
+    ParseResult, PrintableString, Result, Sequence, Set, Tag, TeletexString, ToStatic,
+    UniversalString, UtcTime, Utf8String, VideotexString, VisibleString,
 };
 use std::{borrow::Cow, convert::TryInto};
 
@@ -92,7 +92,8 @@ impl<'a> Any<'a> {
     impl_any_into!(bool => bool, "BOOLEAN");
     impl_any_into!(boolean => Boolean, "BOOLEAN");
     impl_any_into!(enumerated => Enumerated, "ENUMERATED");
-    impl_any_into!(general5string => GeneralString<'a>, "GeneralString");
+    impl_any_into!(generalizedtime => GeneralizedTime, "GeneralizedTime");
+    impl_any_into!(generalstring => GeneralString<'a>, "GeneralString");
     impl_any_into!(ia5string => Ia5String<'a>, "IA5String");
     impl_any_into!(integer => Integer<'a>, "INTEGER");
     impl_any_into!(null => Null, "NULL");
@@ -114,6 +115,7 @@ impl<'a> Any<'a> {
     impl_any_into!(u32 => u32, "INTEGER");
     impl_any_into!(u64 => u64, "INTEGER");
     impl_any_into!(universalstring => UniversalString<'a>, "UniversalString");
+    impl_any_into!(utctime => UtcTime, "UTCTime");
     impl_any_into!(utf8string => Utf8String<'a>, "UTF8String");
     impl_any_into!(videotexstring => VideotexString<'a>, "VideotexString");
     impl_any_into!(visiblestring => VisibleString<'a>, "VisibleString");

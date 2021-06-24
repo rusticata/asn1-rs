@@ -9,6 +9,8 @@ use thiserror::Error;
 pub enum Error {
     #[error("Invalid Length")]
     InvalidLength,
+    #[error("Invalid Value")]
+    InvalidValue,
     #[error("Invalid Tag")]
     InvalidTag,
     #[error("Unknown tag: {0:?}")]

@@ -87,6 +87,20 @@ fn from_der_enumerated() {
 }
 
 #[test]
+fn from_der_generalizedtime() {
+    let input = &hex!("18 0F 32 30 30 32 31 32 31 33 31 34 32 39 32 33 5A FF");
+    let (rem, result) = GeneralizedTime::from_der(input).expect("parsing failed");
+    assert_eq!(rem, &[0xff]);
+    #[cfg(feature = "datetime")]
+    {
+        use chrono::{TimeZone, Utc};
+        let datetime = Utc.ymd(2002, 12, 13).and_hms(14, 29, 23);
+
+        assert_eq!(result.utc_datetime(), datetime);
+    }
+}
+
+#[test]
 fn from_der_int() {
     let input = &hex!("02 01 02 ff ff");
     let (rem, result) = u8::from_der(input).expect("parsing failed");
@@ -196,6 +210,20 @@ fn from_der_set_btreeset() {
     assert!(result.contains(&65537));
     assert_eq!(result.len(), 1);
     assert_eq!(rem, &[]);
+}
+
+#[test]
+fn from_der_utctime() {
+    let input = &hex!("17 0D 30 32 31 32 31 33 31 34 32 39 32 33 5A FF");
+    let (rem, result) = UtcTime::from_der(input).expect("parsing failed");
+    assert_eq!(rem, &[0xff]);
+    #[cfg(feature = "datetime")]
+    {
+        use chrono::{TimeZone, Utc};
+        let datetime = Utc.ymd(2, 12, 13).and_hms(14, 29, 23);
+
+        assert_eq!(result.utc_datetime(), datetime);
+    }
 }
 
 #[test]
