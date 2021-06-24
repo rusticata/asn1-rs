@@ -98,18 +98,10 @@ fn from_der_generalizedtime() {
 
         assert_eq!(result.utc_datetime(), datetime);
     }
-    // local time with fractional seconds
+    // local time with fractional seconds (should fail: no 'Z' at end)
     let input = b"\x18\x1019851106210627.3";
-    let (rem, result) = GeneralizedTime::from_der(input).expect("parsing failed");
-    assert!(rem.is_empty());
-    #[cfg(feature = "datetime")]
-    {
-        use chrono::{TimeZone, Utc};
-        let datetime = Utc.ymd(1985, 11, 6).and_hms(21, 6, 27);
-        assert_eq!(result.utc_datetime(), datetime);
-        assert_eq!(result.0.millisecond, Some(3));
-        assert_eq!(result.0.tz, ASN1TimeZone::Undefined);
-    }
+    let result = GeneralizedTime::from_der(input).expect_err("should not parse");
+    assert_eq!(result, nom::Err::Failure(Error::DerConstraintFailed));
     // coordinated universal time with fractional seconds
     let input = b"\x18\x1119851106210627.3Z";
     let (rem, result) = GeneralizedTime::from_der(input).expect("parsing failed");
@@ -123,17 +115,10 @@ fn from_der_generalizedtime() {
         assert_eq!(result.0.tz, ASN1TimeZone::Z);
     }
     // local time with fractional seconds, and with local time 5 hours retarded in relation to coordinated universal time.
+    // (should fail: no 'Z' at end)
     let input = b"\x18\x1519851106210627.3-0500";
-    let (rem, result) = GeneralizedTime::from_der(input).expect("parsing failed");
-    assert!(rem.is_empty());
-    #[cfg(feature = "datetime")]
-    {
-        use chrono::{TimeZone, Utc};
-        let datetime = Utc.ymd(1985, 11, 6).and_hms(21, 6, 27);
-        assert_eq!(result.utc_datetime(), datetime);
-        assert_eq!(result.0.millisecond, Some(3));
-        assert_eq!(result.0.tz, ASN1TimeZone::Offset(-1, 5, 0));
-    }
+    let result = GeneralizedTime::from_der(input).expect_err("should not parse");
+    assert_eq!(result, nom::Err::Failure(Error::DerConstraintFailed));
 }
 
 #[test]

@@ -47,6 +47,56 @@ fn from_ber_endofcontent() {
 }
 
 #[test]
+fn from_ber_generalizedtime() {
+    let input = &hex!("18 0F 32 30 30 32 31 32 31 33 31 34 32 39 32 33 5A FF");
+    let (rem, result) = GeneralizedTime::from_ber(input).expect("parsing failed");
+    assert_eq!(rem, &[0xff]);
+    #[cfg(feature = "datetime")]
+    {
+        use chrono::{TimeZone, Utc};
+        let datetime = Utc.ymd(2002, 12, 13).and_hms(14, 29, 23);
+
+        assert_eq!(result.utc_datetime(), datetime);
+    }
+    // local time with fractional seconds
+    let input = b"\x18\x1019851106210627.3";
+    let (rem, result) = GeneralizedTime::from_ber(input).expect("parsing failed");
+    assert!(rem.is_empty());
+    #[cfg(feature = "datetime")]
+    {
+        use chrono::{TimeZone, Utc};
+        let datetime = Utc.ymd(1985, 11, 6).and_hms(21, 6, 27);
+        assert_eq!(result.utc_datetime(), datetime);
+        assert_eq!(result.0.millisecond, Some(3));
+        assert_eq!(result.0.tz, ASN1TimeZone::Undefined);
+    }
+    // coordinated universal time with fractional seconds
+    let input = b"\x18\x1119851106210627.3Z";
+    let (rem, result) = GeneralizedTime::from_ber(input).expect("parsing failed");
+    assert!(rem.is_empty());
+    #[cfg(feature = "datetime")]
+    {
+        use chrono::{TimeZone, Utc};
+        let datetime = Utc.ymd(1985, 11, 6).and_hms(21, 6, 27);
+        assert_eq!(result.utc_datetime(), datetime);
+        assert_eq!(result.0.millisecond, Some(3));
+        assert_eq!(result.0.tz, ASN1TimeZone::Z);
+    }
+    // local time with fractional seconds, and with local time 5 hours retarded in relation to coordinated universal time.
+    let input = b"\x18\x1519851106210627.3-0500";
+    let (rem, result) = GeneralizedTime::from_ber(input).expect("parsing failed");
+    assert!(rem.is_empty());
+    #[cfg(feature = "datetime")]
+    {
+        use chrono::{TimeZone, Utc};
+        let datetime = Utc.ymd(1985, 11, 6).and_hms(21, 6, 27);
+        assert_eq!(result.utc_datetime(), datetime);
+        assert_eq!(result.0.millisecond, Some(3));
+        assert_eq!(result.0.tz, ASN1TimeZone::Offset(-1, 5, 0));
+    }
+}
+
+#[test]
 fn from_ber_int() {
     let input = &hex!("02 01 02 ff ff");
     let (rem, result) = u8::from_ber(input).expect("parsing failed");
