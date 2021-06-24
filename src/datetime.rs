@@ -1,4 +1,4 @@
-use crate::{Error, Result, Tag};
+use crate::{Result, Tag};
 
 #[derive(Clone, Copy, Debug)]
 pub enum ASN1TimeZone {
@@ -48,10 +48,10 @@ impl ASN1DateTime {
 }
 
 /// Decode 2-digit decimal value
-pub(crate) fn decode_decimal(_tag: Tag, hi: u8, lo: u8) -> Result<u16> {
+pub(crate) fn decode_decimal(tag: Tag, hi: u8, lo: u8) -> Result<u16> {
     if (b'0'..=b'9').contains(&hi) && (b'0'..=b'9').contains(&lo) {
         Ok((hi - b'0') as u16 * 10 + (lo - b'0') as u16)
     } else {
-        Err(Error::InvalidValue)
+        Err(tag.invalid_value("expected digit"))
     }
 }

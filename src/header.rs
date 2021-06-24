@@ -125,6 +125,13 @@ impl Tag {
             })
         }
     }
+
+    pub fn invalid_value(&self, msg: &str) -> Error {
+        Error::InvalidValue {
+            tag: *self,
+            msg: msg.to_string(),
+        }
+    }
 }
 
 impl From<u32> for Tag {

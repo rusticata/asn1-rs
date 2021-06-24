@@ -36,10 +36,10 @@ impl GeneralizedTime {
                 let minute = decode_decimal(Self::TAG, *min1, *min2)?;
                 (year, month, day, hour, minute, rem)
             }
-            _ => return Err(Error::InvalidValue),
+            _ => return Err(Self::TAG.invalid_value("malformed time string (not yymmddhhmm)")),
         };
         if rem.is_empty() {
-            return Err(Error::InvalidValue);
+            return Err(Self::TAG.invalid_value("malformed time string"));
         }
         // check for seconds
         let (second, rem) = match rem {
@@ -56,7 +56,7 @@ impl GeneralizedTime {
             // eprintln!(" hour:{}", hour);
             // eprintln!(" minute:{}", minute);
             // eprintln!(" second:{}", second);
-            return Err(Error::InvalidValue);
+            return Err(Self::TAG.invalid_value("time components with invalid values"));
         }
         if rem.is_empty() {
             // case a): no fractional seconds part, and no terminating Z
@@ -80,12 +80,16 @@ impl GeneralizedTime {
                     if rem.is_empty() {
                         if idx == 0 {
                             // dot or comma, but no following digit
-                            return Err(Error::InvalidValue);
+                            return Err(Self::TAG.invalid_value(
+                                "malformed time string (dot or comma but no digits)",
+                            ));
                         }
                         break;
                     }
                     if idx == 4 {
-                        return Err(Error::InvalidValue);
+                        return Err(
+                            Self::TAG.invalid_value("malformed time string (invalid milliseconds)")
+                        );
                     }
                     match rem[0] {
                         b'0'..=b'9' => {
@@ -95,7 +99,11 @@ impl GeneralizedTime {
                         b'Z' | b'+' | b'-' => {
                             break;
                         }
-                        _ => return Err(Error::InvalidValue),
+                        _ => {
+                            return Err(Self::TAG.invalid_value(
+                                "malformed time string (invalid milliseconds/timezone)",
+                            ))
+                        }
                     }
                     rem = &rem[1..];
                 }
@@ -129,7 +137,7 @@ impl GeneralizedTime {
                 let mm = decode_decimal(Self::TAG, *m1, *m2)?;
                 ASN1TimeZone::Offset(-1, hh, mm)
             }
-            _ => return Err(Error::InvalidValue),
+            _ => return Err(Self::TAG.invalid_value("malformed time string: no time zone")),
         };
         Ok(GeneralizedTime(ASN1DateTime::new(
             year,

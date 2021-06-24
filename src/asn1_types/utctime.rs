@@ -35,10 +35,10 @@ impl UtcTime {
                 let minute = decode_decimal(Self::TAG, *min1, *min2)?;
                 (year, month, day, hour, minute, rem)
             }
-            _ => return Err(Error::InvalidValue),
+            _ => return Err(Self::TAG.invalid_value("malformed time string (not yymmddhhmm)")),
         };
         if rem.is_empty() {
-            return Err(Error::InvalidValue);
+            return Err(Self::TAG.invalid_value("malformed time string"));
         }
         // check for seconds
         let (second, rem) = match rem {
@@ -49,10 +49,10 @@ impl UtcTime {
             _ => (0, rem),
         };
         if month > 12 || day > 31 || hour > 23 || minute > 59 || second > 59 {
-            return Err(Error::InvalidValue);
+            return Err(Self::TAG.invalid_value("time components with invalid values"));
         }
         if rem.is_empty() {
-            return Err(Error::InvalidValue);
+            return Err(Self::TAG.invalid_value("malformed time string"));
         }
         let tz = match rem {
             [b'Z'] => ASN1TimeZone::Z,
@@ -66,7 +66,7 @@ impl UtcTime {
                 let mm = decode_decimal(Self::TAG, *m1, *m2)?;
                 ASN1TimeZone::Offset(-1, hh, mm)
             }
-            _ => return Err(Error::InvalidValue),
+            _ => return Err(Self::TAG.invalid_value("malformed time string: no time zone")),
         };
         Ok(UtcTime(ASN1DateTime::new(
             year as u32,
