@@ -1,6 +1,6 @@
 use crate::{Result, Tag};
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub enum ASN1TimeZone {
     /// No timezone provided
     Undefined,
@@ -10,7 +10,7 @@ pub enum ASN1TimeZone {
     Offset(i8, u16, u16),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct ASN1DateTime {
     pub year: u32,
     pub month: u16,
