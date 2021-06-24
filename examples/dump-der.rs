@@ -9,6 +9,7 @@ use std::{env, fs};
 
 struct Context<'a> {
     oid_registry: OidRegistry<'a>,
+    hex_max: usize,
     t: PhantomData<&'a ()>,
 }
 
@@ -17,6 +18,7 @@ impl<'a> Default for Context<'a> {
         let oid_registry = OidRegistry::default().with_all_crypto().with_x509();
         Context {
             oid_registry,
+            hex_max: 64,
             t: PhantomData,
         }
     }
@@ -50,7 +52,7 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
         if filename.ends_with(".pem") || content.starts_with(b"----") {
             let pems = pem::parse_many(&content);
             if pems.is_empty() {
-                eprintln!("{}", "No PEM section decoded".red());
+                eprintln!("{}", "No PEM section decoded".bright_red());
                 continue;
             }
             for (idx, pem) in pems.iter().enumerate() {
@@ -71,8 +73,8 @@ fn print_der(i: &[u8], depth: usize, ctx: &Context) {
             print_der_any(any, depth, ctx);
             if !rem.is_empty() {
                 let warning = format!("WARNING: {} extra bytes after object", rem.len());
-                indent_println!(depth, "{}", warning.red());
-                print_hex_dump(rem, 32);
+                indent_println!(depth, "{}", warning.bright_red());
+                print_hex_dump(rem, ctx.hex_max);
             }
         }
         Err(e) => {
@@ -105,7 +107,7 @@ fn print_der_any(any: Any, depth: usize, ctx: &Context) {
     indent_println!(depth, "{}", hdr);
     match any.header.class {
         Class::Universal => (),
-        Class::ContextSpecific => {
+        Class::ContextSpecific | Class::Application => {
             // attempt to decode inner object (if EXPLICIT)
             match Any::from_der(&any.data) {
                 Ok((rem2, inner)) => {
@@ -120,7 +122,11 @@ fn print_der_any(any: Any, depth: usize, ctx: &Context) {
                 }
                 Err(_) => {
                     // assume tagged IMPLICIT
-                    indent_println!(depth + 1, "could not decode (IMPLICIT tagging?)");
+                    indent_println!(
+                        depth + 1,
+                        "{}",
+                        "could not decode (IMPLICIT tagging?)".bright_red()
+                    );
                 }
             }
             return;
@@ -139,15 +145,23 @@ fn print_der_any(any: Any, depth: usize, ctx: &Context) {
         Tag::BitString => {
             let b = any.bitstring().unwrap();
             indent_println!(depth + 1, "BITSTRING");
-            print_hex_dump(b.as_ref(), 32);
+            print_hex_dump(b.as_ref(), ctx.hex_max);
         }
         Tag::Boolean => {
             let b = any.bool().unwrap();
             indent_println!(depth + 1, "BOOLEAN: {}", b.to_string().green());
         }
+        Tag::Enumerated => {
+            let i = any.enumerated().unwrap();
+            indent_println!(depth + 1, "ENUMERATED: {}", i.0);
+        }
         Tag::GeneralizedTime => {
             let s = any.generalizedtime().unwrap();
             indent_println!(depth + 1, "GeneralizedTime: {}", s);
+        }
+        Tag::GeneralString => {
+            let s = any.generalstring().unwrap();
+            indent_println!(depth + 1, "GeneralString: {}", s.as_ref());
         }
         Tag::Ia5String => {
             let s = any.ia5string().unwrap();
@@ -160,7 +174,7 @@ fn print_der_any(any: Any, depth: usize, ctx: &Context) {
                     indent_println!(depth + 1, "{}", i);
                 }
                 Err(_) => {
-                    print_hex_dump(i.as_ref(), 32);
+                    print_hex_dump(i.as_ref(), ctx.hex_max);
                 }
             }
         }
@@ -168,7 +182,7 @@ fn print_der_any(any: Any, depth: usize, ctx: &Context) {
         Tag::OctetString => {
             let b = any.octetstring().unwrap();
             indent_println!(depth + 1, "OCTETSTRING");
-            print_hex_dump(b.as_ref(), 32);
+            print_hex_dump(b.as_ref(), ctx.hex_max);
         }
         Tag::Oid => {
             let oid = any.oid().unwrap();
