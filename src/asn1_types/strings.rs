@@ -51,6 +51,20 @@ macro_rules! asn1_string {
             }
         }
 
+        impl<'a> From<&'a str> for $name<'a> {
+            fn from(s: &'a str) -> Self {
+                Self::new(s)
+            }
+        }
+
+        impl From<String> for $name<'_> {
+            fn from(s: String) -> Self {
+                Self {
+                    data: std::borrow::Cow::Owned(s),
+                }
+            }
+        }
+
         impl<'a> std::convert::TryFrom<$crate::Any<'a>> for $name<'a> {
             type Error = $crate::Error;
 
@@ -92,22 +106,30 @@ macro_rules! asn1_string {
                     $crate::Class::Universal,
                     0,
                     Self::TAG,
-                    $crate::Length::Definite(self.data.len()),
+                    $crate::Length::Definite(self.data.as_bytes().len()),
                 );
                 Ok(header.to_der_len()? + self.data.as_bytes().len())
             }
 
-            fn to_der(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
-                use $crate::traits::Tagged;
+            fn write_der_header(
+                &self,
+                writer: &mut dyn std::io::Write,
+            ) -> $crate::SerializeResult<usize> {
+                use $crate::Tagged;
                 let header = $crate::Header::new(
                     $crate::Class::Universal,
                     0,
                     Self::TAG,
-                    $crate::Length::Definite(self.data.as_bytes().len()),
+                    $crate::Length::Definite(self.data.len()),
                 );
-                let sz = header.to_der(writer)?;
-                let sz = sz + writer.write(&self.data.as_bytes())?;
-                Ok(sz)
+                header.write_der_header(writer).map_err(Into::into)
+            }
+
+            fn write_der_content(
+                &self,
+                writer: &mut dyn std::io::Write,
+            ) -> $crate::SerializeResult<usize> {
+                writer.write(self.data.as_bytes()).map_err(Into::into)
             }
         }
     };

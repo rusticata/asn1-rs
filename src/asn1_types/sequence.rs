@@ -161,16 +161,18 @@ impl ToDer for Sequence<'_> {
         Ok(header.to_der_len()? + self.content.len())
     }
 
-    fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let header = Header::new(
             Class::Universal,
             1,
             Self::TAG,
             Length::Definite(self.content.len()),
         );
-        let sz = header.to_der(writer)?;
-        let sz = sz + writer.write(&self.content)?;
-        Ok(sz)
+        header.write_der_header(writer).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        writer.write(&self.content).map_err(Into::into)
     }
 }
 
@@ -179,6 +181,7 @@ impl<'a> Sequence<'a> {
     where
         IT: Iterator<Item = T>,
         T: ToDer,
+        T: Tagged,
     {
         let mut v = Vec::new();
         for item in it {

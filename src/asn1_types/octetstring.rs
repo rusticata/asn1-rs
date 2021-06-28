@@ -56,16 +56,18 @@ impl ToDer for OctetString<'_> {
         Ok(header.to_der_len()? + self.data.len())
     }
 
-    fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let header = Header::new(
             Class::Universal,
             0,
             Self::TAG,
             Length::Definite(self.data.len()),
         );
-        let sz = header.to_der(writer)?;
-        let sz = sz + writer.write(&self.data)?;
-        Ok(sz)
+        header.write_der_header(writer).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        writer.write(&self.data).map_err(Into::into)
     }
 }
 
@@ -100,10 +102,12 @@ impl ToDer for &'_ [u8] {
         Ok(header.to_der_len()? + self.len())
     }
 
-    fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let header = Header::new(Class::Universal, 0, Self::TAG, Length::Definite(self.len()));
-        let sz = header.to_der(writer)?;
-        let sz = sz + writer.write(self)?;
-        Ok(sz)
+        header.write_der_header(writer).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        writer.write(self).map_err(Into::into)
     }
 }

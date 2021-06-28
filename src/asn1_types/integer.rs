@@ -119,9 +119,19 @@ macro_rules! impl_int {
                 int.to_der_len()
             }
 
-            fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+            fn write_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
                 let int = Integer::from(*self);
-                int.to_der(writer)
+                int.write_der(writer)
+            }
+
+            fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+                let int = Integer::from(*self);
+                int.write_der_header(writer)
+            }
+
+            fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+                let int = Integer::from(*self);
+                int.write_der_content(writer)
             }
         }
     };
@@ -165,9 +175,19 @@ macro_rules! impl_uint {
                 int.to_der_len()
             }
 
-            fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+            fn write_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
                 let int = Integer::from(*self);
-                int.to_der(writer)
+                int.write_der(writer)
+            }
+
+            fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+                let int = Integer::from(*self);
+                int.write_der_header(writer)
+            }
+
+            fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+                let int = Integer::from(*self);
+                int.write_der_content(writer)
             }
         }
     };
@@ -184,7 +204,7 @@ impl_int!(u32 => i32);
 impl_int!(u64 => i64);
 impl_int!(u128 => i128);
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Integer<'a> {
     pub(crate) data: Cow<'a, [u8]>,
 }
@@ -341,16 +361,18 @@ impl ToDer for Integer<'_> {
         Ok(header.to_der_len()? + self.data.len())
     }
 
-    fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let header = Header::new(
             Class::Universal,
             0,
             Self::TAG,
             Length::Definite(self.data.len()),
         );
-        let sz = header.to_der(writer)?;
-        let sz = sz + writer.write(&self.data)?;
-        Ok(sz)
+        header.write_der_header(writer).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        writer.write(&self.data).map_err(Into::into)
     }
 }
 

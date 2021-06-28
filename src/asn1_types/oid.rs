@@ -1,4 +1,7 @@
-use crate::{Any, CheckDerConstraints, Error, FromBer, FromDer, ParseResult, Result, Tag, Tagged};
+use crate::{
+    Any, CheckDerConstraints, Class, Error, FromBer, FromDer, Header, Length, ParseResult, Result,
+    Tag, Tagged, ToDer,
+};
 use std::{borrow::Cow, convert::TryFrom, fmt, iter::FusedIterator, ops::Shl, str::FromStr};
 
 #[cfg(feature = "bigint")]
@@ -50,6 +53,33 @@ impl<'a> CheckDerConstraints for Oid<'a> {
 
 impl<'a> Tagged for Oid<'a> {
     const TAG: Tag = Tag::Oid;
+}
+
+impl ToDer for Oid<'_> {
+    fn to_der_len(&self) -> Result<usize> {
+        // OID/REL-OID tag will not change header size, so we don't care here
+        let header = Header::new(
+            Class::Universal,
+            0,
+            Self::TAG,
+            Length::Definite(self.asn1.len()),
+        );
+        Ok(header.to_der_len()? + self.asn1.len())
+    }
+
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        let tag = if self.relative {
+            Tag::RelativeOid
+        } else {
+            Tag::Oid
+        };
+        let header = Header::new(Class::Universal, 0, tag, Length::Definite(self.asn1.len()));
+        header.write_der_header(writer).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        writer.write(&self.asn1).map_err(Into::into)
+    }
 }
 
 fn encode_relative(ids: &'_ [u64]) -> impl Iterator<Item = u8> + '_ {

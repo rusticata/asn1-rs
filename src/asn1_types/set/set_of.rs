@@ -1,5 +1,6 @@
 use crate::{
     BerParser, DerParser, FromBer, FromDer, ParseResult, Result, Set, SetIterator, Tag, Tagged,
+    ToDer,
 };
 use std::borrow::Cow;
 
@@ -68,4 +69,21 @@ impl<T> From<SetOf<T>> for Vec<T> {
 
 impl<T> Tagged for SetOf<T> {
     const TAG: Tag = Tag::Set;
+}
+
+impl<T> ToDer for SetOf<T>
+where
+    T: ToDer,
+{
+    fn to_der_len(&self) -> Result<usize> {
+        self.items.to_der_len()
+    }
+
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        self.items.write_der_header(writer)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        self.items.write_der_content(writer)
+    }
 }

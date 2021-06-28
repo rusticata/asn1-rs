@@ -38,9 +38,12 @@ impl ToDer for Null {
         Ok(2)
     }
 
-    fn to_der(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
-        let sz = writer.write(&[0x05, 0x00])?;
-        Ok(sz)
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        writer.write(&[0x05, 0x00]).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, _writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        Ok(0)
     }
 }
 
@@ -72,8 +75,11 @@ impl ToDer for () {
         Ok(2)
     }
 
-    fn to_der(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
-        let sz = writer.write(&[0x05, 0x00])?;
-        Ok(sz)
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        writer.write(&[0x05, 0x00]).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, _writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        Ok(0)
     }
 }

@@ -30,6 +30,7 @@ impl<'a> Any<'a> {
         }
     }
 
+    #[inline]
     pub const fn tag(&self) -> Tag {
         self.header.tag
     }
@@ -137,6 +138,12 @@ impl<'a> FromDer<'a> for Any<'a> {
     }
 }
 
+impl DynTagged for Any<'_> {
+    fn tag(&self) -> Tag {
+        self.tag()
+    }
+}
+
 impl<'a> ToStatic for Any<'a> {
     type Owned = Any<'static>;
 
@@ -154,7 +161,7 @@ impl ToDer for Any<'_> {
         Ok(hdr_len + self.data.len())
     }
 
-    fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         // create fake header to have correct length
         let header = Header::new(
             self.header.class,
@@ -162,14 +169,17 @@ impl ToDer for Any<'_> {
             self.header.tag,
             Length::Definite(self.data.len()),
         );
-        let sz = header.to_der(writer)?;
-        let sz = sz + writer.write(&self.data)?;
+        let sz = header.write_der_header(writer)?;
         Ok(sz)
     }
 
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        writer.write(&self.data).map_err(Into::into)
+    }
+
     /// Similar to using `to_der`, but uses header without computing length value
-    fn to_der_raw(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let sz = self.header.to_der(writer)?;
+    fn write_der_raw(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let sz = self.header.write_der_header(writer)?;
         let sz = sz + writer.write(&self.data)?;
         Ok(sz)
     }

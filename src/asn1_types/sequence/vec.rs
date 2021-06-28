@@ -66,15 +66,19 @@ where
         Ok(header.to_der_len()? + len)
     }
 
-    fn to_der(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
         let mut len = 0;
         for t in self.iter() {
             len += t.to_der_len().map_err(|_| SerializeError::InvalidLength)?;
         }
         let header = Header::new(Class::Universal, 1, Self::TAG, Length::Definite(len));
-        let mut sz = header.to_der(writer)?;
+        header.write_der_header(writer).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        let mut sz = 0;
         for t in self.iter() {
-            sz += t.to_der(writer)?;
+            sz += t.write_der(writer)?;
         }
         Ok(sz)
     }

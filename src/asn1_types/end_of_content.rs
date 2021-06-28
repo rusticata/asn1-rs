@@ -32,8 +32,11 @@ impl ToDer for EndOfContent {
         Ok(2)
     }
 
-    fn to_der(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
-        let sz = writer.write(&[0x00, 0x00])?;
-        Ok(sz)
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        writer.write(&[Self::TAG.0 as u8, 0x00]).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, _writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        Ok(0)
     }
 }

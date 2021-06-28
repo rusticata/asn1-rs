@@ -1,4 +1,4 @@
-use crate::{Any, CheckDerConstraints, Error, Result, Tag, Tagged};
+use crate::{Any, CheckDerConstraints, Class, Error, Header, Length, Result, Tag, Tagged, ToDer};
 use nom::bitvec::{order::Msb0, slice::BitSlice};
 use std::{borrow::Cow, convert::TryFrom};
 
@@ -90,6 +90,34 @@ impl<'a> CheckDerConstraints for BitString<'a> {
 
 impl<'a> Tagged for BitString<'a> {
     const TAG: Tag = Tag::BitString;
+}
+
+impl ToDer for BitString<'_> {
+    fn to_der_len(&self) -> Result<usize> {
+        let header = Header::new(
+            Class::Universal,
+            0,
+            Self::TAG,
+            Length::Definite(1 + self.data.len()),
+        );
+        Ok(header.to_der_len()? + 1 + self.data.len())
+    }
+
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        let header = Header::new(
+            Class::Universal,
+            0,
+            Self::TAG,
+            Length::Definite(1 + self.data.len()),
+        );
+        header.write_der_header(writer).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        let sz = writer.write(&[self.unused_bits])?;
+        let sz = sz + writer.write(&self.data)?;
+        Ok(sz)
+    }
 }
 
 #[cfg(test)]

@@ -23,6 +23,26 @@ pub trait Tagged {
     const TAG: Tag;
 }
 
+impl<T> Tagged for &'_ T
+where
+    T: Tagged,
+{
+    const TAG: Tag = T::TAG;
+}
+
+pub trait DynTagged {
+    fn tag(&self) -> Tag;
+}
+
+impl<T> DynTagged for T
+where
+    T: Tagged,
+{
+    fn tag(&self) -> Tag {
+        T::TAG
+    }
+}
+
 /// Base trait for BER object parsers
 ///
 /// Library authors should usually not directly implement this trait, but should prefer implementing the
@@ -75,7 +95,38 @@ pub trait CheckDerConstraints {
     fn check_constraints(any: &Any) -> Result<()>;
 }
 
-pub trait ToDer {
+/// Common trait for all objects that can be encoded using the DER representation
+///
+/// # Examples
+///
+/// Objects from this crate can be encoded as DER:
+///
+/// ```
+/// use asn1_rs::{Integer, ToDer};
+///
+/// let int = Integer::from(4u32);
+/// let mut writer = Vec::new();
+/// let sz = int.write_der(&mut writer).expect("serialization failed");
+///
+/// assert_eq!(&writer, &[0x02, 0x01, 0x04]);
+/// # assert_eq!(sz, 3);
+/// ```
+///
+/// Many of the primitive types can also directly be encoded as DER:
+///
+/// ```
+/// use asn1_rs::ToDer;
+///
+/// let mut writer = Vec::new();
+/// let sz = 4.write_der(&mut writer).expect("serialization failed");
+///
+/// assert_eq!(&writer, &[0x02, 0x01, 0x04]);
+/// # assert_eq!(sz, 3);
+/// ```
+pub trait ToDer
+where
+    Self: DynTagged,
+{
     /// Get the length of the object, when encoded
     ///
     // Since we are using DER, length cannot be Indefinite, so we can use `usize`.
@@ -85,38 +136,66 @@ pub trait ToDer {
     /// Write the DER encoded representation to a newly allocated `Vec<u8>`.
     fn to_der_vec(&self) -> SerializeResult<Vec<u8>> {
         let mut v = Vec::new();
-        let _ = self.to_der(&mut v)?;
+        let _ = self.write_der(&mut v)?;
         Ok(v)
-    }
-
-    // Write the DER encoded representation to `writer`.
-    fn to_der(&self, writer: &mut dyn Write) -> SerializeResult<usize>;
-
-    /// Similar to using `to_der`, but uses provided values without changes.
-    /// This can generate an invalid encoding for a DER object.
-    fn to_der_raw(&self, writer: &mut dyn Write) -> SerializeResult<usize> {
-        self.to_der(writer)
     }
 
     /// Similar to using `to_vec`, but uses provided values without changes.
     /// This can generate an invalid encoding for a DER object.
     fn to_der_vec_raw(&self) -> SerializeResult<Vec<u8>> {
         let mut v = Vec::new();
-        let _ = self.to_der_raw(&mut v)?;
+        let _ = self.write_der_raw(&mut v)?;
         Ok(v)
+    }
+
+    /// Attempt to write the DER encoded representation (header and content) into this writer.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use asn1_rs::{Integer, ToDer};
+    ///
+    /// let int = Integer::from(4u32);
+    /// let mut writer = Vec::new();
+    /// let sz = int.write_der(&mut writer).expect("serialization failed");
+    ///
+    /// assert_eq!(&writer, &[0x02, 0x01, 0x04]);
+    /// # assert_eq!(sz, 3);
+    /// ```
+    fn write_der(&self, writer: &mut dyn Write) -> SerializeResult<usize> {
+        let sz = self.write_der_header(writer)?;
+        let sz = sz + self.write_der_content(writer)?;
+        Ok(sz)
+    }
+
+    /// Attempt to write the DER header to this writer.
+    fn write_der_header(&self, writer: &mut dyn Write) -> SerializeResult<usize>;
+
+    /// Attempt to write the DER content (all except header) to this writer.
+    fn write_der_content(&self, writer: &mut dyn Write) -> SerializeResult<usize>;
+
+    /// Similar to using `to_der`, but uses provided values without changes.
+    /// This can generate an invalid encoding for a DER object.
+    fn write_der_raw(&self, writer: &mut dyn Write) -> SerializeResult<usize> {
+        self.write_der(writer)
     }
 }
 
-impl<T> ToDer for &'_ T
+impl<'a, T> ToDer for &'a T
 where
     T: ToDer,
+    &'a T: DynTagged,
 {
     fn to_der_len(&self) -> Result<usize> {
         (*self).to_der_len()
     }
 
-    fn to_der(&self, writer: &mut dyn Write) -> SerializeResult<usize> {
-        (*self).to_der(writer)
+    fn write_der_header(&self, writer: &mut dyn Write) -> SerializeResult<usize> {
+        (*self).write_der_header(writer)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn Write) -> SerializeResult<usize> {
+        (*self).write_der_content(writer)
     }
 }
 

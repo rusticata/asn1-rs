@@ -97,6 +97,27 @@ fn to_der_bool() {
     assert_eq!(&v, &[0x01, 0x01, 0x8a]);
 }
 
+#[test]
+fn to_der_generalizedtime() {
+    // date without millisecond
+    let dt = ASN1DateTime::new(1999, 12, 31, 23, 59, 59, None, ASN1TimeZone::Z);
+    let time = GeneralizedTime::new(dt);
+    let v = time.to_der_vec().expect("serialization failed");
+    assert_eq!(&v[..2], &hex!("18 0f"));
+    assert_eq!(&v[2..], b"19991231235959Z");
+    let (_, time2) = GeneralizedTime::from_der(&v).expect("decoding serialized object failed");
+    assert!(time.eq(&time2));
+    //
+    // date with millisecond
+    let dt = ASN1DateTime::new(1999, 12, 31, 23, 59, 59, Some(123), ASN1TimeZone::Z);
+    let time = GeneralizedTime::new(dt);
+    let v = time.to_der_vec().expect("serialization failed");
+    assert_eq!(&v[..2], &hex!("18 13"));
+    assert_eq!(&v[2..], b"19991231235959.123Z");
+    let (_, time2) = GeneralizedTime::from_der(&v).expect("decoding serialized object failed");
+    assert!(time.eq(&time2));
+}
+
 fn encode_decode_assert_int<T>(t: T, expected: &[u8])
 where
     T: ToDer + std::fmt::Debug + Eq,
@@ -137,4 +158,35 @@ fn to_der_sequence() {
     // Vec<T>::ToDer
     let v = vec![2, 3, 4].to_der_vec().expect("serialization failed");
     assert_eq!(&v, &hex!("30 09 02 01 02 02 01 03 02 01 04"));
+}
+
+#[test]
+fn to_der_tagged_explicit() {
+    let tagged = TaggedValue::new_explicit(Class::ContextSpecific, 1, 2u32);
+    let v = tagged.to_der_vec().expect("serialization failed");
+    assert_eq!(&v, &hex!("a1 03 02 01 02"));
+    let (_, t2) =
+        TaggedValue::<Explicit, u32>::from_der(&v).expect("decoding serialized object failed");
+    assert!(tagged.eq(&t2));
+}
+
+#[test]
+fn to_der_tagged_implicit() {
+    let tagged = TaggedValue::new_implicit(Class::ContextSpecific, 0, 1, 2u32);
+    let v = tagged.to_der_vec().expect("serialization failed");
+    assert_eq!(&v, &hex!("81 01 02"));
+    let (_, t2) =
+        TaggedValue::<Implicit, u32>::from_der(&v).expect("decoding serialized object failed");
+    assert!(tagged.eq(&t2));
+}
+
+#[test]
+fn to_der_utctime() {
+    let dt = ASN1DateTime::new(99, 12, 31, 23, 59, 59, None, ASN1TimeZone::Z);
+    let time = UtcTime::new(dt);
+    let v = time.to_der_vec().expect("serialization failed");
+    assert_eq!(&v[..2], &hex!("17 0d"));
+    assert_eq!(&v[2..], b"991231235959Z");
+    let (_, time2) = UtcTime::from_der(&v).expect("decoding serialized object failed");
+    assert!(time.eq(&time2));
 }

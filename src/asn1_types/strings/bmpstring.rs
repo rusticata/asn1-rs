@@ -1,7 +1,7 @@
 // do not use the `asn1_string` macro, since types are not the same
 // X.680 section 37.15
 
-use crate::{Any, CheckDerConstraints, Error, Result, Tag, Tagged};
+use crate::{Any, CheckDerConstraints, Class, Error, Header, Length, Result, Tag, Tagged, ToDer};
 use std::borrow::Cow;
 
 /// `BMPSTRING` ASN.1 string
@@ -64,4 +64,30 @@ impl<'a> CheckDerConstraints for BmpString<'a> {
 
 impl<'a> Tagged for BmpString<'a> {
     const TAG: Tag = Tag::BmpString;
+}
+
+impl ToDer for BmpString<'_> {
+    fn to_der_len(&self) -> Result<usize> {
+        let header = Header::new(
+            Class::Universal,
+            0,
+            Self::TAG,
+            Length::Definite(self.data.as_bytes().len()),
+        );
+        Ok(header.to_der_len()? + self.data.as_bytes().len())
+    }
+
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        let header = Header::new(
+            Class::Universal,
+            0,
+            Self::TAG,
+            Length::Definite(self.data.as_bytes().len()),
+        );
+        header.write_der_header(writer).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        writer.write(&self.data.as_bytes()).map_err(Into::into)
+    }
 }

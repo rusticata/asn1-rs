@@ -1,6 +1,7 @@
 use crate::ber::*;
 use crate::der_constraint_fail_if;
 use crate::error::*;
+use crate::DynTagged;
 use crate::ToDer;
 use crate::ToStatic;
 use crate::{FromBer, FromDer};
@@ -80,7 +81,7 @@ pub enum Length {
     Indefinite,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct Header<'a> {
     pub class: Class,
     pub structured: u8,
@@ -399,6 +400,12 @@ impl<'a> FromDer<'a> for Header<'a> {
     }
 }
 
+impl DynTagged for (Class, u8, Tag) {
+    fn tag(&self) -> Tag {
+        self.2
+    }
+}
+
 impl ToDer for (Class, u8, Tag) {
     fn to_der_len(&self) -> Result<usize> {
         let (_, _, tag) = self;
@@ -419,7 +426,7 @@ impl ToDer for (Class, u8, Tag) {
         }
     }
 
-    fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let (class, structured, tag) = self;
         let b0 = (*class as u8) << 6;
         let b0 = b0 | if *structured != 0 { 0b10_0000 } else { 0 };
@@ -443,6 +450,16 @@ impl ToDer for (Class, u8, Tag) {
             Ok(sz)
         }
     }
+
+    fn write_der_content(&self, _writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        Ok(0)
+    }
+}
+
+impl DynTagged for Length {
+    fn tag(&self) -> Tag {
+        Tag(0)
+    }
 }
 
 impl ToDer for Length {
@@ -459,7 +476,7 @@ impl ToDer for Length {
         }
     }
 
-    fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         match *self {
             Length::Indefinite => {
                 let sz = writer.write(&[0b1000_0000])?;
@@ -488,6 +505,16 @@ impl ToDer for Length {
             }
         }
     }
+
+    fn write_der_content(&self, _writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        Ok(0)
+    }
+}
+
+impl DynTagged for Header<'_> {
+    fn tag(&self) -> Tag {
+        self.tag
+    }
 }
 
 impl ToDer for Header<'_> {
@@ -497,19 +524,49 @@ impl ToDer for Header<'_> {
         Ok(tag_len + len_len)
     }
 
-    fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let sz = (self.class, self.structured, self.tag).to_der(writer)?;
-        let sz = sz + self.length.to_der(writer)?;
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let sz = (self.class, self.structured, self.tag).write_der_header(writer)?;
+        let sz = sz + self.length.write_der_header(writer)?;
         Ok(sz)
     }
 
-    fn to_der_raw(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+    fn write_der_content(&self, _writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        Ok(0)
+    }
+
+    fn write_der_raw(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         // use raw_tag if present
         let sz = match &self.raw_tag {
             Some(t) => writer.write(&t)?,
-            None => (self.class, self.structured, self.tag).to_der(writer)?,
+            None => (self.class, self.structured, self.tag).write_der_header(writer)?,
         };
-        let sz = sz + self.length.to_der(writer)?;
+        let sz = sz + self.length.write_der_header(writer)?;
         Ok(sz)
     }
 }
+
+/// Compare two BER headers. `len` fields are compared only if both objects have it set (same for `raw_tag`)
+impl<'a> PartialEq<Header<'a>> for Header<'a> {
+    fn eq(&self, other: &Header) -> bool {
+        self.class == other.class
+            && self.tag == other.tag
+            && self.structured == other.structured
+            && {
+                if self.length.is_null() && other.length.is_null() {
+                    self.length == other.length
+                } else {
+                    true
+                }
+            }
+            && {
+                // it tag is present for both, compare it
+                if self.raw_tag.as_ref().xor(other.raw_tag.as_ref()).is_none() {
+                    self.raw_tag == other.raw_tag
+                } else {
+                    true
+                }
+            }
+    }
+}
+
+impl Eq for Header<'_> {}

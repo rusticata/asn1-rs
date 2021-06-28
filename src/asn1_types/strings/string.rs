@@ -1,4 +1,7 @@
-use crate::{Any, CheckDerConstraints, Error, Result, Tag, Tagged, Utf8String};
+use crate::{
+    Any, CheckDerConstraints, Class, Error, Header, Length, Result, SerializeResult, Tag, Tagged,
+    ToDer, Utf8String,
+};
 use std::convert::TryFrom;
 
 impl<'a> TryFrom<Any<'a>> for String {
@@ -21,4 +24,20 @@ impl<'a> CheckDerConstraints for String {
 
 impl Tagged for String {
     const TAG: Tag = Tag::Utf8String;
+}
+
+impl ToDer for String {
+    fn to_der_len(&self) -> Result<usize> {
+        let header = Header::new(Class::Universal, 0, Self::TAG, Length::Definite(self.len()));
+        Ok(header.to_der_len()? + self.len())
+    }
+
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let header = Header::new(Class::Universal, 0, Self::TAG, Length::Definite(self.len()));
+        header.write_der_header(writer).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        writer.write(self.as_ref()).map_err(Into::into)
+    }
 }

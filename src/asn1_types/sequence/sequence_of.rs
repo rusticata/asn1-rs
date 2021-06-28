@@ -68,7 +68,11 @@ where
         self.items.to_der_len()
     }
 
-    fn to_der(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
-        self.items.to_der(writer)
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        self.items.write_der_header(writer)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        self.items.write_der_content(writer)
     }
 }

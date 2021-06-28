@@ -1,11 +1,13 @@
 use crate::datetime::decode_decimal;
-use crate::{ASN1DateTime, ASN1TimeZone, Any, CheckDerConstraints, Error, Result, Tag, Tagged};
+use crate::{
+    ASN1DateTime, ASN1TimeZone, Any, CheckDerConstraints, Error, Result, Tag, Tagged, ToDer,
+};
 #[cfg(feature = "datetime")]
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
 use std::convert::TryFrom;
 use std::fmt;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct UtcTime(pub ASN1DateTime);
 
 impl UtcTime {
@@ -157,12 +159,43 @@ impl fmt::Display for UtcTime {
     }
 }
 
-impl<'a> CheckDerConstraints for UtcTime {
+impl CheckDerConstraints for UtcTime {
     fn check_constraints(_any: &Any) -> Result<()> {
         Ok(())
     }
 }
 
-impl<'a> Tagged for UtcTime {
+impl Tagged for UtcTime {
     const TAG: Tag = Tag::UtcTime;
+}
+
+impl ToDer for UtcTime {
+    fn to_der_len(&self) -> Result<usize> {
+        // data:
+        // - 6 bytes for YYMMDD
+        // - 6 for hhmmss in DER (X.690 section 11.8.2)
+        // - 1 for the character Z in DER (X.690 section 11.8.1)
+        // data length: 13
+        //
+        // thus, length will always be on 1 byte (short length) and
+        // class+structure+tag also on 1
+        //
+        // total: 15 = 1 (class+structured+tag) + 1 (length) + 13
+        Ok(15)
+    }
+
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        // see above for length value
+        writer.write(&[Self::TAG.0 as u8, 13]).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        let _ = write!(
+            writer,
+            "{:02}{:02}{:02}{:02}{:02}{:02}Z",
+            self.0.year, self.0.month, self.0.day, self.0.hour, self.0.minute, self.0.second,
+        )?;
+        // write_fmt returns (), see above for length value
+        Ok(13)
+    }
 }

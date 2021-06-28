@@ -1,7 +1,20 @@
 use super::{Explicit, TaggedValue};
-use crate::{Any, CheckDerConstraints, FromBer, FromDer, ParseResult, Result};
+use crate::{
+    Any, CheckDerConstraints, Class, FromBer, FromDer, Header, Length, ParseResult, Result,
+    SerializeResult, Tag, ToDer,
+};
 use std::borrow::Cow;
 use std::marker::PhantomData;
+
+impl<'a, T> TaggedValue<'a, Explicit, T> {
+    pub const fn new_explicit(class: Class, tag: u32, inner: T) -> Self {
+        Self {
+            header: Header::new(class, 1, Tag(tag), Length::Definite(0)),
+            inner,
+            tag_kind: PhantomData,
+        }
+    }
+}
 
 impl<'a, T> FromBer<'a> for TaggedValue<'a, Explicit, T>
 where
@@ -56,5 +69,30 @@ where
         let (_, inner_any) = Any::from_der(&any.data)?;
         T::check_constraints(&inner_any)?;
         Ok(())
+    }
+}
+
+impl<'a, T> ToDer for TaggedValue<'a, Explicit, T>
+where
+    T: ToDer,
+{
+    fn to_der_len(&self) -> Result<usize> {
+        let header = Header::new(
+            self.class(),
+            1,
+            self.tag(),
+            Length::Definite(self.inner.to_der_len()?),
+        );
+        Ok(header.to_der_len()? + self.inner.to_der_len()?)
+    }
+
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let inner_len = self.inner.to_der_len()?;
+        let header = Header::new(self.class(), 1, self.tag(), Length::Definite(inner_len));
+        header.write_der_header(writer).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        self.inner.write_der(writer)
     }
 }

@@ -1,4 +1,8 @@
-use crate::{ber::bytes_to_u64, Any, CheckDerConstraints, Error, Result, Tag, Tagged};
+use crate::ber::bytes_to_u64;
+use crate::{
+    Any, CheckDerConstraints, Class, Error, Header, Integer, Length, Result, SerializeResult, Tag,
+    Tagged, ToDer,
+};
 use std::convert::TryFrom;
 
 #[derive(Debug, PartialEq)]
@@ -34,4 +38,21 @@ impl CheckDerConstraints for Enumerated {
 
 impl Tagged for Enumerated {
     const TAG: Tag = Tag::Enumerated;
+}
+
+impl ToDer for Enumerated {
+    fn to_der_len(&self) -> Result<usize> {
+        Integer::from(self.0).to_der_len()
+    }
+
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let len = Integer::from(self.0).to_der_len()?;
+        let header = Header::new(Class::Universal, 0, Self::TAG, Length::Definite(len));
+        header.write_der_header(writer).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let int = Integer::from(self.0);
+        int.write_der_content(writer).map_err(Into::into)
+    }
 }

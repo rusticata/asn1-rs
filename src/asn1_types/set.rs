@@ -1,5 +1,5 @@
 use crate::traits::*;
-use crate::{Any, Error, ParseResult, Result, Tag};
+use crate::{Any, Class, Error, Header, Length, ParseResult, Result, SerializeResult, Tag};
 use std::borrow::Cow;
 use std::convert::TryFrom;
 
@@ -136,4 +136,30 @@ impl<'a> CheckDerConstraints for Set<'a> {
 
 impl<'a> Tagged for Set<'a> {
     const TAG: Tag = Tag::Set;
+}
+
+impl ToDer for Set<'_> {
+    fn to_der_len(&self) -> Result<usize> {
+        let header = Header::new(
+            Class::Universal,
+            1,
+            Self::TAG,
+            Length::Definite(self.content.len()),
+        );
+        Ok(header.to_der_len()? + self.content.len())
+    }
+
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let header = Header::new(
+            Class::Universal,
+            1,
+            Self::TAG,
+            Length::Definite(self.content.len()),
+        );
+        header.write_der_header(writer).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        writer.write(&self.content).map_err(Into::into)
+    }
 }

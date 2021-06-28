@@ -1,4 +1,4 @@
-use crate::{Class, FromBer, FromDer, Header, ParseResult, Result, Tag};
+use crate::{Class, DynTagged, FromBer, FromDer, Header, ParseResult, Result, Tag};
 
 use std::marker::PhantomData;
 
@@ -12,10 +12,10 @@ pub use helpers::*;
 
 // tag types: IMPLICIT, EXPLICIT
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Implicit {}
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum Explicit {}
 
 pub trait TagKind {}
@@ -48,10 +48,12 @@ impl<'a, TagKind, T> TaggedValue<'a, TagKind, T> {
         self.header.assert_tag(tag)
     }
 
+    #[inline]
     pub const fn class(&self) -> Class {
         self.header.class
     }
 
+    #[inline]
     pub const fn tag(&self) -> Tag {
         self.header.tag
     }
@@ -84,5 +86,11 @@ where
         t.assert_class(class)?;
         t.assert_tag(tag)?;
         Ok((rem, t))
+    }
+}
+
+impl<'a, TagKind, T> DynTagged for TaggedValue<'a, TagKind, T> {
+    fn tag(&self) -> Tag {
+        self.tag()
     }
 }

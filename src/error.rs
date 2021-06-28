@@ -100,6 +100,9 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Error)]
 pub enum SerializeError {
+    #[error("ASN.1 error: {0:?}")]
+    ASN1Error(#[from] Error),
+
     #[error("Invalid Length")]
     InvalidLength,
 
