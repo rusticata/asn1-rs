@@ -23,6 +23,18 @@ impl<'a> Set<'a> {
         Set { content }
     }
 
+    #[inline]
+    pub fn into_content(self) -> Cow<'a, [u8]> {
+        self.content
+    }
+
+    pub fn and_then<U, F>(self, op: F) -> ParseResult<'a, U>
+    where
+        F: FnOnce(Cow<'a, [u8]>) -> ParseResult<U>,
+    {
+        op(self.content)
+    }
+
     pub fn parse<F, T>(&'a self, mut f: F) -> ParseResult<'a, T>
     where
         F: FnMut(&'a [u8]) -> ParseResult<'a, T>,
