@@ -53,6 +53,15 @@ fn from_der_bitstring() {
 }
 
 #[test]
+fn from_der_bitstring_constructed() {
+    let bytes: &[u8] = &hex!("23 81 0c 03 03 00 0a 3b 03 05 04 5f 29 1c d0");
+    assert_eq!(
+        BitString::from_der(&bytes),
+        Err(Err::Failure(Error::ConstructUnexpected))
+    );
+}
+
+#[test]
 fn from_der_bmpstring() {
     // taken from https://docs.microsoft.com/en-us/windows/win32/seccertenroll/about-bmpstring
     let input = &hex!("1e 08 00 55 00 73 00 65 00 72");
@@ -122,10 +131,30 @@ fn from_der_generalizedtime() {
 }
 
 #[test]
+fn from_der_indefinite_length() {
+    let bytes: &[u8] = &hex!("23 80 03 03 00 0a 3b 03 05 04 5f 29 1c d0 00 00");
+    assert_eq!(
+        BitString::from_der(&bytes),
+        Err(Err::Error(Error::IndefiniteLengthUnexpected))
+    );
+}
+
+#[test]
 fn from_der_int() {
     let input = &hex!("02 01 02 ff ff");
     let (rem, result) = u8::from_der(input).expect("parsing failed");
     assert_eq!(result, 2);
+    assert_eq!(rem, &[0xff, 0xff]);
+}
+
+#[test]
+fn from_der_null() {
+    let input = &hex!("05 00 ff ff");
+    let (rem, result) = Null::from_der(input).expect("parsing failed");
+    assert_eq!(result, Null {});
+    assert_eq!(rem, &[0xff, 0xff]);
+    // unit
+    let (rem, _unit) = <()>::from_der(input).expect("parsing failed");
     assert_eq!(rem, &[0xff, 0xff]);
 }
 
@@ -150,6 +179,20 @@ fn from_der_oid() {
     let input = &hex!("06 09 2a 86 48 86 f7 0d 01 01 05");
     let (rem, result) = Oid::from_der(input).expect("parsing failed");
     let expected = Oid::from(&[1, 2, 840, 113_549, 1, 1, 5]).unwrap();
+    assert_eq!(result, expected);
+    assert_eq!(rem, &[]);
+}
+
+#[test]
+fn from_der_optional() {
+    let input = &hex!("30 0a 0a 03 00 00 01 02 03 01 00 01");
+    let (rem, result) = Sequence::parse_and_then(input, |input| {
+        let (i, obj0) = <Option<Enumerated>>::from_der(&input)?;
+        let (i, obj1) = u32::from_der(i)?;
+        Ok((i, (obj0, obj1)))
+    })
+    .expect("parsing failed");
+    let expected = (Some(Enumerated::new(1)), 65537);
     assert_eq!(result, expected);
     assert_eq!(rem, &[]);
 }
