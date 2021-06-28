@@ -84,5 +84,31 @@ macro_rules! asn1_string {
         impl<'a> $crate::Tagged for $name<'a> {
             const TAG: $crate::Tag = $crate::Tag::$name;
         }
+
+        impl $crate::ToDer for $name<'_> {
+            fn to_der_len(&self) -> Result<usize> {
+                use $crate::traits::Tagged;
+                let header = $crate::Header::new(
+                    $crate::Class::Universal,
+                    0,
+                    Self::TAG,
+                    $crate::Length::Definite(self.data.len()),
+                );
+                Ok(header.to_der_len()? + self.data.as_bytes().len())
+            }
+
+            fn to_der(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+                use $crate::traits::Tagged;
+                let header = $crate::Header::new(
+                    $crate::Class::Universal,
+                    0,
+                    Self::TAG,
+                    $crate::Length::Definite(self.data.as_bytes().len()),
+                );
+                let sz = header.to_der(writer)?;
+                let sz = sz + writer.write(&self.data.as_bytes())?;
+                Ok(sz)
+            }
+        }
     };
 }

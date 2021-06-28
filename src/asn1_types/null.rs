@@ -1,5 +1,5 @@
-use crate::CheckDerConstraints;
 use crate::{Any, Error, Result, Tag, Tagged};
+use crate::{CheckDerConstraints, ToDer};
 use std::convert::TryFrom;
 
 #[derive(Debug)]
@@ -33,6 +33,17 @@ impl<'a> Tagged for Null {
     const TAG: Tag = Tag::Null;
 }
 
+impl ToDer for Null {
+    fn to_der_len(&self) -> Result<usize> {
+        Ok(2)
+    }
+
+    fn to_der(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        let sz = writer.write(&[0x05, 0x00])?;
+        Ok(sz)
+    }
+}
+
 impl<'a> TryFrom<Any<'a>> for () {
     type Error = Error;
 
@@ -54,4 +65,15 @@ impl<'a> CheckDerConstraints for () {
 
 impl<'a> Tagged for () {
     const TAG: Tag = Tag::Null;
+}
+
+impl ToDer for () {
+    fn to_der_len(&self) -> Result<usize> {
+        Ok(2)
+    }
+
+    fn to_der(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        let sz = writer.write(&[0x05, 0x00])?;
+        Ok(sz)
+    }
 }

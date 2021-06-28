@@ -1,5 +1,5 @@
 use crate::CheckDerConstraints;
-use crate::{Any, Error, Result, Tag, Tagged};
+use crate::{Any, Class, Error, Header, Length, Result, SerializeResult, Tag, Tagged, ToDer};
 use std::borrow::Cow;
 use std::convert::TryFrom;
 
@@ -45,6 +45,30 @@ impl<'a> Tagged for OctetString<'a> {
     const TAG: Tag = Tag::OctetString;
 }
 
+impl ToDer for OctetString<'_> {
+    fn to_der_len(&self) -> Result<usize> {
+        let header = Header::new(
+            Class::Universal,
+            0,
+            Self::TAG,
+            Length::Definite(self.data.len()),
+        );
+        Ok(header.to_der_len()? + self.data.len())
+    }
+
+    fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let header = Header::new(
+            Class::Universal,
+            0,
+            Self::TAG,
+            Length::Definite(self.data.len()),
+        );
+        let sz = header.to_der(writer)?;
+        let sz = sz + writer.write(&self.data)?;
+        Ok(sz)
+    }
+}
+
 impl<'a> TryFrom<Any<'a>> for &'a [u8] {
     type Error = Error;
 
@@ -68,4 +92,18 @@ impl<'a> CheckDerConstraints for &'a [u8] {
 
 impl<'a> Tagged for &'a [u8] {
     const TAG: Tag = Tag::OctetString;
+}
+
+impl ToDer for &'_ [u8] {
+    fn to_der_len(&self) -> Result<usize> {
+        let header = Header::new(Class::Universal, 0, Self::TAG, Length::Definite(self.len()));
+        Ok(header.to_der_len()? + self.len())
+    }
+
+    fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let header = Header::new(Class::Universal, 0, Self::TAG, Length::Definite(self.len()));
+        let sz = header.to_der(writer)?;
+        let sz = sz + writer.write(self)?;
+        Ok(sz)
+    }
 }

@@ -1,9 +1,5 @@
-use crate::{
-    ber::*, BitString, BmpString, Boolean, Enumerated, FromBer, FromDer, GeneralString,
-    GeneralizedTime, Header, Ia5String, Integer, Length, Null, NumericString, OctetString, Oid,
-    ParseResult, PrintableString, Result, Sequence, Set, Tag, TeletexString, ToStatic,
-    UniversalString, UtcTime, Utf8String, VideotexString, VisibleString,
-};
+use crate::ber::*;
+use crate::*;
 use std::{borrow::Cow, convert::TryInto};
 
 #[derive(Debug)]
@@ -149,5 +145,32 @@ impl<'a> ToStatic for Any<'a> {
             header: self.header.to_static(),
             data: Cow::Owned(self.data.to_vec()),
         }
+    }
+}
+
+impl ToDer for Any<'_> {
+    fn to_der_len(&self) -> Result<usize> {
+        let hdr_len = self.header.to_der_len()?;
+        Ok(hdr_len + self.data.len())
+    }
+
+    fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        // create fake header to have correct length
+        let header = Header::new(
+            self.header.class,
+            self.header.structured,
+            self.header.tag,
+            Length::Definite(self.data.len()),
+        );
+        let sz = header.to_der(writer)?;
+        let sz = sz + writer.write(&self.data)?;
+        Ok(sz)
+    }
+
+    /// Similar to using `to_der`, but uses header without computing length value
+    fn to_der_raw(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let sz = self.header.to_der(writer)?;
+        let sz = sz + writer.write(&self.data)?;
+        Ok(sz)
     }
 }

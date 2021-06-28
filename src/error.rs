@@ -1,6 +1,7 @@
 use crate::{Class, Tag};
 use nom::error::{ErrorKind, ParseError};
 use nom::IResult;
+use std::io;
 use std::str;
 use std::string;
 use thiserror::Error;
@@ -96,3 +97,14 @@ impl From<nom::Err<Error>> for Error {
 pub type ParseResult<'a, T> = IResult<&'a [u8], T, Error>;
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Debug, Error)]
+pub enum SerializeError {
+    #[error("Invalid Length")]
+    InvalidLength,
+
+    #[error("I/O error: {0:?}")]
+    IOError(#[from] io::Error),
+}
+
+pub type SerializeResult<T> = std::result::Result<T, SerializeError>;

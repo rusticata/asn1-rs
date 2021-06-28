@@ -76,10 +76,48 @@ pub trait CheckDerConstraints {
 }
 
 pub trait ToDer {
-    fn to_vec(&self) -> Vec<u8>;
+    /// Get the length of the object, when encoded
+    ///
+    // Since we are using DER, length cannot be Indefinite, so we can use `usize`.
+    // XXX can this function fail?
+    fn to_der_len(&self) -> Result<usize>;
 
-    // XXX to be adjusted
-    fn to_der(&self, writer: &mut dyn Write) -> ParseResult<usize>;
+    /// Write the DER encoded representation to a newly allocated `Vec<u8>`.
+    fn to_der_vec(&self) -> SerializeResult<Vec<u8>> {
+        let mut v = Vec::new();
+        let _ = self.to_der(&mut v)?;
+        Ok(v)
+    }
+
+    // Write the DER encoded representation to `writer`.
+    fn to_der(&self, writer: &mut dyn Write) -> SerializeResult<usize>;
+
+    /// Similar to using `to_der`, but uses provided values without changes.
+    /// This can generate an invalid encoding for a DER object.
+    fn to_der_raw(&self, writer: &mut dyn Write) -> SerializeResult<usize> {
+        self.to_der(writer)
+    }
+
+    /// Similar to using `to_vec`, but uses provided values without changes.
+    /// This can generate an invalid encoding for a DER object.
+    fn to_der_vec_raw(&self) -> SerializeResult<Vec<u8>> {
+        let mut v = Vec::new();
+        let _ = self.to_der_raw(&mut v)?;
+        Ok(v)
+    }
+}
+
+impl<T> ToDer for &'_ T
+where
+    T: ToDer,
+{
+    fn to_der_len(&self) -> Result<usize> {
+        (*self).to_der_len()
+    }
+
+    fn to_der(&self, writer: &mut dyn Write) -> SerializeResult<usize> {
+        (*self).to_der(writer)
+    }
 }
 
 pub trait ToStatic {

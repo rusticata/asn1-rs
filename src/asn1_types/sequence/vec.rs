@@ -1,5 +1,8 @@
 use super::{SequenceIterator, SequenceOf};
-use crate::{Any, BerParser, DerParser, FromBer, FromDer, ParseResult, Result, Tag, Tagged};
+use crate::{
+    Any, BerParser, Class, DerParser, FromBer, FromDer, Header, Length, ParseResult, Result,
+    SerializeError, Tag, Tagged, ToDer,
+};
 use std::borrow::Cow;
 
 impl<T> From<SequenceOf<T>> for Vec<T> {
@@ -47,5 +50,32 @@ where
         };
         let v = SequenceIterator::<T, DerParser>::new(data).collect::<Result<Vec<T>>>()?;
         Ok((rem, v))
+    }
+}
+
+impl<T> ToDer for Vec<T>
+where
+    T: ToDer,
+{
+    fn to_der_len(&self) -> Result<usize> {
+        let mut len = 0;
+        for t in self.iter() {
+            len += t.to_der_len()?;
+        }
+        let header = Header::new(Class::Universal, 1, Self::TAG, Length::Definite(len));
+        Ok(header.to_der_len()? + len)
+    }
+
+    fn to_der(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        let mut len = 0;
+        for t in self.iter() {
+            len += t.to_der_len().map_err(|_| SerializeError::InvalidLength)?;
+        }
+        let header = Header::new(Class::Universal, 1, Self::TAG, Length::Definite(len));
+        let mut sz = header.to_der(writer)?;
+        for t in self.iter() {
+            sz += t.to_der(writer)?;
+        }
+        Ok(sz)
     }
 }

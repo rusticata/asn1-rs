@@ -1,6 +1,7 @@
 use crate::ber::*;
 use crate::der_constraint_fail_if;
 use crate::error::*;
+use crate::ToDer;
 use crate::ToStatic;
 use crate::{FromBer, FromDer};
 use nom::bytes::streaming::take;
@@ -8,6 +9,7 @@ use rusticata_macros::newtype_enum;
 use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::fmt;
+use std::ops;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct BerClassFromIntError(pub(crate) ());
@@ -178,6 +180,40 @@ impl From<usize> for Length {
     }
 }
 
+impl ops::Add<Length> for Length {
+    type Output = Self;
+
+    fn add(self, rhs: Length) -> Self::Output {
+        match self {
+            Length::Indefinite => self,
+            Length::Definite(lhs) => match rhs {
+                Length::Indefinite => self,
+                Length::Definite(rhs) => Length::Definite(lhs + rhs),
+            },
+        }
+    }
+}
+
+impl ops::Add<usize> for Length {
+    type Output = Self;
+
+    fn add(self, rhs: usize) -> Self::Output {
+        match self {
+            Length::Definite(lhs) => Length::Definite(lhs + rhs),
+            Length::Indefinite => self,
+        }
+    }
+}
+
+impl ops::AddAssign<usize> for Length {
+    fn add_assign(&mut self, rhs: usize) {
+        match self {
+            Length::Definite(ref mut lhs) => *lhs += rhs,
+            Length::Indefinite => (),
+        }
+    }
+}
+
 impl<'a> Header<'a> {
     /// Build a new BER header
     pub const fn new(class: Class, structured: u8, tag: Tag, length: Length) -> Self {
@@ -188,6 +224,20 @@ impl<'a> Header<'a> {
             length,
             raw_tag: None,
         }
+    }
+
+    #[inline]
+    pub const fn new_simple(tag: Tag) -> Self {
+        let structured = match tag {
+            Tag::Sequence | Tag::Set => 1,
+            _ => 0,
+        };
+        Self::new(Class::Universal, structured, tag, Length::Definite(0))
+    }
+
+    #[inline]
+    pub fn with_lenth(self, length: Length) -> Self {
+        Self { length, ..self }
     }
 
     /// Update header to add reference to raw tag
@@ -346,5 +396,120 @@ impl<'a> FromDer<'a> for Header<'a> {
         };
         let hdr = Header::new(class, el.1, Tag(el.2), len).with_raw_tag(Some(el.3.into()));
         Ok((i3, hdr))
+    }
+}
+
+impl ToDer for (Class, u8, Tag) {
+    fn to_der_len(&self) -> Result<usize> {
+        let (_, _, tag) = self;
+        match tag.0 {
+            0..=30 => Ok(1),
+            t => {
+                let mut sz = 1;
+                let mut val = t;
+                loop {
+                    if val <= 127 {
+                        return Ok(sz + 1);
+                    } else {
+                        val >>= 7;
+                        sz += 1;
+                    }
+                }
+            }
+        }
+    }
+
+    fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let (class, structured, tag) = self;
+        let b0 = (*class as u8) << 6;
+        let b0 = b0 | if *structured != 0 { 0b10_0000 } else { 0 };
+        if tag.0 > 30 {
+            let b0 = b0 | 0b1_1111;
+            let mut sz = writer.write(&[b0])?;
+            let mut val = tag.0;
+            loop {
+                if val <= 127 {
+                    sz += writer.write(&[val as u8])?;
+                    return Ok(sz);
+                } else {
+                    let b = (val & 0b0111_1111) as u8 | 0b1000_0000;
+                    sz += writer.write(&[b])?;
+                    val >>= 7;
+                }
+            }
+        } else {
+            let b0 = b0 | (tag.0 as u8);
+            let sz = writer.write(&[b0])?;
+            Ok(sz)
+        }
+    }
+}
+
+impl ToDer for Length {
+    fn to_der_len(&self) -> Result<usize> {
+        match self {
+            Length::Indefinite => Ok(1),
+            Length::Definite(l) => match l {
+                0..=0x7f => Ok(1),
+                0x80..=0xff => Ok(2),
+                0x100..=0x7fff => Ok(3),
+                0x8000..=0xffff => Ok(4),
+                _ => Err(Error::InvalidLength),
+            },
+        }
+    }
+
+    fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        match *self {
+            Length::Indefinite => {
+                let sz = writer.write(&[0b1000_0000])?;
+                Ok(sz)
+            }
+            Length::Definite(l) => {
+                if l <= 127 {
+                    // Short form
+                    let sz = writer.write(&[l as u8])?;
+                    Ok(sz)
+                } else {
+                    // Long form
+                    let mut sz = 0;
+                    let mut val = l;
+                    loop {
+                        if val <= 127 {
+                            sz += writer.write(&[val as u8])?;
+                            return Ok(sz);
+                        } else {
+                            let b = (val & 0b0111_1111) as u8 | 0b1000_0000;
+                            sz += writer.write(&[b])?;
+                            val >>= 7;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+impl ToDer for Header<'_> {
+    fn to_der_len(&self) -> Result<usize> {
+        let tag_len = (self.class, self.structured, self.tag).to_der_len()?;
+        let len_len = self.length.to_der_len()?;
+        Ok(tag_len + len_len)
+    }
+
+    fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let sz = (self.class, self.structured, self.tag).to_der(writer)?;
+        let sz = sz + self.length.to_der(writer)?;
+        Ok(sz)
+    }
+
+    fn to_der_raw(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        // use raw_tag if present
+        let sz = match &self.raw_tag {
+            Some(t) => writer.write(&t)?,
+            None => (self.class, self.structured, self.tag).to_der(writer)?,
+        };
+        let sz = sz + self.length.to_der(writer)?;
+        Ok(sz)
     }
 }

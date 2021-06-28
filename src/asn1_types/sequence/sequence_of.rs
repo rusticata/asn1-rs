@@ -1,5 +1,5 @@
 use crate::{
-    BerParser, DerParser, FromBer, FromDer, ParseResult, Result, Sequence, SequenceIterator,
+    BerParser, DerParser, FromBer, FromDer, ParseResult, Result, Sequence, SequenceIterator, ToDer,
 };
 use std::borrow::Cow;
 
@@ -57,5 +57,18 @@ where
         };
         let v = SequenceIterator::<T, DerParser>::new(data).collect::<Result<Vec<T>>>()?;
         Ok((rem, SequenceOf::new(v)))
+    }
+}
+
+impl<T> ToDer for SequenceOf<T>
+where
+    T: ToDer,
+{
+    fn to_der_len(&self) -> Result<usize> {
+        self.items.to_der_len()
+    }
+
+    fn to_der(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        self.items.to_der(writer)
     }
 }

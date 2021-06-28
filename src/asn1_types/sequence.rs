@@ -1,5 +1,5 @@
 use crate::traits::*;
-use crate::{Any, Error, ParseResult, Result, Tag};
+use crate::{Any, Class, Error, Header, Length, ParseResult, Result, SerializeResult, Tag};
 use std::borrow::Cow;
 use std::convert::TryFrom;
 
@@ -11,7 +11,7 @@ pub use iterator::*;
 pub use sequence_of::*;
 pub use vec::*;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Sequence<'a> {
     pub content: Cow<'a, [u8]>,
 }
@@ -148,4 +148,45 @@ impl<'a> CheckDerConstraints for Sequence<'a> {
 
 impl<'a> Tagged for Sequence<'a> {
     const TAG: Tag = Tag::Sequence;
+}
+
+impl ToDer for Sequence<'_> {
+    fn to_der_len(&self) -> Result<usize> {
+        let header = Header::new(
+            Class::Universal,
+            1,
+            Self::TAG,
+            Length::Definite(self.content.len()),
+        );
+        Ok(header.to_der_len()? + self.content.len())
+    }
+
+    fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let header = Header::new(
+            Class::Universal,
+            1,
+            Self::TAG,
+            Length::Definite(self.content.len()),
+        );
+        let sz = header.to_der(writer)?;
+        let sz = sz + writer.write(&self.content)?;
+        Ok(sz)
+    }
+}
+
+impl<'a> Sequence<'a> {
+    pub fn from_iter_to_der<T, IT>(it: IT) -> SerializeResult<Self>
+    where
+        IT: Iterator<Item = T>,
+        T: ToDer,
+    {
+        let mut v = Vec::new();
+        for item in it {
+            let item_v = <T as ToDer>::to_der_vec(&item)?;
+            v.extend_from_slice(&item_v);
+        }
+        Ok(Sequence {
+            content: Cow::Owned(v),
+        })
+    }
 }

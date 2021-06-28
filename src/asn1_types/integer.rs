@@ -1,6 +1,6 @@
 use crate::error::*;
 use crate::traits::*;
-use crate::{Any, Tag};
+use crate::{Any, Class, Header, Length, Tag};
 use std::borrow::Cow;
 use std::convert::TryFrom;
 use std::convert::TryInto;
@@ -112,6 +112,18 @@ macro_rules! impl_int {
         impl Tagged for $int {
             const TAG: Tag = Tag::Integer;
         }
+
+        impl ToDer for $int {
+            fn to_der_len(&self) -> Result<usize> {
+                let int = Integer::from(*self);
+                int.to_der_len()
+            }
+
+            fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+                let int = Integer::from(*self);
+                int.to_der(writer)
+            }
+        }
     };
 }
 
@@ -146,6 +158,18 @@ macro_rules! impl_uint {
         impl Tagged for $ty {
             const TAG: Tag = Tag::Integer;
         }
+
+        impl ToDer for $ty {
+            fn to_der_len(&self) -> Result<usize> {
+                let int = Integer::from(*self);
+                int.to_der_len()
+            }
+
+            fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+                let int = Integer::from(*self);
+                int.to_der(writer)
+            }
+        }
     };
 }
 
@@ -176,46 +200,6 @@ impl<'a> Integer<'a> {
         Any::from_tag_and_data(Self::TAG, &self.data)
     }
 
-    pub fn as_u8(&self) -> Result<u8> {
-        self.any().try_into()
-    }
-
-    pub fn as_u16(&self) -> Result<u16> {
-        self.any().try_into()
-    }
-
-    pub fn as_u32(&self) -> Result<u32> {
-        self.any().try_into()
-    }
-
-    pub fn as_u64(&self) -> Result<u64> {
-        self.any().try_into()
-    }
-
-    pub fn as_u128(&self) -> Result<u128> {
-        self.any().try_into()
-    }
-
-    pub fn as_i8(&self) -> Result<i8> {
-        self.any().try_into()
-    }
-
-    pub fn as_i16(&self) -> Result<i16> {
-        self.any().try_into()
-    }
-
-    pub fn as_i32(&self) -> Result<i32> {
-        self.any().try_into()
-    }
-
-    pub fn as_i64(&self) -> Result<i64> {
-        self.any().try_into()
-    }
-
-    pub fn as_i128(&self) -> Result<i128> {
-        self.any().try_into()
-    }
-
     #[cfg(feature = "bigint")]
     #[cfg_attr(docsrs, doc(cfg(feature = "bigint")))]
     pub fn as_bigint(&self) -> BigInt {
@@ -227,7 +211,96 @@ impl<'a> Integer<'a> {
     pub fn as_biguint(&self) -> BigUint {
         BigUint::from_bytes_be(&self.data)
     }
+
+    pub fn from_const_array<const N: usize>(b: [u8; N]) -> Self {
+        let mut idx = 0;
+        // skip leading 0s
+        while idx < b.len() {
+            if b[idx] == 0 {
+                idx += 1;
+                continue;
+            }
+            break;
+        }
+        if idx == b.len() {
+            Integer {
+                data: Cow::Borrowed(&[0]),
+            }
+        } else {
+            Integer {
+                data: Cow::Owned(b[idx..].to_vec()),
+            }
+        }
+    }
+
+    fn from_const_array_negative<const N: usize>(b: [u8; N]) -> Self {
+        let mut out = vec![0];
+        out.extend_from_slice(&b);
+
+        Integer {
+            data: Cow::Owned(out),
+        }
+    }
 }
+
+macro_rules! impl_from_to {
+    ($ty:ty, $from:ident, $to:ident) => {
+        impl From<$ty> for Integer<'_> {
+            fn from(i: $ty) -> Self {
+                Self::$from(i)
+            }
+        }
+
+        impl TryFrom<Integer<'_>> for $ty {
+            type Error = Error;
+
+            fn try_from(value: Integer<'_>) -> Result<Self> {
+                value.$to()
+            }
+        }
+
+        impl Integer<'_> {
+            pub fn $to(&self) -> Result<$ty> {
+                self.any().try_into()
+            }
+        }
+    };
+    (SIGNED $ty:ty, $from:ident, $to:ident) => {
+        impl_from_to!($ty, $from, $to);
+
+        impl Integer<'_> {
+            pub fn $from(i: $ty) -> Self {
+                let b = i.to_be_bytes();
+                if i >= 0 {
+                    Self::from_const_array(b)
+                } else {
+                    Self::from_const_array_negative(b)
+                }
+            }
+        }
+    };
+    (UNSIGNED $ty:ty, $from:ident, $to:ident) => {
+        impl_from_to!($ty, $from, $to);
+
+        impl Integer<'_> {
+            pub fn $from(i: $ty) -> Self {
+                Self::from_const_array(i.to_be_bytes())
+            }
+        }
+    };
+}
+
+impl_from_to!(SIGNED i8, from_i8, as_i8);
+impl_from_to!(SIGNED i16, from_i16, as_i16);
+impl_from_to!(SIGNED i32, from_i32, as_i32);
+impl_from_to!(SIGNED i64, from_i64, as_i64);
+impl_from_to!(SIGNED i128, from_i128, as_i128);
+
+impl_from_to!(UNSIGNED u8, from_u8, as_u8);
+impl_from_to!(UNSIGNED u16, from_u16, as_u16);
+impl_from_to!(UNSIGNED u32, from_u32, as_u32);
+impl_from_to!(UNSIGNED u64, from_u64, as_u64);
+impl_from_to!(UNSIGNED u128, from_u128, as_u128);
 
 impl<'a> AsRef<[u8]> for Integer<'a> {
     fn as_ref(&self) -> &[u8] {
@@ -255,6 +328,30 @@ impl<'a> CheckDerConstraints for Integer<'a> {
 
 impl<'a> Tagged for Integer<'a> {
     const TAG: Tag = Tag::Integer;
+}
+
+impl ToDer for Integer<'_> {
+    fn to_der_len(&self) -> Result<usize> {
+        let header = Header::new(
+            Class::Universal,
+            0,
+            Self::TAG,
+            Length::Definite(self.data.len()),
+        );
+        Ok(header.to_der_len()? + self.data.len())
+    }
+
+    fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let header = Header::new(
+            Class::Universal,
+            0,
+            Self::TAG,
+            Length::Definite(self.data.len()),
+        );
+        let sz = header.to_der(writer)?;
+        let sz = sz + writer.write(&self.data)?;
+        Ok(sz)
+    }
 }
 
 #[cfg(test)]

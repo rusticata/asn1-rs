@@ -1,5 +1,4 @@
-use crate::{Any, Error, Result, Tag, Tagged};
-use crate::{CheckDerConstraints, Length};
+use crate::{Any, CheckDerConstraints, Error, Length, Result, SerializeResult, Tag, Tagged, ToDer};
 use std::convert::TryFrom;
 
 #[derive(Debug, PartialEq)]
@@ -52,6 +51,25 @@ impl<'a> Tagged for Boolean {
     const TAG: Tag = Tag::Boolean;
 }
 
+impl ToDer for Boolean {
+    fn to_der_len(&self) -> Result<usize> {
+        // 3 = 1 (tag) + 1 (length) + 1 (value)
+        Ok(3)
+    }
+
+    fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let b = if self.value != 0 { 0xff } else { 0x00 };
+        let sz = writer.write(&[Self::TAG.0 as u8, 0x01, b])?;
+        Ok(sz)
+    }
+
+    /// Similar to using `to_der`, but uses header without computing length value
+    fn to_der_raw(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let sz = writer.write(&[Self::TAG.0 as u8, 0x01, self.value])?;
+        Ok(sz)
+    }
+}
+
 impl<'a> TryFrom<Any<'a>> for bool {
     type Error = Error;
 
@@ -75,4 +93,17 @@ impl<'a> CheckDerConstraints for bool {
 
 impl<'a> Tagged for bool {
     const TAG: Tag = Tag::Boolean;
+}
+
+impl ToDer for bool {
+    fn to_der_len(&self) -> Result<usize> {
+        // 3 = 1 (tag) + 1 (length) + 1 (value)
+        Ok(3)
+    }
+
+    fn to_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let b = if *self { 0xff } else { 0x00 };
+        let sz = writer.write(&[Self::TAG.0 as u8, 0x01, b])?;
+        Ok(sz)
+    }
 }

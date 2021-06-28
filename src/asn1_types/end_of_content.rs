@@ -1,4 +1,4 @@
-use crate::{Any, Error, Result, Tag, Tagged};
+use crate::{Any, Error, Result, Tag, Tagged, ToDer};
 use std::convert::TryFrom;
 
 // No `FromDer` implementation, type is not valid in DER
@@ -25,4 +25,15 @@ impl<'a> TryFrom<Any<'a>> for EndOfContent {
 
 impl<'a> Tagged for EndOfContent {
     const TAG: Tag = Tag::EndOfContent;
+}
+
+impl ToDer for EndOfContent {
+    fn to_der_len(&self) -> Result<usize> {
+        Ok(2)
+    }
+
+    fn to_der(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        let sz = writer.write(&[0x00, 0x00])?;
+        Ok(sz)
+    }
 }
