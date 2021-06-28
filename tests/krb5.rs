@@ -21,10 +21,68 @@ pub struct PrincipalName {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct NameType(pub i32);
 
+// KerberosString  ::= GeneralString (IA5String)
+pub type KerberosString<'a> = GeneralString<'a>;
+
+pub type KerberosStringList<'a> = Vec<KerberosString<'a>>;
+
+impl Tagged for PrincipalName {
+    const TAG: Tag = Tag::Sequence;
+}
+
+impl<'a> FromDer<'a> for PrincipalName {
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
+        // XXX in the example above, PRINCIPAL_NAME does not respect DER constraints (length is using long form while < 127)
+        let (rem, seq) = Sequence::from_ber(bytes)?;
+        seq.and_then(|data| {
+            let input = &data;
+            let (i, t) = parse_der_tagged_explicit::<_, u32>(0)(input)?;
+            let name_type = t.inner;
+            let name_type = NameType(name_type as i32);
+            let (_, t) = parse_der_tagged_explicit::<_, KerberosStringList>(1)(i)?;
+            let name_string = t.inner.iter().map(|s| s.string()).collect();
+            Ok((
+                rem,
+                PrincipalName {
+                    name_type,
+                    name_string,
+                },
+            ))
+        })
+    }
+}
+
+impl ToDer for PrincipalName {
+    fn to_der_len(&self) -> Result<usize> {
+        let sz = self.name_type.0.to_der_len()? + 2 /* tagged */;
+        let sz = sz + self.name_string.to_der_len()? + 2 /* tagged */;
+        Ok(sz)
+    }
+
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let len = self.to_der_len()?;
+        let header = Header::new(Class::Universal, 1, Self::TAG, Length::Definite(len));
+        header.write_der_header(writer).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        // XXX build DER sequence content
+        let sz = TaggedValue::new_explicit(Class::ContextSpecific, 0, self.name_type.0)
+            .write_der(writer)?;
+        let v: Vec<_> = self
+            .name_string
+            .iter()
+            .map(|s| KerberosString::from(s.as_ref()))
+            .collect();
+        let sz = sz + TaggedValue::new_explicit(Class::ContextSpecific, 1, v).write_der(writer)?;
+        Ok(sz)
+    }
+}
+
 #[test]
 fn krb5_principalname() {
     let input = PRINCIPAL_NAME;
-    let (rem, res) = parse_principalname(input).expect("parsing failed");
+    let (rem, res) = PrincipalName::from_der(input).expect("parsing failed");
     assert!(rem.is_empty());
     let expected = PrincipalName {
         name_type: NameType(0),
@@ -33,29 +91,14 @@ fn krb5_principalname() {
     assert_eq!(res, expected);
 }
 
-fn parse_principalname(bytes: &[u8]) -> ParseResult<PrincipalName> {
-    // XXX in the example above, PRINCIPAL_NAME does not respect DER constraints (length is using long form while < 127)
-    let (rem, seq) = Sequence::from_ber(bytes)?;
-    seq.parse_ref(|input| {
-        //
-        let (i, t) = parse_der_tagged_explicit::<_, u32>(0)(input)?;
-        let name_type = t.inner;
-        // dbg!(name_type);
-        let name_type = NameType(name_type as i32);
-        let (_, t) = parse_der_tagged_explicit::<_, KerberosStringList>(1)(i)?;
-        let name_string = t.inner.iter().map(|s| s.string()).collect();
-        // dbg!(&name_string);
-        Ok((
-            rem,
-            PrincipalName {
-                name_type,
-                name_string,
-            },
-        ))
-    })
+#[test]
+fn to_der_krb5_principalname() {
+    let principal = PrincipalName {
+        name_type: NameType(0),
+        name_string: vec!["Jones".to_string()],
+    };
+    let v = PrincipalName::to_der_vec(&principal).expect("serialization failed");
+    std::fs::write("/tmp/out.bin", &v).unwrap();
+    let (_, principal2) = PrincipalName::from_der(&v).expect("parsing failed");
+    assert!(principal.eq(&principal2));
 }
-
-// KerberosString  ::= GeneralString (IA5String)
-pub type KerberosString<'a> = GeneralString<'a>;
-
-pub type KerberosStringList<'a> = Vec<KerberosString<'a>>;
