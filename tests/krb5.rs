@@ -66,16 +66,20 @@ impl ToDer for PrincipalName {
     }
 
     fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        // XXX build DER sequence content
-        let sz = TaggedValue::new_explicit(Class::ContextSpecific, 0, self.name_type.0)
+        // build DER sequence content
+        let sz1 = self
+            .name_type
+            .0
+            .explicit(Class::ContextSpecific, 0)
             .write_der(writer)?;
-        let v: Vec<_> = self
+        let sz2 = self
             .name_string
             .iter()
             .map(|s| KerberosString::from(s.as_ref()))
-            .collect();
-        let sz = sz + TaggedValue::new_explicit(Class::ContextSpecific, 1, v).write_der(writer)?;
-        Ok(sz)
+            .collect::<Vec<_>>()
+            .explicit(Class::ContextSpecific, 1)
+            .write_der(writer)?;
+        Ok(sz1 + sz2)
     }
 }
 

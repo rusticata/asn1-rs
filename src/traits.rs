@@ -1,5 +1,5 @@
 use crate::error::*;
-use crate::{Any, Tag};
+use crate::{Any, Class, Explicit, Implicit, Tag, TaggedValue};
 use std::convert::{TryFrom, TryInto};
 use std::io::Write;
 
@@ -198,6 +198,22 @@ where
         (*self).write_der_content(writer)
     }
 }
+
+pub trait AsTaggedExplicit<'a>: Sized {
+    fn explicit(self, class: Class, tag: u32) -> TaggedValue<'a, Explicit, Self> {
+        TaggedValue::new_explicit(class, tag, self)
+    }
+}
+
+impl<'a, T> AsTaggedExplicit<'a> for T where T: Sized + 'a {}
+
+pub trait AsTaggedImplicit<'a>: Sized {
+    fn implicit(self, class: Class, structured: u8, tag: u32) -> TaggedValue<'a, Implicit, Self> {
+        TaggedValue::new_implicit(class, structured, tag, self)
+    }
+}
+
+impl<'a, T> AsTaggedImplicit<'a> for T where T: Sized + 'a {}
 
 pub trait ToStatic {
     type Owned: 'static;
