@@ -79,6 +79,15 @@ fn to_der_any_raw() {
 }
 
 #[test]
+fn to_der_bitstring() {
+    let bitstring = BitString::new(6, &hex!("6e 5d c0"));
+    let v = bitstring.to_der_vec().expect("serialization failed");
+    assert_eq!(&v, &hex!("03 04 06 6e 5d c0"));
+    let (_, result) = BitString::from_der(&v).expect("parsing failed");
+    assert!(bitstring.eq(&result));
+}
+
+#[test]
 fn to_der_bool() {
     let v = Boolean::new(0xff)
         .to_der_vec()
@@ -148,6 +157,17 @@ fn to_der_integer() {
 }
 
 #[test]
+fn to_der_octetstring() {
+    let bytes: &[u8] = &hex!("01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f");
+    let s = OctetString::from(bytes);
+    let v = s.to_der_vec().expect("serialization failed");
+    assert_eq!(&v[..2], &hex!("04 0f"));
+    assert_eq!(&v[2..], bytes);
+    let (_, s2) = OctetString::from_der(&v).expect("decoding serialized object failed");
+    assert!(s.eq(&s2));
+}
+
+#[test]
 fn to_der_sequence() {
     let it = [2, 3, 4].iter();
     let seq = Sequence::from_iter_to_der(it).unwrap();
@@ -189,4 +209,14 @@ fn to_der_utctime() {
     assert_eq!(&v[2..], b"991231235959Z");
     let (_, time2) = UtcTime::from_der(&v).expect("decoding serialized object failed");
     assert!(time.eq(&time2));
+}
+
+#[test]
+fn to_der_utf8string() {
+    let s = Utf8String::from("abcdef");
+    let v = s.to_der_vec().expect("serialization failed");
+    assert_eq!(&v[..2], &hex!("0c 06"));
+    assert_eq!(&v[2..], b"abcdef");
+    let (_, s2) = Utf8String::from_der(&v).expect("decoding serialized object failed");
+    assert!(s.eq(&s2));
 }
