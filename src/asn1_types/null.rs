@@ -2,7 +2,7 @@ use crate::{Any, Error, Result, Tag, Tagged};
 use crate::{CheckDerConstraints, ToDer};
 use std::convert::TryFrom;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Null {}
 
 impl Null {

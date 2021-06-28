@@ -33,6 +33,20 @@ impl<'a> Sequence<'a> {
         op(self.content)
     }
 
+    pub fn parse_and_then<U, F>(bytes: &'a [u8], op: F) -> ParseResult<'a, U>
+    where
+        F: FnOnce(&'a [u8]) -> ParseResult<U>,
+    {
+        let (rem, seq) = Sequence::from_der(bytes)?;
+        let data = match seq.content {
+            Cow::Borrowed(b) => b,
+            // Since 'any' is built from 'bytes', it is borrowed by construction
+            Cow::Owned(_) => unreachable!(),
+        };
+        let (_, res) = op(data)?;
+        Ok((rem, res))
+    }
+
     pub fn parse<F, T>(&'a self, mut f: F) -> ParseResult<'a, T>
     where
         F: FnMut(&'a [u8]) -> ParseResult<'a, T>,
