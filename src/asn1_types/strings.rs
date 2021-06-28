@@ -101,14 +101,15 @@ macro_rules! asn1_string {
 
         impl $crate::ToDer for $name<'_> {
             fn to_der_len(&self) -> Result<usize> {
-                use $crate::traits::Tagged;
-                let header = $crate::Header::new(
-                    $crate::Class::Universal,
-                    0,
-                    Self::TAG,
-                    $crate::Length::Definite(self.data.as_bytes().len()),
-                );
-                Ok(header.to_der_len()? + self.data.as_bytes().len())
+                let sz = self.data.as_bytes().len();
+                if sz < 127 {
+                    // 1 (class+tag) + 1 (length) + len
+                    Ok(2 + sz)
+                } else {
+                    // 1 (class+tag) + n (length) + len
+                    let n = $crate::Length::Definite(sz).to_der_len()?;
+                    Ok(1 + n + sz)
+                }
             }
 
             fn write_der_header(

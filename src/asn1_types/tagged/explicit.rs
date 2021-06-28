@@ -77,13 +77,15 @@ where
     T: ToDer,
 {
     fn to_der_len(&self) -> Result<usize> {
-        let header = Header::new(
-            self.class(),
-            1,
-            self.tag(),
-            Length::Definite(self.inner.to_der_len()?),
-        );
-        Ok(header.to_der_len()? + self.inner.to_der_len()?)
+        let sz = self.inner.to_der_len()?;
+        if sz < 127 {
+            // 1 (class+tag) + 1 (length) + len
+            Ok(2 + sz)
+        } else {
+            // 1 (class+tag) + n (length) + len
+            let n = Length::Definite(sz).to_der_len()?;
+            Ok(1 + n + sz)
+        }
     }
 
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {

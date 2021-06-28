@@ -21,6 +21,18 @@ impl<'a> Sequence<'a> {
         Sequence { content }
     }
 
+    #[inline]
+    pub fn into_content(self) -> Cow<'a, [u8]> {
+        self.content
+    }
+
+    pub fn and_then<U, F>(self, op: F) -> ParseResult<'a, U>
+    where
+        F: FnOnce(Cow<'a, [u8]>) -> ParseResult<U>,
+    {
+        op(self.content)
+    }
+
     pub fn parse<F, T>(&'a self, mut f: F) -> ParseResult<'a, T>
     where
         F: FnMut(&'a [u8]) -> ParseResult<'a, T>,
@@ -152,13 +164,15 @@ impl<'a> Tagged for Sequence<'a> {
 
 impl ToDer for Sequence<'_> {
     fn to_der_len(&self) -> Result<usize> {
-        let header = Header::new(
-            Class::Universal,
-            1,
-            Self::TAG,
-            Length::Definite(self.content.len()),
-        );
-        Ok(header.to_der_len()? + self.content.len())
+        let sz = self.content.len();
+        if sz < 127 {
+            // 1 (class+tag) + 1 (length) + len
+            Ok(2 + sz)
+        } else {
+            // 1 (class+tag) + n (length) + len
+            let n = Length::Definite(sz).to_der_len()?;
+            Ok(1 + n + sz)
+        }
     }
 
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {

@@ -3,7 +3,7 @@ use crate::{Any, Class, Error, Header, Length, Result, SerializeResult, Tag, Tag
 use std::borrow::Cow;
 use std::convert::TryFrom;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct OctetString<'a> {
     data: Cow<'a, [u8]>,
 }
@@ -19,6 +19,14 @@ impl<'a> OctetString<'a> {
 impl<'a> AsRef<[u8]> for OctetString<'a> {
     fn as_ref(&self) -> &[u8] {
         &self.data
+    }
+}
+
+impl<'a> From<&'a [u8]> for OctetString<'a> {
+    fn from(b: &'a [u8]) -> Self {
+        OctetString {
+            data: Cow::Borrowed(b),
+        }
     }
 }
 
@@ -47,13 +55,15 @@ impl<'a> Tagged for OctetString<'a> {
 
 impl ToDer for OctetString<'_> {
     fn to_der_len(&self) -> Result<usize> {
-        let header = Header::new(
-            Class::Universal,
-            0,
-            Self::TAG,
-            Length::Definite(self.data.len()),
-        );
-        Ok(header.to_der_len()? + self.data.len())
+        let sz = self.data.len();
+        if sz < 127 {
+            // 1 (class+tag) + 1 (length) + len
+            Ok(2 + sz)
+        } else {
+            // 1 (class+tag) + n (length) + len
+            let n = Length::Definite(sz).to_der_len()?;
+            Ok(1 + n + sz)
+        }
     }
 
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {

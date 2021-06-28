@@ -3,7 +3,7 @@ use nom::bitvec::{order::Msb0, slice::BitSlice};
 use std::{borrow::Cow, convert::TryFrom};
 
 /// BITSTRING object
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BitString<'a> {
     pub unused_bits: u8,
     pub data: Cow<'a, [u8]>,
@@ -94,13 +94,15 @@ impl<'a> Tagged for BitString<'a> {
 
 impl ToDer for BitString<'_> {
     fn to_der_len(&self) -> Result<usize> {
-        let header = Header::new(
-            Class::Universal,
-            0,
-            Self::TAG,
-            Length::Definite(1 + self.data.len()),
-        );
-        Ok(header.to_der_len()? + 1 + self.data.len())
+        let sz = self.data.len();
+        if sz < 127 {
+            // 1 (class+tag) + 1 (length) +  1 (unused bits) + len
+            Ok(3 + sz)
+        } else {
+            // 1 (class+tag) + n (length) + 1 (unused bits) + len
+            let n = Length::Definite(sz + 1).to_der_len()?;
+            Ok(2 + n + sz)
+        }
     }
 
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
