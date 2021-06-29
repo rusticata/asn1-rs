@@ -27,7 +27,10 @@ pub use visiblestring::*;
 #[doc(hidden)]
 #[macro_export]
 macro_rules! asn1_string {
-    ($name:ident) => {
+    (IMPL $name:ident, $sname:expr) => {
+        #[doc="ASN.1 restricted character string type (`"]
+        #[doc = $sname]
+        #[doc = "`)"]
         #[derive(Debug, PartialEq)]
         pub struct $name<'a> {
             pub(crate) data: std::borrow::Cow<'a, str>,
@@ -133,5 +136,8 @@ macro_rules! asn1_string {
                 writer.write(self.data.as_bytes()).map_err(Into::into)
             }
         }
+    };
+    ($name:ident) => {
+        asn1_string!(IMPL $name, stringify!($name));
     };
 }

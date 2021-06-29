@@ -2,7 +2,7 @@ use crate::{Any, CheckDerConstraints, Class, Error, Header, Length, Result, Tag,
 use nom::bitvec::{order::Msb0, slice::BitSlice};
 use std::{borrow::Cow, convert::TryFrom};
 
-/// BITSTRING object
+/// ASN.1 `BITSTRING` type
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct BitString<'a> {
     pub unused_bits: u8,

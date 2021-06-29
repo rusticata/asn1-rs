@@ -94,8 +94,10 @@ impl From<nom::Err<Error>> for Error {
     }
 }
 
+/// Holds the result of BER/DER serialization functions
 pub type ParseResult<'a, T> = IResult<&'a [u8], T, Error>;
 
+/// A specialized `Result` type for all operations from this crate.
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Error)]
@@ -110,4 +112,5 @@ pub enum SerializeError {
     IOError(#[from] io::Error),
 }
 
+/// Holds the result of BER/DER encoding functions
 pub type SerializeResult<T> = std::result::Result<T, SerializeError>;

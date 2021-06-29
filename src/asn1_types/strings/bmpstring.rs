@@ -4,7 +4,7 @@
 use crate::{Any, CheckDerConstraints, Class, Error, Header, Length, Result, Tag, Tagged, ToDer};
 use std::borrow::Cow;
 
-/// `BMPSTRING` ASN.1 string
+/// ASN.1 `BMPSTRING` type
 ///
 /// Note: parsing a `BmpString` allocates memory since the UTF-16 to UTF-8 conversion requires a memory allocation.
 /// (see `String::from_utf16` method).

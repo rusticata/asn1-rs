@@ -204,6 +204,7 @@ impl_int!(u32 => i32);
 impl_int!(u64 => i64);
 impl_int!(u128 => i128);
 
+/// ASN.1 `INTEGER` type
 #[derive(Debug, Eq, PartialEq)]
 pub struct Integer<'a> {
     pub(crate) data: Cow<'a, [u8]>,

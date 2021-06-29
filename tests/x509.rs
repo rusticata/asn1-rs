@@ -66,7 +66,7 @@ impl<'a> FromDer<'a> for AttributeTypeAndValue<'a> {
     fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
         let (rem, seq) = Sequence::from_der(bytes)?;
         let (_, (oid, value)) =
-            seq.parse_ref(|i| pair(Oid::from_der, AttributeValue::from_der)(i))?;
+            seq.parse_into(|i| pair(Oid::from_der, AttributeValue::from_der)(i))?;
         let attr = AttributeTypeAndValue { oid, value };
         Ok((rem, attr))
     }

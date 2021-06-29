@@ -19,9 +19,9 @@ pub enum ParseError {
 }
 
 /// Object ID (OID) representation which can be relative or non-relative.
-/// An example for an oid in string representation is "1.2.840.113549.1.1.5".
+/// An example for an OID in string representation is `"1.2.840.113549.1.1.5"`.
 ///
-/// For non-relative oids restrictions apply to the first two components.
+/// For non-relative OIDs restrictions apply to the first two components.
 ///
 /// This library contains a procedural macro `oid` which can be used to
 /// create oids. For example `oid!(1.2.44.233)` or `oid!(rel 44.233)`

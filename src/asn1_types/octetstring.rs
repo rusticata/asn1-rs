@@ -3,6 +3,7 @@ use crate::{Any, Class, Error, Header, Length, Result, SerializeResult, Tag, Tag
 use std::borrow::Cow;
 use std::convert::TryFrom;
 
+/// ASN.1 `OCTETSTRING` type
 #[derive(Debug, PartialEq, Eq)]
 pub struct OctetString<'a> {
     data: Cow<'a, [u8]>,
