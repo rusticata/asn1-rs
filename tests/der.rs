@@ -186,7 +186,7 @@ fn from_der_oid() {
 #[test]
 fn from_der_optional() {
     let input = &hex!("30 0a 0a 03 00 00 01 02 03 01 00 01");
-    let (rem, result) = Sequence::parse_and_then(input, |input| {
+    let (rem, result) = Sequence::from_der_and_then(input, |input| {
         let (i, obj0) = <Option<Enumerated>>::from_der(&input)?;
         let (i, obj1) = u32::from_der(i)?;
         Ok((i, (obj0, obj1)))
