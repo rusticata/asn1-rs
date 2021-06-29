@@ -23,7 +23,7 @@ impl<'a> TryFrom<Any<'a>> for Null {
     }
 }
 
-impl<'a> CheckDerConstraints for Null {
+impl CheckDerConstraints for Null {
     fn check_constraints(_any: &Any) -> Result<()> {
         Ok(())
     }

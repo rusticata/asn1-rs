@@ -2,6 +2,10 @@ use crate::ber::*;
 use crate::*;
 use std::{borrow::Cow, convert::TryInto};
 
+/// The `Any` object is not strictly an ASN.1 type, but holds a generic description of any object
+/// that could be encoded.
+///
+/// It contains a header, and either a reference to or owned data for the object content.
 #[derive(Debug)]
 pub struct Any<'a> {
     pub header: Header<'a>,

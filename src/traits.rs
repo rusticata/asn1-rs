@@ -47,8 +47,41 @@ where
 ///
 /// Library authors should usually not directly implement this trait, but should prefer implementing the
 /// `TryFrom<Any>` trait,
-/// which offers greater flexibility and provides an equivalent `BerParser` implementation for free.
+/// which offers greater flexibility and provides an equivalent `FromBer` implementation for free.
+///
+/// # Examples
+///
+/// ```
+/// use asn1_rs::{Any, Result, Tag};
+/// use std::convert::TryFrom;
+///
+/// // The type to be decoded
+/// #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// pub struct MyType(pub u32);
+///
+/// impl<'a> TryFrom<Any<'a>> for MyType {
+///     type Error = asn1_rs::Error;
+///
+///     fn try_from(any: Any<'a>) -> Result<MyType> {
+///         any.tag().assert_eq(Tag::Integer)?;
+///         // for this fictive example, the type contains the number of characters
+///         let n = any.data.len() as u32;
+///         Ok(MyType(n))
+///     }
+/// }
+///
+/// // The above code provides a `FromBer` implementation for free.
+///
+/// // Example of parsing code:
+/// use asn1_rs::FromBer;
+///
+/// let input = &[2, 1, 2];
+/// // Objects can be parsed using `from_ber`, which returns the remaining bytes
+/// // and the parsed object:
+/// let (rem, my_type) = MyType::from_ber(input).expect("parsing failed");
+/// ```
 pub trait FromBer<'a>: Sized {
+    /// Attempt to parse input bytes into a BER object
     fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self>;
 }
 
@@ -67,9 +100,53 @@ where
 ///
 /// Library authors should usually not directly implement this trait, but should prefer implementing the
 /// `TryFrom<Any>` + `CheckDerConstraint` traits,
-/// which offers greater flexibility and provides an equivalent `DerParser` implementation for free.
+/// which offers greater flexibility and provides an equivalent `FromDer` implementation for free
+/// (in fact, it provides both [`FromBer`] and `FromDer`).
+///
+/// Note: if you already implemented `TryFrom<Any>` to get the [`FromBer`] implementation, then you only
+/// have to add a `CheckDerConstraint` implementation.
+///
+/// # Examples
+///
+/// ```
+/// use asn1_rs::{Any, CheckDerConstraints, Result, Tag};
+/// use std::convert::TryFrom;
+///
+/// // The type to be decoded
+/// #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+/// pub struct MyType(pub u32);
+///
+/// impl<'a> TryFrom<Any<'a>> for MyType {
+///     type Error = asn1_rs::Error;
+///
+///     fn try_from(any: Any<'a>) -> Result<MyType> {
+///         any.tag().assert_eq(Tag::Integer)?;
+///         // for this fictive example, the type contains the number of characters
+///         let n = any.data.len() as u32;
+///         Ok(MyType(n))
+///     }
+/// }
+///
+/// impl CheckDerConstraints for MyType {
+///     fn check_constraints(any: &Any) -> Result<()> {
+///         any.header.assert_primitive()?;
+///         Ok(())
+///     }
+/// }
+///
+/// // The above code provides a `FromDer` implementation for free.
+///
+/// // Example of parsing code:
+/// use asn1_rs::FromDer;
+///
+/// let input = &[2, 1, 2];
+/// // Objects can be parsed using `from_der`, which returns the remaining bytes
+/// // and the parsed object:
+/// let (rem, my_type) = MyType::from_der(input).expect("parsing failed");
+/// ```
 
 pub trait FromDer<'a>: Sized {
+    /// Attempt to parse input bytes into a DER object (enforcing constraints)
     fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self>;
 }
 

@@ -19,7 +19,7 @@ pub use vec::*;
 ///
 /// The current object covers the former. For the latter, see the [`SequenceOf`] documentation.
 ///
-/// The `Sequence` object contains the (unparsed) encoded representation of its content. It provides
+/// The `Sequence` object contains the (*unparsed*) encoded representation of its content. It provides
 /// methods to parse and iterate contained objects, or convert the sequence to other types.
 ///
 /// # Building a Sequence
