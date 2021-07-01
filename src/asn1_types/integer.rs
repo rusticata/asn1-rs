@@ -205,34 +205,95 @@ impl_int!(u64 => i64);
 impl_int!(u128 => i128);
 
 /// ASN.1 `INTEGER` type
+///
+/// Generic representation for integer types.
+/// BER/DER integers can be of any size, so it is not possible to store them as simple integers (they
+/// are stored as raw bytes).
+///
+/// The internal representation can be obtained using `.as_ref()`.
+///
+/// # Note
+///
+/// Methods from/to BER and DER encodings are also implemented for primitive types
+/// (`u8`, `u16` to `u128`, and `i8` to `i128`).
+/// In most cases, it is easier to use these types directly.
+///
+/// # Examples
+///
+/// Creating an `Integer`
+///
+/// ```
+/// use asn1_rs::Integer;
+///
+/// // unsigned
+/// let i = Integer::from(4);
+/// assert_eq!(i.as_ref(), &[4]);
+/// // signed
+/// let j = Integer::from(-2);
+/// assert_eq!(j.as_ref(), &[0x0, 0xff, 0xff, 0xff, 0xfe]);
+/// ```
+///
+/// Converting an `Integer` to a primitive type (using the `TryInto` trait)
+///
+/// ```
+/// use asn1_rs::{Error, Integer};
+/// use std::convert::TryInto;
+///
+/// let i = Integer::new(&[0x12, 0x34, 0x56, 0x78]);
+/// // converts to an u32
+/// let n: u32 = i.try_into().unwrap();
+///
+/// // Same, but converting to an u16: will fail, value cannot fit into an u16
+/// let i = Integer::new(&[0x12, 0x34, 0x56, 0x78]);
+/// assert_eq!(i.try_into() as Result<u16, _>, Err(Error::IntegerTooLarge));
+/// ```
+///
+/// Encoding an `Integer` to DER
+///
+/// ```
+/// use asn1_rs::{Integer, ToDer};
+///
+/// let i = Integer::from(4);
+/// let v = i.to_der_vec().unwrap();
+/// assert_eq!(&v, &[2, 1, 4]);
+///
+/// // same, with primitive types
+/// let v = 4.to_der_vec().unwrap();
+/// assert_eq!(&v, &[2, 1, 4]);
+/// ```
 #[derive(Debug, Eq, PartialEq)]
 pub struct Integer<'a> {
     pub(crate) data: Cow<'a, [u8]>,
 }
 
 impl<'a> Integer<'a> {
+    /// Creates a new `Integer` containing the given value (borrowed).
     pub const fn new(s: &'a [u8]) -> Self {
         Integer {
             data: Cow::Borrowed(s),
         }
     }
 
+    /// Creates a borrowed `Any` for this object
     pub fn any(&'a self) -> Any<'a> {
         Any::from_tag_and_data(Self::TAG, &self.data)
     }
 
+    /// Returns a `BigInt` built from this `Integer` value.
     #[cfg(feature = "bigint")]
     #[cfg_attr(docsrs, doc(cfg(feature = "bigint")))]
     pub fn as_bigint(&self) -> BigInt {
         BigInt::from_bytes_be(Sign::Plus, &self.data)
     }
 
+    /// Returns a `BigUint` built from this `Integer` value.
     #[cfg(feature = "bigint")]
     #[cfg_attr(docsrs, doc(cfg(feature = "bigint")))]
     pub fn as_biguint(&self) -> BigUint {
         BigUint::from_bytes_be(&self.data)
     }
 
+    /// Build an `Integer` from a constant array of bytes representation of an integer.
     pub fn from_const_array<const N: usize>(b: [u8; N]) -> Self {
         let mut idx = 0;
         // skip leading 0s
@@ -265,7 +326,7 @@ impl<'a> Integer<'a> {
 }
 
 macro_rules! impl_from_to {
-    ($ty:ty, $from:ident, $to:ident) => {
+    ($ty:ty, $sty:expr, $from:ident, $to:ident) => {
         impl From<$ty> for Integer<'_> {
             fn from(i: $ty) -> Self {
                 Self::$from(i)
@@ -281,15 +342,25 @@ macro_rules! impl_from_to {
         }
 
         impl Integer<'_> {
+            #[doc = "Attempts to convert an `Integer` to a `"]
+            #[doc = $sty]
+            #[doc = "`."]
+            #[doc = ""]
+            #[doc = "This function returns an `IntegerTooLarge` error if the integer will not fit into the output type."]
             pub fn $to(&self) -> Result<$ty> {
                 self.any().try_into()
             }
         }
     };
-    (SIGNED $ty:ty, $from:ident, $to:ident) => {
-        impl_from_to!($ty, $from, $to);
+    (IMPL SIGNED $ty:ty, $sty:expr, $from:ident, $to:ident) => {
+        impl_from_to!($ty, $sty, $from, $to);
 
         impl Integer<'_> {
+            #[doc = "Converts a `"]
+            #[doc = $sty]
+            #[doc = "` to an `Integer`"]
+            #[doc = ""]
+            #[doc = "Note: this function allocates data."]
             pub fn $from(i: $ty) -> Self {
                 let b = i.to_be_bytes();
                 if i >= 0 {
@@ -300,14 +371,25 @@ macro_rules! impl_from_to {
             }
         }
     };
-    (UNSIGNED $ty:ty, $from:ident, $to:ident) => {
-        impl_from_to!($ty, $from, $to);
+    (IMPL UNSIGNED $ty:ty, $sty:expr, $from:ident, $to:ident) => {
+        impl_from_to!($ty, $sty, $from, $to);
 
         impl Integer<'_> {
+            #[doc = "Converts a `"]
+            #[doc = $sty]
+            #[doc = "` to an `Integer`"]
+            #[doc = ""]
+            #[doc = "Note: this function allocates data."]
             pub fn $from(i: $ty) -> Self {
                 Self::from_const_array(i.to_be_bytes())
             }
         }
+    };
+    (SIGNED $ty:ty, $from:ident, $to:ident) => {
+        impl_from_to!(IMPL SIGNED $ty, stringify!($ty), $from, $to);
+    };
+    (UNSIGNED $ty:ty, $from:ident, $to:ident) => {
+        impl_from_to!(IMPL UNSIGNED $ty, stringify!($ty), $from, $to);
     };
 }
 

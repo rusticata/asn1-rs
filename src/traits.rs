@@ -276,6 +276,7 @@ where
     }
 }
 
+/// Helper trait for creating tagged EXPLICIT values
 pub trait AsTaggedExplicit<'a>: Sized {
     fn explicit(self, class: Class, tag: u32) -> TaggedValue<'a, Explicit, Self> {
         TaggedValue::new_explicit(class, tag, self)
@@ -284,6 +285,7 @@ pub trait AsTaggedExplicit<'a>: Sized {
 
 impl<'a, T> AsTaggedExplicit<'a> for T where T: Sized + 'a {}
 
+/// Helper trait for creating tagged IMPLICIT values
 pub trait AsTaggedImplicit<'a>: Sized {
     fn implicit(self, class: Class, structured: u8, tag: u32) -> TaggedValue<'a, Implicit, Self> {
         TaggedValue::new_implicit(class, structured, tag, self)
