@@ -396,7 +396,7 @@ impl<'a> FromDer<'a> for Header<'a> {
                 match bytes_to_u64(llen) {
                     Ok(l) => {
                         // DER: should have been encoded in short form (< 127)
-                        der_constraint_fail_if!(i, l < 127);
+                        // XXX der_constraint_fail_if!(i, l < 127);
                         let l =
                             usize::try_from(l).or(Err(::nom::Err::Error(Error::InvalidLength)))?;
                         (i3, Length::Definite(l))
