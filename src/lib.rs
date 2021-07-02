@@ -4,7 +4,7 @@
 //! [![crates.io](https://img.shields.io/crates/v/asn1-rs.svg)](https://crates.io/crates/asn1-rs)
 //! [![Download numbers](https://img.shields.io/crates/d/asn1-rs.svg)](https://crates.io/crates/asn1-rs)
 //! [![Github CI](https://github.com/rusticata/asn1-rs/workflows/Continuous%20integration/badge.svg)](https://github.com/rusticata/asn1-rs/actions)
-//! [![Minimum rustc version](https://img.shields.io/badge/rustc-1.44.0+-lightgray.svg)](#rust-version-requirements)
+//! [![Minimum rustc version](https://img.shields.io/badge/rustc-1.53.0+-lightgray.svg)](#rust-version-requirements)
 //!
 //! # BER/DER Parsers/Encoders
 //!
