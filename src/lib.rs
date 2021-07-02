@@ -6,7 +6,7 @@
 //! [![Github CI](https://github.com/rusticata/asn1-rs/workflows/Continuous%20integration/badge.svg)](https://github.com/rusticata/asn1-rs/actions)
 //! [![Minimum rustc version](https://img.shields.io/badge/rustc-1.44.0+-lightgray.svg)](#rust-version-requirements)
 //!
-//! # BER/DER Parser/Encoder
+//! # BER/DER Parsers/Encoders
 //!
 //! A set of parsers/encoders for Basic Encoding Rules (BER [[X.690]]) and Distinguished Encoding Rules(DER
 //! [[X.690]]) formats, implemented with the [nom] parser combinator framework.
