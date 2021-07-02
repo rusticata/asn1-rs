@@ -81,12 +81,22 @@ pub enum Length {
     Indefinite,
 }
 
+/// BER/DER object header (identifier and length)
 #[derive(Clone, Debug)]
 pub struct Header<'a> {
+    /// Object class: universal, application, context-specific, or private
     pub class: Class,
+    /// Constructed attribute: 1 if constructed, else 0
     pub structured: u8,
+    /// Tag number
     pub tag: Tag,
+    /// Object length: value if definite, or indefinite
     pub length: Length,
+
+    /// Optionally, the raw encoding of the tag
+    ///
+    /// This is useful in some cases, where different representations of the same
+    /// BER tags have different meanings (BER only)
     pub(crate) raw_tag: Option<Cow<'a, [u8]>>,
 }
 
@@ -216,7 +226,7 @@ impl ops::AddAssign<usize> for Length {
 }
 
 impl<'a> Header<'a> {
-    /// Build a new BER header
+    /// Build a new BER/DER header from the provided values
     pub const fn new(class: Class, structured: u8, tag: Tag, length: Length) -> Self {
         Header {
             tag,
@@ -227,6 +237,7 @@ impl<'a> Header<'a> {
         }
     }
 
+    /// Build a new BER/DER header from the provided tag, with default values for other fields
     #[inline]
     pub const fn new_simple(tag: Tag) -> Self {
         let structured = match tag {
@@ -236,6 +247,7 @@ impl<'a> Header<'a> {
         Self::new(Class::Universal, structured, tag, Length::Definite(0))
     }
 
+    /// Set the length of this `Header`
     #[inline]
     pub fn with_lenth(self, length: Length) -> Self {
         Self { length, ..self }

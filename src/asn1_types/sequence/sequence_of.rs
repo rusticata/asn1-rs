@@ -3,6 +3,7 @@ use crate::{
 };
 use std::borrow::Cow;
 
+/// The `SEQUENCE OF` object is an ordered list of homogeneous types.
 #[derive(Debug)]
 pub struct SequenceOf<T> {
     pub(crate) items: Vec<T>,
@@ -25,6 +26,24 @@ impl<T> SequenceOf<T> {
 impl<'a, T> AsRef<[T]> for SequenceOf<T> {
     fn as_ref(&self) -> &[T] {
         &self.items
+    }
+}
+
+impl<'a, T> IntoIterator for &'a SequenceOf<T> {
+    type Item = &'a T;
+    type IntoIter = std::slice::Iter<'a, T>;
+
+    fn into_iter(self) -> std::slice::Iter<'a, T> {
+        self.items.iter()
+    }
+}
+
+impl<'a, T> IntoIterator for &'a mut SequenceOf<T> {
+    type Item = &'a mut T;
+    type IntoIter = std::slice::IterMut<'a, T>;
+
+    fn into_iter(self) -> std::slice::IterMut<'a, T> {
+        self.items.iter_mut()
     }
 }
 

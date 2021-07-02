@@ -13,7 +13,7 @@ pub use hashset::*;
 pub use iterator::*;
 pub use set_of::*;
 
-/// The `SET` object is an unordered list of heteregeneous objects.
+/// The `SET` object is an unordered list of heteregeneous types.
 ///
 /// Sets can usually be of 2 types:
 /// - a list of different objects (`SET`, usually parsed as a `struct`)

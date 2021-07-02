@@ -11,7 +11,7 @@ pub use iterator::*;
 pub use sequence_of::*;
 pub use vec::*;
 
-/// The `SEQUENCE` object is an ordered list of heteregeneous objects.
+/// The `SEQUENCE` object is an ordered list of heteregeneous types.
 ///
 /// Sequences can usually be of 2 types:
 /// - a list of different objects (`SEQUENCE`, usually parsed as a `struct`)

@@ -13,10 +13,12 @@ pub struct Any<'a> {
 }
 
 impl<'a> Any<'a> {
+    /// Create a new `Any` from BER/DER header and content
     pub const fn new(header: Header<'a>, data: Cow<'a, [u8]>) -> Self {
         Any { header, data }
     }
 
+    /// Create a new `Any` from a tag, and BER/DER content
     pub const fn from_tag_and_data(tag: Tag, data: &'a [u8]) -> Self {
         let structured = match tag {
             Tag::Sequence | Tag::Set => 1,
@@ -34,6 +36,7 @@ impl<'a> Any<'a> {
         }
     }
 
+    /// Return the `Tag` of this object
     #[inline]
     pub const fn tag(&self) -> Tag {
         self.header.tag

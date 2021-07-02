@@ -1,20 +1,29 @@
 use crate::{Any, CheckDerConstraints, Error, Length, Result, SerializeResult, Tag, Tagged, ToDer};
 use std::convert::TryFrom;
 
+/// ASN.1 `BOOLEAN` type
+///
+/// BER objects consider any non-zero value as `true`, and `0` as `false`.
+///
+/// DER objects must use value `0x0` (`false`) or `0xff` (`true`).
 #[derive(Debug, PartialEq)]
 pub struct Boolean {
     pub value: u8,
 }
 
 impl Boolean {
+    /// `BOOLEAN` object for value `false`
     pub const FALSE: Boolean = Boolean::new(0);
+    /// `BOOLEAN` object for value `true`
     pub const TRUE: Boolean = Boolean::new(0xff);
 
+    /// Create a new `Boolean` from the provided logical value.
     #[inline]
     pub const fn new(value: u8) -> Self {
         Boolean { value }
     }
 
+    /// Return the `bool` value from this object.
     #[inline]
     pub const fn bool(&self) -> bool {
         self.value != 0

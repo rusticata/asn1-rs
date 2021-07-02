@@ -5,6 +5,25 @@ use nom::IResult;
 use std::borrow::Cow;
 use std::marker::PhantomData;
 
+/// A builder for parsing tagged values (`IMPLICIT` or `EXPLICIT`)
+///
+/// # Examples
+///
+/// ```
+/// use asn1_rs::{Class, Tag, TagParser};
+///
+/// let parser = TagParser::explicit()
+///     .with_class(Class::ContextSpecific)
+///     .with_tag(Tag(0))
+///     .der_parser::<u32>();
+///
+/// let input = &[0xa0, 0x03, 0x02, 0x01, 0x02];
+/// let (rem, tagged) = parser(input).expect("parsing failed");
+///
+/// assert!(rem.is_empty());
+/// assert_eq!(tagged.tag(), Tag(0));
+/// assert_eq!(tagged.as_ref(), &2);
+/// ```
 #[derive(Clone, Copy, Debug)]
 pub struct TagParser<TagKind> {
     class: Class,
@@ -13,6 +32,15 @@ pub struct TagParser<TagKind> {
 }
 
 impl<TagKind> TagParser<TagKind> {
+    /// Create a default `TagParser` builder
+    ///
+    /// `TagKind` must be specified as either [`Explicit`] or [`Implicit`]
+    ///
+    /// ```
+    /// use asn1_rs::{Explicit, TagParser};
+    ///
+    /// let builder = TagParser::<Explicit>::new();
+    /// ```
     pub const fn new() -> Self {
         TagParser {
             class: Class::Universal,
@@ -21,28 +49,35 @@ impl<TagKind> TagParser<TagKind> {
         }
     }
 
+    /// Set the expected `Class` for the builder
     pub const fn with_class(self, class: Class) -> Self {
         Self { class, ..self }
     }
 
+    /// Set the expected `Tag` for the builder
     pub const fn with_tag(self, tag: Tag) -> Self {
         Self { tag, ..self }
     }
 }
 
 impl TagParser<Explicit> {
+    /// Create a `TagParser` builder for `EXPLICIT` tagged values
     pub const fn explicit() -> Self {
         TagParser::new()
     }
 }
 
 impl TagParser<Implicit> {
+    /// Create a `TagParser` builder for `IMPLICIT` tagged values
     pub const fn implicit() -> Self {
         TagParser::new()
     }
 }
 
 impl<TagKind> TagParser<TagKind> {
+    /// Create the BER parser from the builder parameters
+    ///
+    /// This method will consume the builder and return a parser (to be used as a function).
     pub fn ber_parser<'a, T>(
         self,
     ) -> impl Fn(&'a [u8]) -> ParseResult<'a, TaggedValue<'a, TagKind, T>>
@@ -54,6 +89,9 @@ impl<TagKind> TagParser<TagKind> {
 }
 
 impl<TagKind> TagParser<TagKind> {
+    /// Create the DER parser from the builder parameters
+    ///
+    /// This method will consume the builder and return a parser (to be used as a function).
     pub fn der_parser<'a, T>(
         self,
     ) -> impl Fn(&'a [u8]) -> ParseResult<'a, TaggedValue<'a, TagKind, T>>

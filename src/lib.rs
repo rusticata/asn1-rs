@@ -163,14 +163,12 @@ attr(deny(warnings/*, rust_2018_idioms*/), allow(dead_code, unused_variables))
 
 mod asn1_types;
 mod ber;
-mod const_int;
 mod datetime;
 mod error;
 mod header;
 mod traits;
 
 pub use asn1_types::*;
-pub use const_int::*;
 pub use datetime::*;
 pub use error::*;
 pub use header::*;

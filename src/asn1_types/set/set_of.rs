@@ -29,6 +29,24 @@ impl<'a, T> AsRef<[T]> for SetOf<T> {
     }
 }
 
+impl<'a, T> IntoIterator for &'a SetOf<T> {
+    type Item = &'a T;
+    type IntoIter = std::slice::Iter<'a, T>;
+
+    fn into_iter(self) -> std::slice::Iter<'a, T> {
+        self.items.iter()
+    }
+}
+
+impl<'a, T> IntoIterator for &'a mut SetOf<T> {
+    type Item = &'a mut T;
+    type IntoIter = std::slice::IterMut<'a, T>;
+
+    fn into_iter(self) -> std::slice::IterMut<'a, T> {
+        self.items.iter_mut()
+    }
+}
+
 impl<'a, T> FromBer<'a> for SetOf<T>
 where
     T: FromBer<'a>,

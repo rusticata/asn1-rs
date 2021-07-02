@@ -2,6 +2,7 @@ use crate::{Any, Error, Result, Tag, Tagged};
 use crate::{CheckDerConstraints, ToDer};
 use std::convert::TryFrom;
 
+/// ASN.1 `NULL` type
 #[derive(Debug, PartialEq, Eq)]
 pub struct Null {}
 

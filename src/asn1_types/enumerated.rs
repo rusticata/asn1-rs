@@ -5,6 +5,11 @@ use crate::{
 };
 use std::convert::TryFrom;
 
+/// ASN.1 `ENUMERATED` type
+///
+/// # Limitations
+///
+/// Supported values are limited to 0 .. 2^32
 #[derive(Debug, PartialEq)]
 pub struct Enumerated(pub u32);
 
