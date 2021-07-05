@@ -113,6 +113,81 @@ fn from_ber_octetstring() {
 }
 
 #[test]
+fn from_ber_real_binary() {
+    const EPSILON: f32 = 0.00001;
+    // binary, base = 2
+    let input = &hex!("09 03 80 ff 01 ff ff");
+    let (rem, result) = Real::from_ber(input).expect("parsing failed");
+    assert_eq!(result, Real::binary(1, 2, -1));
+    assert!((result.f32() - 0.5).abs() < EPSILON);
+    assert_eq!(rem, &[0xff, 0xff]);
+    // binary, base = 2 and scale factor
+    let input = &hex!("09 03 94 ff 0d ff ff");
+    let (rem, result) = Real::from_ber(input).expect("parsing failed");
+    assert_eq!(result, Real::binary(26, 2, -3));
+    assert!((result.f32() - 3.25).abs() < EPSILON);
+    assert_eq!(rem, &[0xff, 0xff]);
+    // binary, base = 16
+    let input = &hex!("09 03 a0 fe 01 ff ff");
+    let (rem, result) = Real::from_ber(input).expect("parsing failed");
+    assert_eq!(result, Real::binary(1, 2, -8));
+    assert!((result.f32() - 0.00390625).abs() < EPSILON);
+    assert_eq!(rem, &[0xff, 0xff]);
+    // binary, exponent = 0
+    let input = &hex!("09 03 80 00 01 ff ff");
+    let (rem, result) = Real::from_ber(input).expect("parsing failed");
+    assert_eq!(result, Real::binary(1, 2, 0));
+    assert!((result.f32() - 1.0).abs() < EPSILON);
+    assert_eq!(rem, &[0xff, 0xff]);
+    // 2 octets for exponent and negative exponent
+    let input = &hex!("09 04 a1 ff 01 03 ff ff");
+    let (rem, result) = Real::from_ber(input).expect("parsing failed");
+    assert_eq!(result, Real::binary(3, 2, -1020));
+    let epsilon = 1e-311_f64;
+    assert!((result.f64() - 2.67e-307).abs() < epsilon);
+    assert_eq!(rem, &[0xff, 0xff]);
+}
+
+#[test]
+fn from_ber_real_special() {
+    // 0
+    let input = &hex!("09 00 ff ff");
+    let (rem, result) = Real::from_ber(input).expect("parsing failed");
+    assert_eq!(result, Real::from(0.0));
+    assert_eq!(rem, &[0xff, 0xff]);
+    // infinity
+    let input = &hex!("09 01 40 ff ff");
+    let (rem, result) = Real::from_ber(input).expect("parsing failed");
+    assert_eq!(result, Real::INFINITY);
+    assert_eq!(rem, &[0xff, 0xff]);
+    // negative infinity
+    let input = &hex!("09 01 41 ff ff");
+    let (rem, result) = Real::from_ber(input).expect("parsing failed");
+    assert_eq!(result, Real::NEG_INFINITY);
+    assert_eq!(rem, &[0xff, 0xff]);
+}
+
+#[test]
+#[allow(clippy::approx_constant)]
+fn from_ber_real_string() {
+    // text representation, NR3
+    let input = &hex!("09 07 03 33 31 34 45 2D 32 ff ff");
+    let (rem, result) = Real::from_ber(input).expect("parsing failed");
+    assert_eq!(result, Real::from(3.14));
+    assert_eq!(rem, &[0xff, 0xff]);
+}
+
+#[test]
+#[allow(clippy::approx_constant)]
+fn from_ber_real_string_primitive() {
+    // text representation, NR3
+    let input = &hex!("09 07 03 33 31 34 45 2D 32 ff ff");
+    let (rem, result) = f32::from_ber(input).expect("parsing failed");
+    assert!((result - 3.14).abs() < 0.01);
+    assert_eq!(rem, &[0xff, 0xff]);
+}
+
+#[test]
 fn from_ber_sequence() {
     let input = &hex!("30 05 02 03 01 00 01");
     let (rem, result) = Sequence::from_ber(input).expect("parsing failed");
