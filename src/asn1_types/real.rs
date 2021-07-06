@@ -376,6 +376,7 @@ impl ToDer for Real {
                     0x100..=0xffff => 2,
                     0x1_0000..=0xff_ffff => 3,
                     // e is an `i32` so it can't be longer than 4 bytes
+                    // use 4, so `first` is ORed with 3
                     _ => 4,
                 };
                 first |= (len_e - 1) & 0x3;

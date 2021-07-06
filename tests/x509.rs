@@ -133,5 +133,6 @@ impl<'a> TryFrom<Any<'a>> for DirectoryString {
 fn x509_decode_dn() {
     let (rem, dn) = Name::from_der(DN).expect("parsing failed");
     assert!(rem.is_empty());
-    dbg!(&dn);
+    // dbg!(&dn);
+    assert_eq!(dn.rdn_sequence.len(), 3);
 }
