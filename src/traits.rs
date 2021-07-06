@@ -305,8 +305,13 @@ impl<'a, T> AsTaggedExplicit<'a> for T where T: Sized + 'a {}
 /// let tagged = 4u32.implicit(Class::ContextSpecific, false, 1);
 /// ```
 pub trait AsTaggedImplicit<'a>: Sized {
-    fn implicit(self, class: Class, structured: bool, tag: u32) -> TaggedValue<'a, Implicit, Self> {
-        TaggedValue::new_implicit(class, structured, tag, self)
+    fn implicit(
+        self,
+        class: Class,
+        constructed: bool,
+        tag: u32,
+    ) -> TaggedValue<'a, Implicit, Self> {
+        TaggedValue::new_implicit(class, constructed, tag, self)
     }
 }
 

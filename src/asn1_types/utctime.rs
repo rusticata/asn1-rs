@@ -180,7 +180,7 @@ impl ToDer for UtcTime {
         // thus, length will always be on 1 byte (short length) and
         // class+structure+tag also on 1
         //
-        // total: 15 = 1 (class+structured+tag) + 1 (length) + 13
+        // total: 15 = 1 (class+constructed+tag) + 1 (length) + 13
         Ok(15)
     }
 

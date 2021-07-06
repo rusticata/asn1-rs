@@ -8,9 +8,9 @@ use std::convert::TryFrom;
 use std::marker::PhantomData;
 
 impl<'a, T> TaggedValue<'a, Implicit, T> {
-    pub const fn new_implicit(class: Class, structured: bool, tag: u32, inner: T) -> Self {
+    pub const fn new_implicit(class: Class, constructed: bool, tag: u32, inner: T) -> Self {
         Self {
-            header: Header::new(class, structured, Tag(tag), Length::Definite(0)),
+            header: Header::new(class, constructed, Tag(tag), Length::Definite(0)),
             inner,
             tag_kind: PhantomData,
         }

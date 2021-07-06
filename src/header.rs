@@ -85,13 +85,13 @@ pub enum Length {
 #[derive(Clone, Debug)]
 pub struct Header<'a> {
     /// Object class: universal, application, context-specific, or private
-    pub class: Class,
+    pub(crate) class: Class,
     /// Constructed attribute: true if constructed, else false
-    pub structured: bool,
+    pub(crate) constructed: bool,
     /// Tag number
-    pub tag: Tag,
+    pub(crate) tag: Tag,
     /// Object length: value if definite, or indefinite
-    pub length: Length,
+    pub(crate) length: Length,
 
     /// Optionally, the raw encoding of the tag
     ///
@@ -227,10 +227,10 @@ impl ops::AddAssign<usize> for Length {
 
 impl<'a> Header<'a> {
     /// Build a new BER/DER header from the provided values
-    pub const fn new(class: Class, structured: bool, tag: Tag, length: Length) -> Self {
+    pub const fn new(class: Class, constructed: bool, tag: Tag, length: Length) -> Self {
         Header {
             tag,
-            structured,
+            constructed,
             class,
             length,
             raw_tag: None,
@@ -240,8 +240,29 @@ impl<'a> Header<'a> {
     /// Build a new BER/DER header from the provided tag, with default values for other fields
     #[inline]
     pub const fn new_simple(tag: Tag) -> Self {
-        let structured = matches!(tag, Tag::Sequence | Tag::Set);
-        Self::new(Class::Universal, structured, tag, Length::Definite(0))
+        let constructed = matches!(tag, Tag::Sequence | Tag::Set);
+        Self::new(Class::Universal, constructed, tag, Length::Definite(0))
+    }
+
+    /// Set the class of this `Header`
+    #[inline]
+    pub fn with_class(self, class: Class) -> Self {
+        Self { class, ..self }
+    }
+
+    /// Set the constructed flags of this `Header`
+    #[inline]
+    pub fn with_constructed(self, constructed: bool) -> Self {
+        Self {
+            constructed,
+            ..self
+        }
+    }
+
+    /// Set the tag of this `Header`
+    #[inline]
+    pub fn with_tag(self, tag: Tag) -> Self {
+        Self { tag, ..self }
     }
 
     /// Set the length of this `Header`
@@ -256,16 +277,40 @@ impl<'a> Header<'a> {
         Header { raw_tag, ..self }
     }
 
+    /// Return the class of this header.
+    #[inline]
+    pub const fn class(&self) -> Class {
+        self.class
+    }
+
+    /// Return true if this header has the 'constructed' flag.
+    #[inline]
+    pub const fn constructed(&self) -> bool {
+        self.constructed
+    }
+
+    /// Return the tag of this header.
+    #[inline]
+    pub const fn tag(&self) -> Tag {
+        self.tag
+    }
+
+    /// Return the length of this header.
+    #[inline]
+    pub const fn length(&self) -> Length {
+        self.length
+    }
+
     /// Test if object is primitive
     #[inline]
     pub const fn is_primitive(&self) -> bool {
-        !self.structured
+        !self.constructed
     }
 
     /// Test if object is constructed
     #[inline]
     pub const fn is_constructed(&self) -> bool {
-        self.structured
+        self.constructed
     }
 
     /// Return error if class is not the expected class
@@ -313,7 +358,7 @@ impl<'a> ToStatic for Header<'a> {
             self.raw_tag.as_ref().map(|b| Cow::Owned(b.to_vec()));
         Header {
             tag: self.tag,
-            structured: self.structured,
+            constructed: self.constructed,
             class: self.class,
             length: self.length,
             raw_tag,
@@ -360,8 +405,8 @@ impl<'a> FromBer<'a> for Header<'a> {
                 }
             }
         };
-        let structured = el.1 != 0;
-        let hdr = Header::new(class, structured, Tag(el.2), len).with_raw_tag(Some(el.3.into()));
+        let constructed = el.1 != 0;
+        let hdr = Header::new(class, constructed, Tag(el.2), len).with_raw_tag(Some(el.3.into()));
         Ok((i3, hdr))
     }
 }
@@ -405,8 +450,8 @@ impl<'a> FromDer<'a> for Header<'a> {
                 }
             }
         };
-        let structured = el.1 != 0;
-        let hdr = Header::new(class, structured, Tag(el.2), len).with_raw_tag(Some(el.3.into()));
+        let constructed = el.1 != 0;
+        let hdr = Header::new(class, constructed, Tag(el.2), len).with_raw_tag(Some(el.3.into()));
         Ok((i3, hdr))
     }
 }
@@ -438,9 +483,9 @@ impl ToDer for (Class, bool, Tag) {
     }
 
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let (class, structured, tag) = self;
+        let (class, constructed, tag) = self;
         let b0 = (*class as u8) << 6;
-        let b0 = b0 | if *structured { 0b10_0000 } else { 0 };
+        let b0 = b0 | if *constructed { 0b10_0000 } else { 0 };
         if tag.0 > 30 {
             let b0 = b0 | 0b1_1111;
             let mut sz = writer.write(&[b0])?;
@@ -530,13 +575,13 @@ impl DynTagged for Header<'_> {
 
 impl ToDer for Header<'_> {
     fn to_der_len(&self) -> Result<usize> {
-        let tag_len = (self.class, self.structured, self.tag).to_der_len()?;
+        let tag_len = (self.class, self.constructed, self.tag).to_der_len()?;
         let len_len = self.length.to_der_len()?;
         Ok(tag_len + len_len)
     }
 
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let sz = (self.class, self.structured, self.tag).write_der_header(writer)?;
+        let sz = (self.class, self.constructed, self.tag).write_der_header(writer)?;
         let sz = sz + self.length.write_der_header(writer)?;
         Ok(sz)
     }
@@ -549,7 +594,7 @@ impl ToDer for Header<'_> {
         // use raw_tag if present
         let sz = match &self.raw_tag {
             Some(t) => writer.write(&t)?,
-            None => (self.class, self.structured, self.tag).write_der_header(writer)?,
+            None => (self.class, self.constructed, self.tag).write_der_header(writer)?,
         };
         let sz = sz + self.length.write_der_header(writer)?;
         Ok(sz)
@@ -561,7 +606,7 @@ impl<'a> PartialEq<Header<'a>> for Header<'a> {
     fn eq(&self, other: &Header) -> bool {
         self.class == other.class
             && self.tag == other.tag
-            && self.structured == other.structured
+            && self.constructed == other.constructed
             && {
                 if self.length.is_null() && other.length.is_null() {
                     self.length == other.length

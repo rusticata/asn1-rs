@@ -8,7 +8,7 @@ fn from_ber_any() {
     let (rem, result) = Any::from_ber(input).expect("parsing failed");
     // dbg!(&result);
     assert_eq!(rem, &[0xff, 0xff]);
-    assert_eq!(result.header.tag, Tag::Integer);
+    assert_eq!(result.header.tag(), Tag::Integer);
 }
 
 #[test]

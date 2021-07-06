@@ -20,11 +20,11 @@ impl<'a> Any<'a> {
 
     /// Create a new `Any` from a tag, and BER/DER content
     pub const fn from_tag_and_data(tag: Tag, data: &'a [u8]) -> Self {
-        let structured = matches!(tag, Tag::Sequence | Tag::Set);
+        let constructed = matches!(tag, Tag::Sequence | Tag::Set);
         Any {
             header: Header {
                 tag,
-                structured,
+                constructed,
                 class: crate::Class::Universal,
                 length: Length::Definite(data.len()),
                 raw_tag: None,
@@ -169,7 +169,7 @@ impl ToDer for Any<'_> {
         // create fake header to have correct length
         let header = Header::new(
             self.header.class,
-            self.header.structured,
+            self.header.constructed,
             self.header.tag,
             Length::Definite(self.data.len()),
         );

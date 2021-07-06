@@ -93,19 +93,19 @@ fn print_der_result_any(r: Result<Any>, depth: usize, ctx: &Context) {
 }
 
 fn print_der_any(any: Any, depth: usize, ctx: &Context) {
-    let class = match any.header.class {
+    let class = match any.header.class() {
         Class::Universal => "UNIVERSAL".to_string().white(),
         c => c.to_string().cyan(),
     };
     let hdr = format!(
         "[c:{} t:{}({}) l:{}]",
         class,
-        any.header.tag.0,
-        any.header.tag.to_string().white(),
-        str_of_length(any.header.length)
+        any.header.tag().0,
+        any.header.tag().to_string().white(),
+        str_of_length(any.header.length())
     );
     indent_println!(depth, "{}", hdr);
-    match any.header.class {
+    match any.header.class() {
         Class::Universal => (),
         Class::ContextSpecific | Class::Application => {
             // attempt to decode inner object (if EXPLICIT)
@@ -114,7 +114,7 @@ fn print_der_any(any: Any, depth: usize, ctx: &Context) {
                     indent_println!(
                         depth + 1,
                         "{} (rem.len={})",
-                        format!("EXPLICIT [{}]", any.header.tag.0).green(),
+                        format!("EXPLICIT [{}]", any.header.tag().0).green(),
                         // any.header.tag.0,
                         rem2.len()
                     );
@@ -135,13 +135,13 @@ fn print_der_any(any: Any, depth: usize, ctx: &Context) {
             indent_println!(
                 depth + 1,
                 "tagged: [{}] {}",
-                any.header.tag.0,
+                any.header.tag().0,
                 "*NOT SUPPORTED*".red()
             );
             return;
         }
     }
-    match any.header.tag {
+    match any.header.tag() {
         Tag::BitString => {
             let b = any.bitstring().unwrap();
             indent_println!(depth + 1, "BITSTRING");
@@ -226,7 +226,7 @@ fn print_der_any(any: Any, depth: usize, ctx: &Context) {
             let s = any.utf8string().unwrap();
             indent_println!(depth + 1, "UTF-8: {}", s.as_ref());
         }
-        _ => unimplemented!("unsupported tag {}", any.header.tag),
+        _ => unimplemented!("unsupported tag {}", any.header.tag()),
     }
 }
 
