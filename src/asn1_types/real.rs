@@ -85,8 +85,8 @@ impl Real {
             } => {
                 let mut m = mantissa;
                 let mut e = exponent;
-                while m.abs() > f64::EPSILON && m.rem_euclid(10.0).abs() > f64::EPSILON {
-                    m = m.div_euclid(10.0);
+                while m.abs() > f64::EPSILON && m.rem_euclid(10.0).abs() < f64::EPSILON {
+                    m /= 10.0;
                     e += 1;
                 }
                 Real::Binary {
