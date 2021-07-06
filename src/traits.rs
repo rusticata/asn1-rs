@@ -277,6 +277,15 @@ where
 }
 
 /// Helper trait for creating tagged EXPLICIT values
+///
+/// # Examples
+///
+/// ```
+/// use asn1_rs::{AsTaggedExplicit, Class};
+///
+/// // create a `[1] EXPLICIT INTEGER` value
+/// let tagged = 4u32.explicit(Class::ContextSpecific, 1);
+/// ```
 pub trait AsTaggedExplicit<'a>: Sized {
     fn explicit(self, class: Class, tag: u32) -> TaggedValue<'a, Explicit, Self> {
         TaggedValue::new_explicit(class, tag, self)
@@ -286,6 +295,15 @@ pub trait AsTaggedExplicit<'a>: Sized {
 impl<'a, T> AsTaggedExplicit<'a> for T where T: Sized + 'a {}
 
 /// Helper trait for creating tagged IMPLICIT values
+///
+/// # Examples
+///
+/// ```
+/// use asn1_rs::{AsTaggedImplicit, Class};
+///
+/// // create a `[1] IMPLICIT INTEGER` value, not structured
+/// let tagged = 4u32.implicit(Class::ContextSpecific, 0, 1);
+/// ```
 pub trait AsTaggedImplicit<'a>: Sized {
     fn implicit(self, class: Class, structured: u8, tag: u32) -> TaggedValue<'a, Implicit, Self> {
         TaggedValue::new_implicit(class, structured, tag, self)
