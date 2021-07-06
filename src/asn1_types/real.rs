@@ -1,4 +1,5 @@
-use crate::{Any, CheckDerConstraints, Error, Length, Result, Tag, Tagged};
+use crate::ToDer;
+use crate::{Any, CheckDerConstraints, Class, Error, Header, Length, Result, Tag, Tagged};
 use nom::Needed;
 use std::convert::TryFrom;
 
@@ -8,40 +9,105 @@ pub use self::f32::*;
 pub use self::f64::*;
 
 /// ASN.1 `REAL` type
+///
+/// # Limitations
+///
+/// When encoding binary values, only base 2 is supported
 #[derive(Debug, PartialEq)]
 pub enum Real {
+    /// Non-special values
     Binary {
-        mantissa: i64,
+        mantissa: f64,
         base: u32,
         exponent: i32,
+        enc_base: u8,
     },
-    Value(f64),
+    /// Infinity (∞).
+    Infinity,
+    /// Negative infinity (−∞).
+    NegInfinity,
+    /// Zero
+    Zero,
 }
 
 impl Real {
-    /// Infinity (∞).
-    pub const INFINITY: Real = Real::Value(f64::INFINITY);
-    /// Negative infinity (−∞).
-    pub const NEG_INFINITY: Real = Real::Value(f64::NEG_INFINITY);
-    /// Zero
-    pub const ZERO: Real = Real::Value(0.0);
+    /// Create a new `REAL` from the `f64` value.
+    pub fn new(f: f64) -> Self {
+        if f.is_infinite() {
+            if f.is_sign_positive() {
+                Self::Infinity
+            } else {
+                Self::NegInfinity
+            }
+        } else if f.abs() == 0.0 {
+            Self::Zero
+        } else {
+            let mut e = 0;
+            let mut f = f;
+            while f.fract() != 0.0 {
+                f *= 10.0_f64;
+                e -= 1;
+            }
+            Real::Binary {
+                mantissa: f,
+                base: 10,
+                exponent: e,
+                enc_base: 10,
+            }
+            .normalize_base10()
+        }
+    }
+
+    pub const fn with_enc_base(self, enc_base: u8) -> Self {
+        match self {
+            Real::Binary {
+                mantissa,
+                base,
+                exponent,
+                ..
+            } => Real::Binary {
+                mantissa,
+                base,
+                exponent,
+                enc_base,
+            },
+            e => e,
+        }
+    }
+
+    fn normalize_base10(self) -> Self {
+        match self {
+            Real::Binary {
+                mantissa,
+                base: 10,
+                exponent,
+                enc_base: _enc_base,
+            } => {
+                let mut m = mantissa;
+                let mut e = exponent;
+                while m.abs() > f64::EPSILON && m.rem_euclid(10.0).abs() > f64::EPSILON {
+                    m = m.div_euclid(10.0);
+                    e += 1;
+                }
+                Real::Binary {
+                    mantissa: m,
+                    base: 10,
+                    exponent: e,
+                    enc_base: _enc_base,
+                }
+            }
+            _ => self,
+        }
+    }
 
     /// Create a new binary `REAL`
     #[inline]
-    pub const fn binary(mantissa: i64, base: u32, exponent: i32) -> Self {
+    pub const fn binary(mantissa: f64, base: u32, exponent: i32) -> Self {
         Self::Binary {
             mantissa,
             base,
             exponent,
-        }
-    }
-
-    /// Returns `true` if this value is `NaN`.
-    #[inline]
-    pub fn is_nan(&self) -> bool {
-        match self {
-            Real::Value(f) => f.is_nan(),
-            _ => false,
+            enc_base: 2,
         }
     }
 
@@ -49,34 +115,33 @@ impl Real {
     /// `false` otherwise.
     #[inline]
     pub fn is_infinite(&self) -> bool {
-        match self {
-            Real::Value(f) => f.is_infinite(),
-            _ => false,
-        }
+        matches!(self, Real::Infinity | Real::NegInfinity)
     }
 
-    /// Returns `true` if this number is neither infinite nor `NaN`.
+    /// Returns `true` if this number is not infinite.
     #[inline]
     pub fn is_finite(&self) -> bool {
-        match self {
-            Real::Value(f) => f.is_finite(),
-            _ => false,
-        }
+        matches!(self, Real::Zero | Real::Binary { .. })
     }
 
     /// Returns the 'f64' value of this `REAL`.
+    ///
+    /// Returned value is a float, and may be infinite.
     pub fn f64(&self) -> f64 {
         match self {
             Real::Binary {
                 mantissa,
                 base,
                 exponent,
+                ..
             } => {
                 let f = *mantissa as f64;
                 let exp = (*base as f64).powi(*exponent);
                 f * exp
             }
-            Real::Value(f) => *f,
+            Real::Zero => 0.0_f64,
+            Real::Infinity => f64::INFINITY,
+            Real::NegInfinity => f64::NEG_INFINITY,
         }
     }
 
@@ -96,7 +161,7 @@ impl<'a> TryFrom<Any<'a>> for Real {
         any.header.assert_primitive()?;
         let data = &any.data;
         if data.is_empty() {
-            return Ok(Real::ZERO);
+            return Ok(Real::Zero);
         }
         // code inspired from pyasn1
         let first = data[0];
@@ -130,6 +195,12 @@ impl<'a> TryFrom<Any<'a>> for Real {
             }
             // base bits
             let b = (first >> 4) & 0x03;
+            let _enc_base = match b {
+                0 => 2,
+                1 => 8,
+                2 => 16,
+                _ => return Err(any.tag().invalid_value("Illegal REAL encoding base")),
+            };
             let e = match b {
                 // base 2
                 0 => e,
@@ -150,13 +221,19 @@ impl<'a> TryFrom<Any<'a>> for Real {
             let p = if first & 0x40 != 0 { -p } else { p };
             // scale bits
             let sf = (first >> 2) & 0x03;
-            // 2^sf: cannot overflow, sf is between 0 and 3
-            let scale = 1_i64 << sf;
-            let p = p * scale;
+            let p = match sf {
+                0 => p as f64,
+                sf => {
+                    // 2^sf: cannot overflow, sf is between 0 and 3
+                    let scale = 2_f64.powi(sf as _);
+                    (p as f64) * scale
+                }
+            };
             Ok(Real::Binary {
                 mantissa: p,
                 base: 2,
                 exponent: e,
+                enc_base: _enc_base,
             })
         } else if first & 0x40 != 0 {
             // special real value (X.690 section 8.5.8)
@@ -166,8 +243,8 @@ impl<'a> TryFrom<Any<'a>> for Real {
             }
             // with values as follows
             match first {
-                0x40 => Ok(Real::INFINITY),
-                0x41 => Ok(Real::NEG_INFINITY),
+                0x40 => Ok(Real::Infinity),
+                0x41 => Ok(Real::NegInfinity),
                 _ => Err(any.tag().invalid_value("Invalid float special value")),
             }
         } else {
@@ -178,13 +255,13 @@ impl<'a> TryFrom<Any<'a>> for Real {
                     // NR1
                     match s.parse::<u32>() {
                         Err(_) => Err(any.tag().invalid_value("Invalid float string encoding")),
-                        Ok(v) => Ok(Real::Value(v.into())),
+                        Ok(v) => Ok(Real::new(v.into())),
                     }
                 }
                 0x2 /* NR2 */ | 0x3 /* NR3 */=> {
                     match s.parse::<f64>() {
                         Err(_) => Err(any.tag().invalid_value("Invalid float string encoding")),
-                        Ok(v) => Ok(Real::Value(v)),
+                        Ok(v) => Ok(Real::new(v)),
                     }
                         }
                 c => {
@@ -208,15 +285,137 @@ impl Tagged for Real {
     const TAG: Tag = Tag::RealType;
 }
 
+impl ToDer for Real {
+    fn to_der_len(&self) -> Result<usize> {
+        match self {
+            Real::Zero => Ok(0),
+            Real::Infinity | Real::NegInfinity => Ok(1),
+            Real::Binary { .. } => {
+                let mut sink = std::io::sink();
+                let n = self
+                    .write_der_content(&mut sink)
+                    .map_err(|_| Self::TAG.invalid_value("Serialization of REAL failed"))?;
+                Ok(n)
+            }
+        }
+    }
+
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        let header = Header::new(
+            Class::Universal,
+            0,
+            Self::TAG,
+            Length::Definite(self.to_der_len()?),
+        );
+        header.write_der_header(writer).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+        match self {
+            Real::Zero => Ok(0),
+            Real::Infinity => writer.write(&[0x40]).map_err(Into::into),
+            Real::NegInfinity => writer.write(&[0x41]).map_err(Into::into),
+            Real::Binary {
+                mantissa,
+                base,
+                exponent,
+                enc_base: _enc_base,
+            } => {
+                if *base == 10 {
+                    // using character form
+                    let sign = if *exponent == 0 { "+" } else { "" };
+                    let s = format!("\x03{}E{}{}", mantissa, sign, exponent);
+                    return writer.write(s.as_bytes()).map_err(Into::into);
+                }
+                if *base != 2 {
+                    return Err(Self::TAG.invalid_value("Invalid base for REAL").into());
+                }
+                let mut first: u8 = 0x80;
+                // choose encoding base
+                let enc_base = *_enc_base;
+                let (ms, mut m, enc_base, mut e) =
+                    drop_floating_point(*mantissa, enc_base, *exponent);
+                assert!(m != 0);
+                if ms < 0 {
+                    first |= 0x40
+                };
+                // exponent & mantissa normalization
+                match enc_base {
+                    2 => {
+                        while m & 0x1 == 0 {
+                            m >>= 1;
+                            e += 1;
+                        }
+                    }
+                    8 => {
+                        while m & 0x7 == 0 {
+                            m >>= 3;
+                            e += 1;
+                        }
+                        first |= 0x10;
+                    }
+                    _ /* 16 */ => {
+                        while m & 0xf == 0 {
+                            m >>= 4;
+                            e += 1;
+                        }
+                        first |= 0x20;
+                    }
+                }
+                // scale factor
+                // XXX in DER, sf is always 0 (11.3.1)
+                let mut sf = 0;
+                while m & 0x1 == 0 && sf < 4 {
+                    m >>= 1;
+                    sf += 1;
+                }
+                first |= sf << 2;
+                // exponent length and bytes
+                let len_e = match e.abs() {
+                    0..=0xff => 1,
+                    0x100..=0xffff => 2,
+                    0x1_0000..=0xff_ffff => 3,
+                    // e is an `i32` so it can't be longer than 4 bytes
+                    _ => 4,
+                };
+                first |= (len_e - 1) & 0x3;
+                // write first byte
+                let mut n = writer.write(&[first])?;
+                // write exponent
+                // special case: number of bytes from exponent is > 3 and cannot fit in 2 bits
+                #[allow(clippy::identity_op)]
+                if len_e == 4 {
+                    let b = len_e & 0xff;
+                    n += writer.write(&[b])?;
+                }
+                // we only need to write e.len() bytes
+                let bytes = e.to_be_bytes();
+                n += writer.write(&bytes[(4 - len_e) as usize..])?;
+                // write mantissa
+                let bytes = m.to_be_bytes();
+                let mut idx = 0;
+                for &b in bytes.iter() {
+                    if b != 0 {
+                        break;
+                    }
+                    idx += 1;
+                }
+                n += writer.write(&bytes[idx..])?;
+                Ok(n)
+            }
+        }
+    }
+}
+
 impl From<f32> for Real {
     fn from(f: f32) -> Self {
-        Real::Value(f.into())
+        Real::new(f.into())
     }
 }
 
 impl From<f64> for Real {
     fn from(f: f64) -> Self {
-        Real::Value(f)
+        Real::new(f)
     }
 }
 
@@ -230,4 +429,29 @@ impl From<Real> for f64 {
     fn from(r: Real) -> Self {
         r.f64()
     }
+}
+
+fn drop_floating_point(m: f64, b: u8, e: i32) -> (i8, u64, u8, i32) {
+    let ms = if m.is_sign_positive() { 1 } else { -1 };
+    let es = if e.is_positive() { 1 } else { -1 };
+    let mut m = m.abs();
+    let mut e = e;
+    //
+    if b == 8 {
+        m *= 2_f64.powi((e.abs() / 3) * es);
+        e = (e.abs() / 3) * es;
+    } else if b == 16 {
+        m *= 2_f64.powi((e.abs() / 4) * es);
+        e = (e.abs() / 4) * es;
+    }
+    //
+    while m.abs() > f64::EPSILON {
+        if m.fract() != 0.0 {
+            m *= b as f64;
+            e -= 1;
+        } else {
+            break;
+        }
+    }
+    (ms, m as u64, b, e)
 }

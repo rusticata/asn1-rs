@@ -168,6 +168,96 @@ fn to_der_octetstring() {
 }
 
 #[test]
+fn to_der_real_binary() {
+    // base = 2, value = 4
+    let r = Real::binary(2.0, 2, 1);
+    let v = r.to_der_vec().expect("serialization failed");
+    assert_eq!(&v, &hex!("09 03 80 02 01"));
+    let (_, result) = Real::from_der(&v).expect("parsing failed");
+    assert!((r.f64() - result.f64()).abs() < f64::EPSILON);
+    //
+    // base = 2, value = 0.5
+    let r = Real::binary(0.5, 2, 0);
+    let v = r.to_der_vec().expect("serialization failed");
+    assert_eq!(&v, &hex!("09 03 80 ff 01"));
+    let (_, result) = Real::from_der(&v).expect("parsing failed");
+    assert!((r.f64() - result.f64()).abs() < f64::EPSILON);
+    //
+    // base = 2, value = 3.25, but change encoding base (8)
+    let r = Real::binary(3.25, 2, 0).with_enc_base(8);
+    let v = r.to_der_vec().expect("serialization failed");
+    // note: this encoding has a scale factor (not DER compliant)
+    assert_eq!(&v, &hex!("09 03 94 ff 0d"));
+    let (_, result) = Real::from_der(&v).expect("parsing failed");
+    assert!((r.f64() - result.f64()).abs() < f64::EPSILON);
+    //
+    // base = 2, value = 0.00390625, but change encoding base (16)
+    let r = Real::binary(0.00390625, 2, 0).with_enc_base(16);
+    let v = r.to_der_vec().expect("serialization failed");
+    // note: this encoding has a scale factor (not DER compliant)
+    assert_eq!(&v, &hex!("09 03 a0 fe 01"));
+    let (_, result) = Real::from_der(&v).expect("parsing failed");
+    assert!((r.f64() - result.f64()).abs() < f64::EPSILON);
+    //
+    // 2 octets for exponent, negative exponent and abs(exponent) is all 1's and fills the whole octet(s)
+    let r = Real::binary(3.0, 2, -1020);
+    let v = r.to_der_vec().expect("serialization failed");
+    assert_eq!(&v, &hex!("09 04 81 fc 04 03"));
+    let (_, result) = Real::from_der(&v).expect("parsing failed");
+    assert!((r.f64() - result.f64()).abs() < f64::EPSILON);
+    //
+    // 3 octets for exponent, and
+    // check that first 9 bits for exponent are not all 1's
+    let r = Real::binary(1.0, 2, 262140);
+    let v = r.to_der_vec().expect("serialization failed");
+    assert_eq!(&v, &hex!("09 05 82 03 ff fc 01"));
+    let (_, result) = Real::from_der(&v).expect("parsing failed");
+    // XXX value cannot be represented as f64 (inf)
+    assert!(result.f64().is_infinite());
+    //
+    // >3 octets for exponent, and
+    // mantissa < 0
+    let r = Real::binary(-1.0, 2, 76354972);
+    let v = r.to_der_vec().expect("serialization failed");
+    let (_, result) = Real::from_der(&v).expect("parsing failed");
+    assert_eq!(&v, &hex!("09 07 c3 04 04 8d 15 9c 01"));
+    // XXX value cannot be represented as f64 (-inf)
+    assert!(result.f64().is_infinite());
+}
+
+#[test]
+fn to_der_real_special() {
+    // ZERO
+    let r = Real::Zero;
+    let v = r.to_der_vec().expect("serialization failed");
+    assert_eq!(&v, &hex!("09 00"));
+    let (_, result) = Real::from_der(&v).expect("parsing failed");
+    assert!(r.eq(&result));
+    // INFINITY
+    let r = Real::Infinity;
+    let v = r.to_der_vec().expect("serialization failed");
+    assert_eq!(&v, &hex!("09 01 40"));
+    let (_, result) = Real::from_der(&v).expect("parsing failed");
+    assert!(r.eq(&result));
+    // MINUS INFINITY
+    let r = Real::NegInfinity;
+    let v = r.to_der_vec().expect("serialization failed");
+    assert_eq!(&v, &hex!("09 01 41"));
+    let (_, result) = Real::from_der(&v).expect("parsing failed");
+    assert!(r.eq(&result));
+}
+
+#[test]
+fn to_der_real_string() {
+    //  non-zero value, base 10
+    let r = Real::new(1.2345);
+    let v = r.to_der_vec().expect("serialization failed");
+    // assert_eq!(&v, &hex!("09 00"));
+    let (_, result) = Real::from_der(&v).expect("parsing failed");
+    assert!(r.eq(&result));
+}
+
+#[test]
 fn to_der_sequence() {
     let it = [2, 3, 4].iter();
     let seq = Sequence::from_iter_to_der(it).unwrap();

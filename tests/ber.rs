@@ -118,31 +118,31 @@ fn from_ber_real_binary() {
     // binary, base = 2
     let input = &hex!("09 03 80 ff 01 ff ff");
     let (rem, result) = Real::from_ber(input).expect("parsing failed");
-    assert_eq!(result, Real::binary(1, 2, -1));
+    assert_eq!(result, Real::binary(1.0, 2, -1));
     assert!((result.f32() - 0.5).abs() < EPSILON);
     assert_eq!(rem, &[0xff, 0xff]);
     // binary, base = 2 and scale factor
     let input = &hex!("09 03 94 ff 0d ff ff");
     let (rem, result) = Real::from_ber(input).expect("parsing failed");
-    assert_eq!(result, Real::binary(26, 2, -3));
+    assert_eq!(result, Real::binary(26.0, 2, -3).with_enc_base(8));
     assert!((result.f32() - 3.25).abs() < EPSILON);
     assert_eq!(rem, &[0xff, 0xff]);
     // binary, base = 16
     let input = &hex!("09 03 a0 fe 01 ff ff");
     let (rem, result) = Real::from_ber(input).expect("parsing failed");
-    assert_eq!(result, Real::binary(1, 2, -8));
+    assert_eq!(result, Real::binary(1.0, 2, -8).with_enc_base(16));
     assert!((result.f32() - 0.00390625).abs() < EPSILON);
     assert_eq!(rem, &[0xff, 0xff]);
     // binary, exponent = 0
     let input = &hex!("09 03 80 00 01 ff ff");
     let (rem, result) = Real::from_ber(input).expect("parsing failed");
-    assert_eq!(result, Real::binary(1, 2, 0));
+    assert_eq!(result, Real::binary(1.0, 2, 0));
     assert!((result.f32() - 1.0).abs() < EPSILON);
     assert_eq!(rem, &[0xff, 0xff]);
     // 2 octets for exponent and negative exponent
     let input = &hex!("09 04 a1 ff 01 03 ff ff");
     let (rem, result) = Real::from_ber(input).expect("parsing failed");
-    assert_eq!(result, Real::binary(3, 2, -1020));
+    assert_eq!(result, Real::binary(3.0, 2, -1020).with_enc_base(16));
     let epsilon = 1e-311_f64;
     assert!((result.f64() - 2.67e-307).abs() < epsilon);
     assert_eq!(rem, &[0xff, 0xff]);
@@ -158,12 +158,12 @@ fn from_ber_real_special() {
     // infinity
     let input = &hex!("09 01 40 ff ff");
     let (rem, result) = Real::from_ber(input).expect("parsing failed");
-    assert_eq!(result, Real::INFINITY);
+    assert_eq!(result, Real::Infinity);
     assert_eq!(rem, &[0xff, 0xff]);
     // negative infinity
     let input = &hex!("09 01 41 ff ff");
     let (rem, result) = Real::from_ber(input).expect("parsing failed");
-    assert_eq!(result, Real::NEG_INFINITY);
+    assert_eq!(result, Real::NegInfinity);
     assert_eq!(rem, &[0xff, 0xff]);
 }
 
