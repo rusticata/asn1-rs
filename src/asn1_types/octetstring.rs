@@ -70,7 +70,7 @@ impl ToDer for OctetString<'_> {
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let header = Header::new(
             Class::Universal,
-            0,
+            false,
             Self::TAG,
             Length::Definite(self.data.len()),
         );
@@ -109,12 +109,22 @@ impl<'a> Tagged for &'a [u8] {
 
 impl ToDer for &'_ [u8] {
     fn to_der_len(&self) -> Result<usize> {
-        let header = Header::new(Class::Universal, 0, Self::TAG, Length::Definite(self.len()));
+        let header = Header::new(
+            Class::Universal,
+            false,
+            Self::TAG,
+            Length::Definite(self.len()),
+        );
         Ok(header.to_der_len()? + self.len())
     }
 
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let header = Header::new(Class::Universal, 0, Self::TAG, Length::Definite(self.len()));
+        let header = Header::new(
+            Class::Universal,
+            false,
+            Self::TAG,
+            Length::Definite(self.len()),
+        );
         header.write_der_header(writer).map_err(Into::into)
     }
 

@@ -324,7 +324,7 @@ impl ToDer for Sequence<'_> {
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let header = Header::new(
             Class::Universal,
-            1,
+            true,
             Self::TAG,
             Length::Definite(self.content.len()),
         );

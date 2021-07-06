@@ -52,7 +52,7 @@ impl ToDer for Enumerated {
 
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let len = Integer::from(self.0).to_der_len()?;
-        let header = Header::new(Class::Universal, 0, Self::TAG, Length::Definite(len));
+        let header = Header::new(Class::Universal, false, Self::TAG, Length::Definite(len));
         header.write_der_header(writer).map_err(Into::into)
     }
 

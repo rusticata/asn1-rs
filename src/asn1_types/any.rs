@@ -20,10 +20,7 @@ impl<'a> Any<'a> {
 
     /// Create a new `Any` from a tag, and BER/DER content
     pub const fn from_tag_and_data(tag: Tag, data: &'a [u8]) -> Self {
-        let structured = match tag {
-            Tag::Sequence | Tag::Set => 1,
-            _ => 0,
-        };
+        let structured = matches!(tag, Tag::Sequence | Tag::Set);
         Any {
             header: Header {
                 tag,

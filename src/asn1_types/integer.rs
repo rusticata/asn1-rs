@@ -450,7 +450,7 @@ impl ToDer for Integer<'_> {
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let header = Header::new(
             Class::Universal,
-            0,
+            false,
             Self::TAG,
             Length::Definite(self.data.len()),
         );

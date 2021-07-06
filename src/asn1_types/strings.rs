@@ -122,7 +122,7 @@ macro_rules! asn1_string {
                 use $crate::Tagged;
                 let header = $crate::Header::new(
                     $crate::Class::Universal,
-                    0,
+                    false,
                     Self::TAG,
                     $crate::Length::Definite(self.data.len()),
                 );

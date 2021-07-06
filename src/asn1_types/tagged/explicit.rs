@@ -9,7 +9,7 @@ use std::marker::PhantomData;
 impl<'a, T> TaggedValue<'a, Explicit, T> {
     pub const fn new_explicit(class: Class, tag: u32, inner: T) -> Self {
         Self {
-            header: Header::new(class, 1, Tag(tag), Length::Definite(0)),
+            header: Header::new(class, true, Tag(tag), Length::Definite(0)),
             inner,
             tag_kind: PhantomData,
         }
@@ -90,7 +90,7 @@ where
 
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let inner_len = self.inner.to_der_len()?;
-        let header = Header::new(self.class(), 1, self.tag(), Length::Definite(inner_len));
+        let header = Header::new(self.class(), true, self.tag(), Length::Definite(inner_len));
         header.write_der_header(writer).map_err(Into::into)
     }
 

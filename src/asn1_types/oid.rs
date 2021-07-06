@@ -60,7 +60,7 @@ impl ToDer for Oid<'_> {
         // OID/REL-OID tag will not change header size, so we don't care here
         let header = Header::new(
             Class::Universal,
-            0,
+            false,
             Self::TAG,
             Length::Definite(self.asn1.len()),
         );
@@ -73,7 +73,12 @@ impl ToDer for Oid<'_> {
         } else {
             Tag::Oid
         };
-        let header = Header::new(Class::Universal, 0, tag, Length::Definite(self.asn1.len()));
+        let header = Header::new(
+            Class::Universal,
+            false,
+            tag,
+            Length::Definite(self.asn1.len()),
+        );
         header.write_der_header(writer).map_err(Into::into)
     }
 

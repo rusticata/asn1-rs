@@ -8,7 +8,7 @@ use std::convert::TryFrom;
 use std::marker::PhantomData;
 
 impl<'a, T> TaggedValue<'a, Implicit, T> {
-    pub const fn new_implicit(class: Class, structured: u8, tag: u32, inner: T) -> Self {
+    pub const fn new_implicit(class: Class, structured: bool, tag: u32, inner: T) -> Self {
         Self {
             header: Header::new(class, structured, Tag(tag), Length::Definite(0)),
             inner,
@@ -109,7 +109,7 @@ where
         let inner_len = self.inner.write_der_content(&mut v)?;
         // XXX X.690 section 8.14.3: if implicing tagging was used [...]:
         // XXX a) the encoding shall be constructed if the base encoding is constructed, and shall be primitive otherwise
-        let header = Header::new(self.class(), 0, self.tag(), Length::Definite(inner_len));
+        let header = Header::new(self.class(), false, self.tag(), Length::Definite(inner_len));
         let sz = header.write_der_header(writer)?;
         let sz = sz + writer.write(&v)?;
         Ok(sz)
@@ -118,7 +118,9 @@ where
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let mut sink = std::io::sink();
         let inner_len = self.inner.write_der_content(&mut sink)?;
-        let header = Header::new(self.class(), 1, self.tag(), Length::Definite(inner_len));
+        // XXX X.690 section 8.14.3: if implicing tagging was used [...]:
+        // XXX a) the encoding shall be constructed if the base encoding is constructed, and shall be primitive otherwise
+        let header = Header::new(self.class(), false, self.tag(), Length::Definite(inner_len));
         header.write_der_header(writer).map_err(Into::into)
     }
 

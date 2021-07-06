@@ -25,22 +25,22 @@ fn to_der_length() {
 #[test]
 fn to_der_tag() {
     // short tag, UNIVERSAL
-    let v = (Class::Universal, 0, Tag(0x1a))
+    let v = (Class::Universal, false, Tag(0x1a))
         .to_der_vec()
         .expect("serialization failed");
     assert_eq!(&v, &[0x1a]);
     // short tag, APPLICATION
-    let v = (Class::Application, 0, Tag(0x1a))
+    let v = (Class::Application, false, Tag(0x1a))
         .to_der_vec()
         .expect("serialization failed");
     assert_eq!(&v, &[0x1a | (0b01 << 6)]);
     // short tag, constructed
-    let v = (Class::Universal, 1, Tag(0x10))
+    let v = (Class::Universal, true, Tag(0x10))
         .to_der_vec()
         .expect("serialization failed");
     assert_eq!(&v, &[0x30]);
     // long tag, UNIVERSAL
-    let v = (Class::Universal, 0, Tag(0x1a1a))
+    let v = (Class::Universal, false, Tag(0x1a1a))
         .to_der_vec()
         .expect("serialization failed");
     assert_eq!(&v, &[0b1_1111, 0x9a, 0x34]);
@@ -53,7 +53,7 @@ fn to_der_header() {
     let v = header.to_der_vec().expect("serialization failed");
     assert_eq!(&v, &[0x2, 0x0]);
     // indefinite length
-    let header = Header::new(Class::Universal, 0, Tag::Integer, Length::Indefinite);
+    let header = Header::new(Class::Universal, false, Tag::Integer, Length::Indefinite);
     let v = header.to_der_vec().expect("serialization failed");
     assert_eq!(&v, &[0x2, 0x80]);
 }
@@ -68,7 +68,7 @@ fn to_der_any() {
 
 #[test]
 fn to_der_any_raw() {
-    let header = Header::new(Class::Universal, 0, Tag::Integer, Length::Definite(3));
+    let header = Header::new(Class::Universal, false, Tag::Integer, Length::Definite(3));
     let any = Any::new(header, Cow::Borrowed(&hex!("02")));
     // to_vec should compute the length
     let v = any.to_der_vec().expect("serialization failed");
@@ -282,7 +282,7 @@ fn to_der_tagged_explicit() {
 
 #[test]
 fn to_der_tagged_implicit() {
-    let tagged = TaggedValue::new_implicit(Class::ContextSpecific, 0, 1, 2u32);
+    let tagged = TaggedValue::new_implicit(Class::ContextSpecific, false, 1, 2u32);
     let v = tagged.to_der_vec().expect("serialization failed");
     assert_eq!(&v, &hex!("81 01 02"));
     let (_, t2) =

@@ -86,8 +86,8 @@ pub enum Length {
 pub struct Header<'a> {
     /// Object class: universal, application, context-specific, or private
     pub class: Class,
-    /// Constructed attribute: 1 if constructed, else 0
-    pub structured: u8,
+    /// Constructed attribute: true if constructed, else false
+    pub structured: bool,
     /// Tag number
     pub tag: Tag,
     /// Object length: value if definite, or indefinite
@@ -227,7 +227,7 @@ impl ops::AddAssign<usize> for Length {
 
 impl<'a> Header<'a> {
     /// Build a new BER/DER header from the provided values
-    pub const fn new(class: Class, structured: u8, tag: Tag, length: Length) -> Self {
+    pub const fn new(class: Class, structured: bool, tag: Tag, length: Length) -> Self {
         Header {
             tag,
             structured,
@@ -240,10 +240,7 @@ impl<'a> Header<'a> {
     /// Build a new BER/DER header from the provided tag, with default values for other fields
     #[inline]
     pub const fn new_simple(tag: Tag) -> Self {
-        let structured = match tag {
-            Tag::Sequence | Tag::Set => 1,
-            _ => 0,
-        };
+        let structured = matches!(tag, Tag::Sequence | Tag::Set);
         Self::new(Class::Universal, structured, tag, Length::Definite(0))
     }
 
@@ -262,13 +259,13 @@ impl<'a> Header<'a> {
     /// Test if object is primitive
     #[inline]
     pub const fn is_primitive(&self) -> bool {
-        self.structured == 0
+        !self.structured
     }
 
     /// Test if object is constructed
     #[inline]
     pub const fn is_constructed(&self) -> bool {
-        self.structured == 1
+        self.structured
     }
 
     /// Return error if class is not the expected class
@@ -363,7 +360,8 @@ impl<'a> FromBer<'a> for Header<'a> {
                 }
             }
         };
-        let hdr = Header::new(class, el.1, Tag(el.2), len).with_raw_tag(Some(el.3.into()));
+        let structured = el.1 != 0;
+        let hdr = Header::new(class, structured, Tag(el.2), len).with_raw_tag(Some(el.3.into()));
         Ok((i3, hdr))
     }
 }
@@ -407,18 +405,19 @@ impl<'a> FromDer<'a> for Header<'a> {
                 }
             }
         };
-        let hdr = Header::new(class, el.1, Tag(el.2), len).with_raw_tag(Some(el.3.into()));
+        let structured = el.1 != 0;
+        let hdr = Header::new(class, structured, Tag(el.2), len).with_raw_tag(Some(el.3.into()));
         Ok((i3, hdr))
     }
 }
 
-impl DynTagged for (Class, u8, Tag) {
+impl DynTagged for (Class, bool, Tag) {
     fn tag(&self) -> Tag {
         self.2
     }
 }
 
-impl ToDer for (Class, u8, Tag) {
+impl ToDer for (Class, bool, Tag) {
     fn to_der_len(&self) -> Result<usize> {
         let (_, _, tag) = self;
         match tag.0 {
@@ -441,7 +440,7 @@ impl ToDer for (Class, u8, Tag) {
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let (class, structured, tag) = self;
         let b0 = (*class as u8) << 6;
-        let b0 = b0 | if *structured != 0 { 0b10_0000 } else { 0 };
+        let b0 = b0 | if *structured { 0b10_0000 } else { 0 };
         if tag.0 > 30 {
             let b0 = b0 | 0b1_1111;
             let mut sz = writer.write(&[b0])?;

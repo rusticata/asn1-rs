@@ -301,11 +301,11 @@ impl<'a, T> AsTaggedExplicit<'a> for T where T: Sized + 'a {}
 /// ```
 /// use asn1_rs::{AsTaggedImplicit, Class};
 ///
-/// // create a `[1] IMPLICIT INTEGER` value, not structured
-/// let tagged = 4u32.implicit(Class::ContextSpecific, 0, 1);
+/// // create a `[1] IMPLICIT INTEGER` value, not constructed
+/// let tagged = 4u32.implicit(Class::ContextSpecific, false, 1);
 /// ```
 pub trait AsTaggedImplicit<'a>: Sized {
-    fn implicit(self, class: Class, structured: u8, tag: u32) -> TaggedValue<'a, Implicit, Self> {
+    fn implicit(self, class: Class, structured: bool, tag: u32) -> TaggedValue<'a, Implicit, Self> {
         TaggedValue::new_implicit(class, structured, tag, self)
     }
 }

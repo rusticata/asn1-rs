@@ -40,7 +40,12 @@ impl ToDer for String {
     }
 
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let header = Header::new(Class::Universal, 0, Self::TAG, Length::Definite(self.len()));
+        let header = Header::new(
+            Class::Universal,
+            false,
+            Self::TAG,
+            Length::Definite(self.len()),
+        );
         header.write_der_header(writer).map_err(Into::into)
     }
 

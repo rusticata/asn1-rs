@@ -82,7 +82,7 @@ impl ToDer for BmpString<'_> {
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
         let header = Header::new(
             Class::Universal,
-            0,
+            false,
             Self::TAG,
             Length::Definite(self.data.as_bytes().len()),
         );
