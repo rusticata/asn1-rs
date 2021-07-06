@@ -8,10 +8,25 @@ name = "asn1-rs"
 version = "0.1.0"
 authors = ["Pierre Chifflier <chifflier@wzdftpd.net>"]
 categories = ["parser-implementations"]
-# readme = "README.md"
+readme = "README.md"
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+include = [
+  "LICENSE-*",
+  "README.md",
+  ".gitignore",
+  "Cargo.toml",
+  "src/*.rs",
+  "src/asn1_types/*.rs",
+  "src/asn1_types/real/*.rs",
+  "src/asn1_types/sequence/*.rs",
+  "src/asn1_types/set/*.rs",
+  "src/asn1_types/strings/*.rs",
+  "src/asn1_types/tagged/*.rs",
+  "src/ber/*.rs",
+  "tests/*.rs",
+]
+
 
 [package.metadata.docs.rs]
 all-features = true
