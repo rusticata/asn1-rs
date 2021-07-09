@@ -1,16 +1,16 @@
 use crate::ber::*;
 use crate::der_constraint_fail_if;
 use crate::error::*;
-use crate::DynTagged;
+#[cfg(feature = "std")]
 use crate::ToDer;
-use crate::ToStatic;
-use crate::{FromBer, FromDer};
+use crate::{DynTagged, FromBer, FromDer, ToStatic};
+use alloc::borrow::Cow;
+use alloc::string::ToString;
+use core::convert::TryFrom;
+use core::fmt;
+use core::ops;
 use nom::bytes::streaming::take;
 use rusticata_macros::newtype_enum;
-use std::borrow::Cow;
-use std::convert::TryFrom;
-use std::fmt;
-use std::ops;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct BerClassFromIntError(pub(crate) ());
@@ -116,7 +116,7 @@ impl TryFrom<u8> for Class {
     type Error = BerClassFromIntError;
 
     #[inline]
-    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
+    fn try_from(value: u8) -> core::result::Result<Self, Self::Error> {
         match value {
             0b00 => Ok(Class::Universal),
             0b01 => Ok(Class::Application),
@@ -462,6 +462,7 @@ impl DynTagged for (Class, bool, Tag) {
     }
 }
 
+#[cfg(feature = "std")]
 impl ToDer for (Class, bool, Tag) {
     fn to_der_len(&self) -> Result<usize> {
         let (_, _, tag) = self;
@@ -518,6 +519,7 @@ impl DynTagged for Length {
     }
 }
 
+#[cfg(feature = "std")]
 impl ToDer for Length {
     fn to_der_len(&self) -> Result<usize> {
         match self {
@@ -573,6 +575,7 @@ impl DynTagged for Header<'_> {
     }
 }
 
+#[cfg(feature = "std")]
 impl ToDer for Header<'_> {
     fn to_der_len(&self) -> Result<usize> {
         let tag_len = (self.class, self.constructed, self.tag).to_der_len()?;

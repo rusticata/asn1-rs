@@ -1,8 +1,10 @@
-use crate::{
-    Any, CheckDerConstraints, Class, Error, FromBer, FromDer, Header, Length, ParseResult, Result,
-    Tag, Tagged, ToDer,
+use crate::*;
+use alloc::borrow::Cow;
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
+use core::{
+    convert::TryFrom, fmt, iter::FusedIterator, marker::PhantomData, ops::Shl, str::FromStr,
 };
-use std::{borrow::Cow, convert::TryFrom, fmt, iter::FusedIterator, ops::Shl, str::FromStr};
 
 #[cfg(feature = "bigint")]
 use num_bigint::BigUint;
@@ -55,6 +57,7 @@ impl<'a> Tagged for Oid<'a> {
     const TAG: Tag = Tag::Oid;
 }
 
+#[cfg(feature = "std")]
 impl ToDer for Oid<'_> {
     fn to_der_len(&self) -> Result<usize> {
         // OID/REL-OID tag will not change header size, so we don't care here
@@ -67,7 +70,7 @@ impl ToDer for Oid<'_> {
         Ok(header.to_der_len()? + self.asn1.len())
     }
 
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let tag = if self.relative {
             Tag::RelativeOid
         } else {
@@ -82,7 +85,7 @@ impl ToDer for Oid<'_> {
         header.write_der_header(writer).map_err(Into::into)
     }
 
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         writer.write(&self.asn1).map_err(Into::into)
     }
 }
@@ -121,7 +124,7 @@ impl<'a> Oid<'a> {
 
     /// Build an OID from an array of object identifier components.
     /// This method allocates memory on the heap.
-    pub fn from<'b>(s: &'b [u64]) -> std::result::Result<Oid<'static>, ParseError> {
+    pub fn from<'b>(s: &'b [u64]) -> core::result::Result<Oid<'static>, ParseError> {
         if s.len() < 2 {
             if s.len() == 1 && s[0] == 0 {
                 return Ok(Oid {
@@ -146,7 +149,7 @@ impl<'a> Oid<'a> {
     }
 
     /// Build a relative OID from an array of object identifier components.
-    pub fn from_relative<'b>(s: &'b [u64]) -> std::result::Result<Oid<'static>, ParseError> {
+    pub fn from_relative<'b>(s: &'b [u64]) -> core::result::Result<Oid<'static>, ParseError> {
         if s.is_empty() {
             return Err(ParseError::TooShort);
         }
@@ -191,6 +194,7 @@ impl<'a> Oid<'a> {
     ///
     /// See also the "bigint" feature of this crate.
     pub fn to_id_string(&self) -> String {
+        use alloc::format;
         if let Some(arcs) = self.iter() {
             let ints: Vec<String> = arcs.map(|i| i.to_string()).collect();
             ints.join(".")
@@ -215,7 +219,7 @@ impl<'a> Oid<'a> {
             oid: &self,
             pos: 0,
             first: false,
-            n: std::marker::PhantomData,
+            n: PhantomData,
         }
     }
 
@@ -251,7 +255,7 @@ impl<'a> Oid<'a> {
             oid: &self,
             pos: 0,
             first: false,
-            n: std::marker::PhantomData,
+            n: PhantomData,
         })
     }
 
@@ -279,7 +283,7 @@ struct SubIdentifierIterator<'a, N: Repr> {
     oid: &'a Oid<'a>,
     pos: usize,
     first: bool,
-    n: std::marker::PhantomData<&'a N>,
+    n: PhantomData<&'a N>,
 }
 
 impl<'a, N: Repr> Iterator for SubIdentifierIterator<'a, N> {
@@ -366,8 +370,8 @@ impl<'a> fmt::Debug for Oid<'a> {
 impl<'a> FromStr for Oid<'a> {
     type Err = ParseError;
 
-    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-        let v: std::result::Result<Vec<_>, _> = s.split('.').map(|c| c.parse::<u64>()).collect();
+    fn from_str(s: &str) -> core::result::Result<Self, Self::Err> {
+        let v: core::result::Result<Vec<_>, _> = s.split('.').map(|c| c.parse::<u64>()).collect();
         v.map_err(|_| ParseError::ParseIntError)
             .and_then(|v| Oid::from(&v))
     }

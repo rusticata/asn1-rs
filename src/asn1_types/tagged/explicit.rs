@@ -1,10 +1,6 @@
-use super::{Explicit, TaggedValue};
-use crate::{
-    Any, CheckDerConstraints, Class, FromBer, FromDer, Header, Length, ParseResult, Result,
-    SerializeResult, Tag, ToDer,
-};
-use std::borrow::Cow;
-use std::marker::PhantomData;
+use crate::*;
+use alloc::borrow::Cow;
+use core::marker::PhantomData;
 
 impl<'a, T> TaggedValue<'a, Explicit, T> {
     pub const fn new_explicit(class: Class, tag: u32, inner: T) -> Self {
@@ -72,6 +68,7 @@ where
     }
 }
 
+#[cfg(feature = "std")]
 impl<'a, T> ToDer for TaggedValue<'a, Explicit, T>
 where
     T: ToDer,

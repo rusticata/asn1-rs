@@ -160,6 +160,13 @@ missing_debug_implementations,
 no_crate_inject,
 attr(deny(warnings/*, rust_2018_idioms*/), allow(dead_code, unused_variables))
 ))]
+#![cfg_attr(not(feature = "std"), no_std)]
+
+#[cfg(feature = "std")]
+extern crate core;
+
+// #[cfg(feature = "alloc")]
+extern crate alloc;
 
 mod asn1_types;
 mod ber;

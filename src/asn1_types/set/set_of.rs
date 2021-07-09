@@ -1,8 +1,6 @@
-use crate::{
-    BerParser, DerParser, FromBer, FromDer, ParseResult, Result, Set, SetIterator, Tag, Tagged,
-    ToDer,
-};
-use std::borrow::Cow;
+use crate::*;
+use alloc::borrow::Cow;
+use alloc::vec::Vec;
 
 #[derive(Debug)]
 pub struct SetOf<T> {
@@ -31,18 +29,18 @@ impl<'a, T> AsRef<[T]> for SetOf<T> {
 
 impl<'a, T> IntoIterator for &'a SetOf<T> {
     type Item = &'a T;
-    type IntoIter = std::slice::Iter<'a, T>;
+    type IntoIter = core::slice::Iter<'a, T>;
 
-    fn into_iter(self) -> std::slice::Iter<'a, T> {
+    fn into_iter(self) -> core::slice::Iter<'a, T> {
         self.items.iter()
     }
 }
 
 impl<'a, T> IntoIterator for &'a mut SetOf<T> {
     type Item = &'a mut T;
-    type IntoIter = std::slice::IterMut<'a, T>;
+    type IntoIter = core::slice::IterMut<'a, T>;
 
-    fn into_iter(self) -> std::slice::IterMut<'a, T> {
+    fn into_iter(self) -> core::slice::IterMut<'a, T> {
         self.items.iter_mut()
     }
 }
@@ -89,6 +87,7 @@ impl<T> Tagged for SetOf<T> {
     const TAG: Tag = Tag::Set;
 }
 
+#[cfg(feature = "std")]
 impl<T> ToDer for SetOf<T>
 where
     T: ToDer,
@@ -97,11 +96,11 @@ where
         self.items.to_der_len()
     }
 
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         self.items.write_der_header(writer)
     }
 
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         self.items.write_der_content(writer)
     }
 }

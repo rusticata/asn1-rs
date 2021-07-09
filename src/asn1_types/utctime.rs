@@ -1,11 +1,9 @@
 use crate::datetime::decode_decimal;
-use crate::{
-    ASN1DateTime, ASN1TimeZone, Any, CheckDerConstraints, Error, Result, Tag, Tagged, ToDer,
-};
+use crate::*;
 #[cfg(feature = "datetime")]
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
-use std::convert::TryFrom;
-use std::fmt;
+use core::convert::TryFrom;
+use core::fmt;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct UtcTime(pub ASN1DateTime);
@@ -169,6 +167,7 @@ impl Tagged for UtcTime {
     const TAG: Tag = Tag::UtcTime;
 }
 
+#[cfg(feature = "std")]
 impl ToDer for UtcTime {
     fn to_der_len(&self) -> Result<usize> {
         // data:
@@ -184,12 +183,12 @@ impl ToDer for UtcTime {
         Ok(15)
     }
 
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         // see above for length value
         writer.write(&[Self::TAG.0 as u8, 13]).map_err(Into::into)
     }
 
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let _ = write!(
             writer,
             "{:02}{:02}{:02}{:02}{:02}{:02}Z",

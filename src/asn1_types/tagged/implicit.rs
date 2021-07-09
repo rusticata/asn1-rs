@@ -1,11 +1,7 @@
-use super::{Implicit, TaggedValue};
-use crate::{
-    Any, CheckDerConstraints, Class, Error, FromBer, FromDer, Header, Length, ParseResult, Result,
-    SerializeResult, Tag, Tagged, ToDer,
-};
-use std::borrow::Cow;
-use std::convert::TryFrom;
-use std::marker::PhantomData;
+use crate::*;
+use alloc::borrow::Cow;
+use core::convert::TryFrom;
+use core::marker::PhantomData;
 
 impl<'a, T> TaggedValue<'a, Implicit, T> {
     pub const fn new_implicit(class: Class, constructed: bool, tag: u32, inner: T) -> Self {
@@ -96,6 +92,7 @@ where
     }
 }
 
+#[cfg(feature = "std")]
 impl<'a, T> ToDer for TaggedValue<'a, Implicit, T>
 where
     T: ToDer,

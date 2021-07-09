@@ -68,7 +68,7 @@ pub(crate) fn ber_get_object_content<'a>(
 
 /// Try to parse input bytes as u64
 #[inline]
-pub(crate) fn bytes_to_u64(s: &[u8]) -> std::result::Result<u64, Error> {
+pub(crate) fn bytes_to_u64(s: &[u8]) -> core::result::Result<u64, Error> {
     let mut u: u64 = 0;
     for &c in s {
         if u & 0xff00_0000_0000_0000 != 0 {

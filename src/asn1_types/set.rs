@@ -1,7 +1,7 @@
-use crate::traits::*;
-use crate::{Any, Class, Error, Header, Length, ParseResult, Result, SerializeResult, Tag};
-use std::borrow::Cow;
-use std::convert::TryFrom;
+use crate::*;
+use alloc::borrow::Cow;
+use alloc::vec::Vec;
+use core::convert::TryFrom;
 
 mod btreeset;
 mod hashset;
@@ -9,6 +9,7 @@ mod iterator;
 mod set_of;
 
 pub use btreeset::*;
+#[cfg(feature = "std")]
 pub use hashset::*;
 pub use iterator::*;
 pub use set_of::*;
@@ -306,6 +307,7 @@ impl<'a> Tagged for Set<'a> {
     const TAG: Tag = Tag::Set;
 }
 
+#[cfg(feature = "std")]
 impl ToDer for Set<'_> {
     fn to_der_len(&self) -> Result<usize> {
         let sz = self.content.len();
@@ -334,6 +336,7 @@ impl ToDer for Set<'_> {
     }
 }
 
+#[cfg(feature = "std")]
 impl<'a> Set<'a> {
     /// Attempt to create a `Set` from an iterator over serializable objects (to DER)
     ///

@@ -1,6 +1,4 @@
-use crate::{
-    Any, CheckDerConstraints, DynTagged, Error, FromBer, FromDer, ParseResult, Tag, ToDer,
-};
+use crate::*;
 
 impl<'a, T> FromBer<'a> for Option<T>
 where
@@ -38,7 +36,7 @@ impl<T> CheckDerConstraints for Option<T>
 where
     T: CheckDerConstraints,
 {
-    fn check_constraints(any: &Any) -> crate::Result<()> {
+    fn check_constraints(any: &Any) -> Result<()> {
         T::check_constraints(any)
     }
 }
@@ -56,25 +54,26 @@ where
     }
 }
 
+#[cfg(feature = "std")]
 impl<T> ToDer for Option<T>
 where
     T: ToDer,
 {
-    fn to_der_len(&self) -> crate::Result<usize> {
+    fn to_der_len(&self) -> Result<usize> {
         match self {
             None => Ok(0),
             Some(t) => t.to_der_len(),
         }
     }
 
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         match self {
             None => Ok(0),
             Some(t) => t.write_der_header(writer),
         }
     }
 
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         match self {
             None => Ok(0),
             Some(t) => t.write_der_content(writer),

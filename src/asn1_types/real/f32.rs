@@ -1,5 +1,5 @@
 use crate::{Any, CheckDerConstraints, Error, Real, Result, Tag, Tagged};
-use std::convert::{TryFrom, TryInto};
+use core::convert::{TryFrom, TryInto};
 
 impl<'a> TryFrom<Any<'a>> for f32 {
     type Error = Error;

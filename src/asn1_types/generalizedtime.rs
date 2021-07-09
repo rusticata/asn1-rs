@@ -1,11 +1,10 @@
 use crate::datetime::decode_decimal;
-use crate::{
-    ASN1DateTime, ASN1TimeZone, Any, CheckDerConstraints, Error, Result, Tag, Tagged, ToDer,
-};
+use crate::*;
+use alloc::format;
 #[cfg(feature = "datetime")]
 use chrono::{DateTime, TimeZone, Utc};
-use std::convert::TryFrom;
-use std::fmt;
+use core::convert::TryFrom;
+use core::fmt;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct GeneralizedTime(pub ASN1DateTime);
@@ -231,6 +230,7 @@ impl<'a> Tagged for GeneralizedTime {
     const TAG: Tag = Tag::GeneralizedTime;
 }
 
+#[cfg(feature = "std")]
 impl ToDer for GeneralizedTime {
     fn to_der_len(&self) -> Result<usize> {
         // data:
@@ -251,7 +251,7 @@ impl ToDer for GeneralizedTime {
         Ok(15 + num_digits)
     }
 
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         // see above for length value
         let num_digits = match self.0.millisecond {
             None => 0,
@@ -262,7 +262,7 @@ impl ToDer for GeneralizedTime {
             .map_err(Into::into)
     }
 
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let fractional = match self.0.millisecond {
             None => "".to_string(),
             Some(v) => format!(".{}", v),

@@ -1,9 +1,6 @@
-use super::{SequenceIterator, SequenceOf};
-use crate::{
-    Any, BerParser, Class, DerParser, FromBer, FromDer, Header, Length, ParseResult, Result,
-    SerializeError, Tag, Tagged, ToDer,
-};
-use std::borrow::Cow;
+use crate::*;
+use alloc::borrow::Cow;
+use alloc::vec::Vec;
 
 impl<T> From<SequenceOf<T>> for Vec<T> {
     fn from(set: SequenceOf<T>) -> Self {
@@ -53,6 +50,7 @@ where
     }
 }
 
+#[cfg(feature = "std")]
 impl<T> ToDer for Vec<T>
 where
     T: ToDer,
@@ -66,7 +64,7 @@ where
         Ok(header.to_der_len()? + len)
     }
 
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let mut len = 0;
         for t in self.iter() {
             len += t.to_der_len().map_err(|_| SerializeError::InvalidLength)?;
@@ -75,7 +73,7 @@ where
         header.write_der_header(writer).map_err(Into::into)
     }
 
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let mut sz = 0;
         for t in self.iter() {
             sz += t.write_der(writer)?;

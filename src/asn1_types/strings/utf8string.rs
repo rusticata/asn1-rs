@@ -1,5 +1,6 @@
 use crate::asn1_string;
 use crate::Result;
+use alloc::string::String;
 
 asn1_string!(Utf8String);
 

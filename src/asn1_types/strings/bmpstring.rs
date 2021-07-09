@@ -1,8 +1,10 @@
 // do not use the `asn1_string` macro, since types are not the same
 // X.680 section 37.15
 
-use crate::{Any, CheckDerConstraints, Class, Error, Header, Length, Result, Tag, Tagged, ToDer};
-use std::borrow::Cow;
+use crate::*;
+use alloc::borrow::Cow;
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
 
 /// ASN.1 `BMPSTRING` type
 ///
@@ -31,7 +33,7 @@ impl<'a> AsRef<str> for BmpString<'a> {
     }
 }
 
-impl<'a> std::convert::TryFrom<Any<'a>> for BmpString<'a> {
+impl<'a> core::convert::TryFrom<Any<'a>> for BmpString<'a> {
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<BmpString<'a>> {
@@ -48,7 +50,7 @@ impl<'a> std::convert::TryFrom<Any<'a>> for BmpString<'a> {
             })
             .collect::<Vec<_>>();
 
-        let s = std::string::String::from_utf16(&v)?;
+        let s = String::from_utf16(&v)?;
         let data = Cow::Owned(s);
 
         Ok(BmpString { data })
@@ -66,6 +68,7 @@ impl<'a> Tagged for BmpString<'a> {
     const TAG: Tag = Tag::BmpString;
 }
 
+#[cfg(feature = "std")]
 impl ToDer for BmpString<'_> {
     fn to_der_len(&self) -> Result<usize> {
         let sz = self.data.as_bytes().len();
@@ -79,7 +82,7 @@ impl ToDer for BmpString<'_> {
         }
     }
 
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let header = Header::new(
             Class::Universal,
             false,
@@ -89,7 +92,7 @@ impl ToDer for BmpString<'_> {
         header.write_der_header(writer).map_err(Into::into)
     }
 
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         writer.write(&self.data.as_bytes()).map_err(Into::into)
     }
 }

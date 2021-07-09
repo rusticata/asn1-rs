@@ -1,9 +1,9 @@
 use super::{Explicit, Implicit, TaggedValue};
 use crate::{Any, Class, Error, FromBer, FromDer, Header, ParseResult, Tag, Tagged};
+use alloc::borrow::Cow;
+use core::marker::PhantomData;
 use nom::error::ParseError;
 use nom::IResult;
-use std::borrow::Cow;
-use std::marker::PhantomData;
 
 /// A builder for parsing tagged values (`IMPLICIT` or `EXPLICIT`)
 ///

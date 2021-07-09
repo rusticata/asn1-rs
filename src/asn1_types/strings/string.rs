@@ -1,8 +1,6 @@
-use crate::{
-    Any, CheckDerConstraints, Class, Error, Header, Length, Result, SerializeResult, Tag, Tagged,
-    ToDer, Utf8String,
-};
-use std::convert::TryFrom;
+use crate::*;
+use alloc::string::String;
+use core::convert::TryFrom;
 
 impl<'a> TryFrom<Any<'a>> for String {
     type Error = Error;
@@ -26,6 +24,7 @@ impl Tagged for String {
     const TAG: Tag = Tag::Utf8String;
 }
 
+#[cfg(feature = "std")]
 impl ToDer for String {
     fn to_der_len(&self) -> Result<usize> {
         let sz = self.as_bytes().len();

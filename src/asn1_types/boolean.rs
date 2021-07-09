@@ -1,5 +1,5 @@
-use crate::{Any, CheckDerConstraints, Error, Length, Result, SerializeResult, Tag, Tagged, ToDer};
-use std::convert::TryFrom;
+use crate::*;
+use core::convert::TryFrom;
 
 /// ASN.1 `BOOLEAN` type
 ///
@@ -60,6 +60,7 @@ impl<'a> Tagged for Boolean {
     const TAG: Tag = Tag::Boolean;
 }
 
+#[cfg(feature = "std")]
 impl ToDer for Boolean {
     fn to_der_len(&self) -> Result<usize> {
         // 3 = 1 (tag) + 1 (length) + 1 (value)
@@ -107,6 +108,7 @@ impl<'a> Tagged for bool {
     const TAG: Tag = Tag::Boolean;
 }
 
+#[cfg(feature = "std")]
 impl ToDer for bool {
     fn to_der_len(&self) -> Result<usize> {
         // 3 = 1 (tag) + 1 (length) + 1 (value)

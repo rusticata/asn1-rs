@@ -1,7 +1,7 @@
-use crate::traits::*;
-use crate::{Any, Class, Error, Header, Length, ParseResult, Result, SerializeResult, Tag};
-use std::borrow::Cow;
-use std::convert::TryFrom;
+use crate::*;
+use alloc::borrow::Cow;
+use alloc::vec::Vec;
+use core::convert::TryFrom;
 
 mod iterator;
 mod sequence_of;
@@ -308,6 +308,7 @@ impl<'a> Tagged for Sequence<'a> {
     const TAG: Tag = Tag::Sequence;
 }
 
+#[cfg(feature = "std")]
 impl ToDer for Sequence<'_> {
     fn to_der_len(&self) -> Result<usize> {
         let sz = self.content.len();
@@ -336,6 +337,7 @@ impl ToDer for Sequence<'_> {
     }
 }
 
+#[cfg(feature = "std")]
 impl<'a> Sequence<'a> {
     /// Attempt to create a `Sequence` from an iterator over serializable objects (to DER)
     ///

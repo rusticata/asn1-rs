@@ -1,9 +1,6 @@
 use crate::ber::bytes_to_u64;
-use crate::{
-    Any, CheckDerConstraints, Class, Error, Header, Integer, Length, Result, SerializeResult, Tag,
-    Tagged, ToDer,
-};
-use std::convert::TryFrom;
+use crate::*;
+use core::convert::TryFrom;
 
 /// ASN.1 `ENUMERATED` type
 ///
@@ -45,6 +42,7 @@ impl Tagged for Enumerated {
     const TAG: Tag = Tag::Enumerated;
 }
 
+#[cfg(feature = "std")]
 impl ToDer for Enumerated {
     fn to_der_len(&self) -> Result<usize> {
         Integer::from(self.0).to_der_len()

@@ -33,17 +33,18 @@ macro_rules! asn1_string {
         #[doc = "`)"]
         #[derive(Debug, PartialEq)]
         pub struct $name<'a> {
-            pub(crate) data: std::borrow::Cow<'a, str>,
+            pub(crate) data: alloc::borrow::Cow<'a, str>,
         }
 
         impl<'a> $name<'a> {
             pub const fn new(s: &'a str) -> Self {
                 $name {
-                    data: std::borrow::Cow::Borrowed(s),
+                    data: alloc::borrow::Cow::Borrowed(s),
                 }
             }
 
             pub fn string(&self) -> String {
+                use alloc::string::ToString;
                 self.data.to_string()
             }
         }
@@ -63,27 +64,27 @@ macro_rules! asn1_string {
         impl From<String> for $name<'_> {
             fn from(s: String) -> Self {
                 Self {
-                    data: std::borrow::Cow::Owned(s),
+                    data: alloc::borrow::Cow::Owned(s),
                 }
             }
         }
 
-        impl<'a> std::convert::TryFrom<$crate::Any<'a>> for $name<'a> {
+        impl<'a> core::convert::TryFrom<$crate::Any<'a>> for $name<'a> {
             type Error = $crate::Error;
 
             fn try_from(any: $crate::Any<'a>) -> $crate::Result<$name<'a>> {
                 use crate::traits::Tagged;
-                use std::borrow::Cow;
+                use alloc::borrow::Cow;
                 any.tag().assert_eq(Self::TAG)?;
                 Self::test_string_charset(&any.data)?;
 
                 let data = match any.data {
                     Cow::Borrowed(b) => {
-                        let s = std::str::from_utf8(b)?;
+                        let s = alloc::str::from_utf8(b)?;
                         Cow::Borrowed(s)
                     }
                     Cow::Owned(v) => {
-                        let s = std::string::String::from_utf8(v)?;
+                        let s = alloc::string::String::from_utf8(v)?;
                         Cow::Owned(s)
                     }
                 };
@@ -102,6 +103,7 @@ macro_rules! asn1_string {
             const TAG: $crate::Tag = $crate::Tag::$name;
         }
 
+        #[cfg(feature = "std")]
         impl $crate::ToDer for $name<'_> {
             fn to_der_len(&self) -> Result<usize> {
                 let sz = self.data.as_bytes().len();

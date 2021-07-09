@@ -1,3 +1,4 @@
+#![cfg(feature = "std")]
 use crate::{
     Any, BerParser, Class, DerParser, FromBer, FromDer, Header, Length, ParseResult, Result,
     SerializeError, SetIterator, Tag, Tagged, ToDer,

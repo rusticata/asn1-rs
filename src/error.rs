@@ -1,54 +1,66 @@
 use crate::{Class, Tag};
+use alloc::str;
+use alloc::string;
+use alloc::string::String;
+use displaydoc::Display;
 use nom::error::{ErrorKind, ParseError};
 use nom::IResult;
+#[cfg(feature = "std")]
 use std::io;
-use std::str;
-use std::string;
+#[cfg(feature = "std")]
 use thiserror::Error;
 
-#[derive(Debug, Error, PartialEq)]
+// XXX
+// thiserror does not work in no_std
+// see https://github.com/dtolnay/thiserror/pull/64
+
+#[cfg(feature = "std")]
+impl std::error::Error for Error {}
+
+#[derive(Debug, Display, PartialEq)]
+// #[cfg_attr(feature = "std", derive(Error))]
 pub enum Error {
-    #[error("Invalid Length")]
+    /// Invalid Length
     InvalidLength,
-    #[error("Invalid Value when parsing object with tag {tag:?} {msg:}")]
+    /// Invalid Value when parsing object with tag {tag:?} {msg:}
     InvalidValue { tag: Tag, msg: String },
-    #[error("Invalid Tag")]
+    /// Invalid Tag
     InvalidTag,
-    #[error("Unknown tag: {0:?}")]
+    /// Unknown tag: {0:?}
     UnknownTag(u32),
-    #[error("Unexpected Tag (expected: {expected:?}, actual: {actual:?})")]
+    /// Unexpected Tag (expected: {expected:?}, actual: {actual:?})
     UnexpectedTag { expected: Option<Tag>, actual: Tag },
-    #[error("Unexpected Class (expected: {0:?}")]
+    /// Unexpected Class (expected: {0:?}
     UnexpectedClass(Class),
 
-    #[error("Indefinite length not allowed")]
+    /// Indefinite length not allowed
     IndefiniteLengthUnexpected,
 
-    #[error("DER object was expected to be constructed (and found to be primitive)")]
+    /// DER object was expected to be constructed (and found to be primitive)
     ConstructExpected,
-    #[error("DER object was expected to be primitive (and found to be constructed)")]
+    /// DER object was expected to be primitive (and found to be constructed)
     ConstructUnexpected,
 
-    #[error("Integer too large")]
+    /// Integer too large
     IntegerTooLarge,
-    #[error("BER recursive parsing reached maximum depth")]
+    /// BER recursive parsing reached maximum depth
     BerMaxDepth,
 
-    #[error("Invalid encoding or forbidden characters in string")]
+    /// Invalid encoding or forbidden characters in string
     StringInvalidCharset,
 
-    #[error("DER Failed constraint")]
+    /// DER Failed constraint
     DerConstraintFailed,
 
-    #[error("Requesting borrowed data from a temporary object")]
+    /// Requesting borrowed data from a temporary object
     LifetimeError,
-    #[error("Feature is not yet implemented")]
+    /// Feature is not yet implemented
     Unsupported,
 
-    #[error("incomplete data, missing: {0:?}")]
+    /// incomplete data, missing: {0:?}
     Incomplete(nom::Needed),
 
-    #[error("nom error: {0:?}")]
+    /// nom error: {0:?}
     NomError(ErrorKind),
 }
 
@@ -98,8 +110,9 @@ impl From<nom::Err<Error>> for Error {
 pub type ParseResult<'a, T> = IResult<&'a [u8], T, Error>;
 
 /// A specialized `Result` type for all operations from this crate.
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = core::result::Result<T, Error>;
 
+#[cfg(feature = "std")]
 #[derive(Debug, Error)]
 pub enum SerializeError {
     #[error("ASN.1 error: {0:?}")]
@@ -112,5 +125,6 @@ pub enum SerializeError {
     IOError(#[from] io::Error),
 }
 
+#[cfg(feature = "std")]
 /// Holds the result of BER/DER encoding functions
 pub type SerializeResult<T> = std::result::Result<T, SerializeError>;

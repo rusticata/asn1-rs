@@ -1,6 +1,5 @@
 use crate::{Class, DynTagged, FromBer, FromDer, Header, ParseResult, Result, Tag};
-
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 mod explicit;
 mod helpers;

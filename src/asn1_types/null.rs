@@ -1,6 +1,5 @@
-use crate::{Any, Error, Result, Tag, Tagged};
-use crate::{CheckDerConstraints, ToDer};
-use std::convert::TryFrom;
+use crate::*;
+use core::convert::TryFrom;
 
 /// ASN.1 `NULL` type
 #[derive(Debug, PartialEq, Eq)]
@@ -34,16 +33,17 @@ impl<'a> Tagged for Null {
     const TAG: Tag = Tag::Null;
 }
 
+#[cfg(feature = "std")]
 impl ToDer for Null {
     fn to_der_len(&self) -> Result<usize> {
         Ok(2)
     }
 
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         writer.write(&[0x05, 0x00]).map_err(Into::into)
     }
 
-    fn write_der_content(&self, _writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_content(&self, _writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         Ok(0)
     }
 }
@@ -71,16 +71,17 @@ impl<'a> Tagged for () {
     const TAG: Tag = Tag::Null;
 }
 
+#[cfg(feature = "std")]
 impl ToDer for () {
     fn to_der_len(&self) -> Result<usize> {
         Ok(2)
     }
 
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         writer.write(&[0x05, 0x00]).map_err(Into::into)
     }
 
-    fn write_der_content(&self, _writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_content(&self, _writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         Ok(0)
     }
 }

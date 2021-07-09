@@ -1,5 +1,5 @@
 use crate::{ASN1Parser, BerParser, DerParser, Error, FromBer, FromDer, Result};
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 #[derive(Debug)]
 pub struct SequenceIterator<'a, T, F>

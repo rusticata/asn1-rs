@@ -1,6 +1,7 @@
-use crate::{Any, CheckDerConstraints, Class, Error, Header, Length, Result, Tag, Tagged, ToDer};
+use crate::*;
+use alloc::borrow::Cow;
+use core::convert::TryFrom;
 use nom::bitvec::{order::Msb0, slice::BitSlice};
-use std::{borrow::Cow, convert::TryFrom};
 
 /// ASN.1 `BITSTRING` type
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -92,6 +93,7 @@ impl<'a> Tagged for BitString<'a> {
     const TAG: Tag = Tag::BitString;
 }
 
+#[cfg(feature = "std")]
 impl ToDer for BitString<'_> {
     fn to_der_len(&self) -> Result<usize> {
         let sz = self.data.len();
@@ -105,7 +107,7 @@ impl ToDer for BitString<'_> {
         }
     }
 
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let header = Header::new(
             Class::Universal,
             false,
@@ -115,7 +117,7 @@ impl ToDer for BitString<'_> {
         header.write_der_header(writer).map_err(Into::into)
     }
 
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let sz = writer.write(&[self.unused_bits])?;
         let sz = sz + writer.write(&self.data)?;
         Ok(sz)

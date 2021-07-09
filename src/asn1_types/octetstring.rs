@@ -1,7 +1,6 @@
-use crate::CheckDerConstraints;
-use crate::{Any, Class, Error, Header, Length, Result, SerializeResult, Tag, Tagged, ToDer};
-use std::borrow::Cow;
-use std::convert::TryFrom;
+use crate::*;
+use alloc::borrow::Cow;
+use core::convert::TryFrom;
 
 /// ASN.1 `OCTETSTRING` type
 #[derive(Debug, PartialEq, Eq)]
@@ -54,6 +53,7 @@ impl<'a> Tagged for OctetString<'a> {
     const TAG: Tag = Tag::OctetString;
 }
 
+#[cfg(feature = "std")]
 impl ToDer for OctetString<'_> {
     fn to_der_len(&self) -> Result<usize> {
         let sz = self.data.len();
@@ -107,6 +107,7 @@ impl<'a> Tagged for &'a [u8] {
     const TAG: Tag = Tag::OctetString;
 }
 
+#[cfg(feature = "std")]
 impl ToDer for &'_ [u8] {
     fn to_der_len(&self) -> Result<usize> {
         let header = Header::new(

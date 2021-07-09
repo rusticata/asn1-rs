@@ -1,6 +1,7 @@
 use crate::error::*;
 use crate::{Any, Class, Explicit, Implicit, Tag, TaggedValue};
-use std::convert::{TryFrom, TryInto};
+use core::convert::{TryFrom, TryInto};
+#[cfg(feature = "std")]
 use std::io::Write;
 
 /// Phantom type representing a BER parser
@@ -200,6 +201,7 @@ pub trait CheckDerConstraints {
 /// assert_eq!(&writer, &[0x02, 0x01, 0x04]);
 /// # assert_eq!(sz, 3);
 /// ```
+#[cfg(feature = "std")]
 pub trait ToDer
 where
     Self: DynTagged,
@@ -258,6 +260,7 @@ where
     }
 }
 
+#[cfg(feature = "std")]
 impl<'a, T> ToDer for &'a T
 where
     T: ToDer,

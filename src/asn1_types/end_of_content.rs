@@ -1,5 +1,5 @@
 use crate::{Any, Error, Result, Tag, Tagged};
-use std::convert::TryFrom;
+use core::convert::TryFrom;
 
 /// End-of-contents octets
 ///

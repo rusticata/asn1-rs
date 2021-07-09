@@ -1,9 +1,7 @@
-use crate::error::*;
-use crate::traits::*;
-use crate::{Any, Class, Header, Length, Tag};
-use std::borrow::Cow;
-use std::convert::TryFrom;
-use std::convert::TryInto;
+use crate::*;
+use alloc::borrow::Cow;
+use alloc::vec;
+use core::convert::{TryFrom, TryInto};
 
 #[cfg(feature = "bigint")]
 #[cfg_attr(docsrs, doc(cfg(feature = "bigint")))]
@@ -113,6 +111,7 @@ macro_rules! impl_int {
             const TAG: Tag = Tag::Integer;
         }
 
+        #[cfg(feature = "std")]
         impl ToDer for $int {
             fn to_der_len(&self) -> Result<usize> {
                 let int = Integer::from(*self);
@@ -169,6 +168,7 @@ macro_rules! impl_uint {
             const TAG: Tag = Tag::Integer;
         }
 
+        #[cfg(feature = "std")]
         impl ToDer for $ty {
             fn to_der_len(&self) -> Result<usize> {
                 let int = Integer::from(*self);
@@ -433,6 +433,7 @@ impl<'a> Tagged for Integer<'a> {
     const TAG: Tag = Tag::Integer;
 }
 
+#[cfg(feature = "std")]
 impl ToDer for Integer<'_> {
     fn to_der_len(&self) -> Result<usize> {
         let sz = self.data.len();

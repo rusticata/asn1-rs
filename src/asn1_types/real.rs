@@ -1,7 +1,7 @@
-use crate::ToDer;
-use crate::{Any, CheckDerConstraints, Class, Error, Header, Length, Result, Tag, Tagged};
+use crate::*;
+use alloc::format;
+use core::convert::TryFrom;
 use nom::Needed;
-use std::convert::TryFrom;
 
 mod f32;
 mod f64;
@@ -249,7 +249,7 @@ impl<'a> TryFrom<Any<'a>> for Real {
             }
         } else {
             // decimal encoding (X.690 section 8.5.7)
-            let s = std::str::from_utf8(rem)?;
+            let s = alloc::str::from_utf8(rem)?;
             match first & 0x03 {
                 0x1 => {
                     // NR1
@@ -285,6 +285,7 @@ impl Tagged for Real {
     const TAG: Tag = Tag::RealType;
 }
 
+#[cfg(feature = "std")]
 impl ToDer for Real {
     fn to_der_len(&self) -> Result<usize> {
         match self {
@@ -300,7 +301,7 @@ impl ToDer for Real {
         }
     }
 
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let header = Header::new(
             Class::Universal,
             false,
@@ -310,7 +311,7 @@ impl ToDer for Real {
         header.write_der_header(writer).map_err(Into::into)
     }
 
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         match self {
             Real::Zero => Ok(0),
             Real::Infinity => writer.write(&[0x40]).map_err(Into::into),
@@ -432,6 +433,7 @@ impl From<Real> for f64 {
     }
 }
 
+#[cfg(feature = "std")]
 fn drop_floating_point(m: f64, b: u8, e: i32) -> (i8, u64, u8, i32) {
     let ms = if m.is_sign_positive() { 1 } else { -1 };
     let es = if e.is_positive() { 1 } else { -1 };
