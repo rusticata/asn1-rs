@@ -38,6 +38,9 @@ fn decode_slice(any: Any<'_>) -> Result<&[u8]> {
 /// Decode an unsigned integer into a byte array of the requested size
 /// containing a big endian integer.
 fn decode_array_uint<const N: usize>(any: Any<'_>) -> Result<[u8; N]> {
+    if is_highest_bit_set(&any.data) {
+        return Err(Error::IntegerNegative);
+    }
     let input = decode_slice(any)?;
 
     if input.len() > N {
@@ -283,14 +286,22 @@ impl<'a> Integer<'a> {
     #[cfg(feature = "bigint")]
     #[cfg_attr(docsrs, doc(cfg(feature = "bigint")))]
     pub fn as_bigint(&self) -> BigInt {
-        BigInt::from_bytes_be(Sign::Plus, &self.data)
+        if is_highest_bit_set(&self.data) {
+            BigInt::from_signed_bytes_be(&self.data)
+        } else {
+            BigInt::from_bytes_be(Sign::Plus, &self.data)
+        }
     }
 
     /// Returns a `BigUint` built from this `Integer` value.
     #[cfg(feature = "bigint")]
     #[cfg_attr(docsrs, doc(cfg(feature = "bigint")))]
-    pub fn as_biguint(&self) -> BigUint {
-        BigUint::from_bytes_be(&self.data)
+    pub fn as_biguint(&self) -> Result<BigUint> {
+        if is_highest_bit_set(&self.data) {
+            Err(Error::IntegerNegative)
+        } else {
+            Ok(BigUint::from_bytes_be(&self.data))
+        }
     }
 
     /// Build an `Integer` from a constant array of bytes representation of an integer.

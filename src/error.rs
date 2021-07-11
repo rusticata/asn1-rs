@@ -41,8 +41,10 @@ pub enum Error {
     /// DER object was expected to be primitive (and found to be constructed)
     ConstructUnexpected,
 
-    /// Integer too large
+    /// Integer too large to fit requested type
     IntegerTooLarge,
+    /// BER integer is negative, while an unsigned integer was requested
+    IntegerNegative,
     /// BER recursive parsing reached maximum depth
     BerMaxDepth,
 
