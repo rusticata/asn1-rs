@@ -286,11 +286,7 @@ impl<'a> Integer<'a> {
     #[cfg(feature = "bigint")]
     #[cfg_attr(docsrs, doc(cfg(feature = "bigint")))]
     pub fn as_bigint(&self) -> BigInt {
-        if is_highest_bit_set(&self.data) {
-            BigInt::from_signed_bytes_be(&self.data)
-        } else {
-            BigInt::from_bytes_be(Sign::Plus, &self.data)
-        }
+        BigInt::from_signed_bytes_be(&self.data)
     }
 
     /// Returns a `BigUint` built from this `Integer` value.
