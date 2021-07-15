@@ -1,44 +1,41 @@
 use crate::*;
-use alloc::borrow::Cow;
 use alloc::collections::BTreeSet;
+use core::convert::TryFrom;
 
 impl<T> Tagged for BTreeSet<T> {
     const TAG: Tag = Tag::Set;
 }
 
-impl<'a, T> FromBer<'a> for BTreeSet<T>
+impl<'a, T> TryFrom<Any<'a>> for BTreeSet<T>
 where
     T: FromBer<'a>,
     T: Ord,
 {
-    fn from_ber(bytes: &'a [u8]) -> ParseResult<Self> {
-        let (rem, any) = Any::from_ber(bytes)?;
-        any.header.assert_tag(Self::TAG)?;
-        let data = match any.data {
-            Cow::Borrowed(b) => b,
-            // Since 'any' is built from 'bytes', it is borrowed by construction
-            _ => unreachable!(),
-        };
-        let v = SetIterator::<T, BerParser>::new(data).collect::<Result<BTreeSet<T>>>()?;
-        Ok((rem, v))
+    type Error = Error;
+
+    fn try_from(any: Any<'a>) -> Result<Self> {
+        any.tag().assert_eq(Self::TAG)?;
+        if !any.header.is_constructed() {
+            return Err(Error::ConstructExpected);
+        }
+        let data = any.into_borrowed()?;
+        let items = SetIterator::<T, BerParser>::new(data).collect::<Result<BTreeSet<T>>>()?;
+        Ok(items)
     }
 }
 
-impl<'a, T> FromDer<'a> for BTreeSet<T>
+impl<T> CheckDerConstraints for BTreeSet<T>
 where
-    T: FromDer<'a>,
-    T: Ord,
+    T: CheckDerConstraints,
 {
-    fn from_der(bytes: &'a [u8]) -> ParseResult<Self> {
-        let (rem, any) = Any::from_der(bytes)?;
-        any.header.assert_tag(Self::TAG)?;
-        let data = match any.data {
-            Cow::Borrowed(b) => b,
-            // Since 'any' is built from 'bytes', it is borrowed by construction
-            _ => unreachable!(),
-        };
-        let v = SetIterator::<T, DerParser>::new(data).collect::<Result<BTreeSet<T>>>()?;
-        Ok((rem, v))
+    fn check_constraints(any: &Any) -> Result<()> {
+        any.tag().assert_eq(Self::TAG)?;
+        any.header.assert_constructed()?;
+        for item in SetIterator::<Any, DerParser>::new(&any.data) {
+            let item = item?;
+            T::check_constraints(&item)?;
+        }
+        Ok(())
     }
 }
 

@@ -1,6 +1,6 @@
 use crate::*;
-use alloc::borrow::Cow;
 use alloc::vec::Vec;
+use core::convert::TryFrom;
 
 #[derive(Debug)]
 pub struct SetOf<T> {
@@ -45,41 +45,41 @@ impl<'a, T> IntoIterator for &'a mut SetOf<T> {
     }
 }
 
-impl<'a, T> FromBer<'a> for SetOf<T>
-where
-    T: FromBer<'a>,
-{
-    fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self> {
-        let (rem, set) = Set::from_ber(bytes)?;
-        let data = match set.content {
-            Cow::Borrowed(b) => b,
-            // Since 'any' is built from 'bytes', it is borrowed by construction
-            _ => unreachable!(),
-        };
-        let v = SetIterator::<T, BerParser>::new(data).collect::<Result<Vec<T>>>()?;
-        Ok((rem, SetOf::new(v)))
-    }
-}
-
-impl<'a, T> FromDer<'a> for SetOf<T>
-where
-    T: FromDer<'a>,
-{
-    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
-        let (rem, set) = Set::from_der(bytes)?;
-        let data = match set.content {
-            Cow::Borrowed(b) => b,
-            // Since 'any' is built from 'bytes', it is borrowed by construction
-            _ => unreachable!(),
-        };
-        let v = SetIterator::<T, DerParser>::new(data).collect::<Result<Vec<T>>>()?;
-        Ok((rem, SetOf::new(v)))
-    }
-}
-
 impl<T> From<SetOf<T>> for Vec<T> {
     fn from(set: SetOf<T>) -> Self {
         set.items
+    }
+}
+
+impl<'a, T> TryFrom<Any<'a>> for SetOf<T>
+where
+    T: FromBer<'a>,
+{
+    type Error = Error;
+
+    fn try_from(any: Any<'a>) -> Result<Self> {
+        any.tag().assert_eq(Self::TAG)?;
+        if !any.header.is_constructed() {
+            return Err(Error::ConstructExpected);
+        }
+        let data = any.into_borrowed()?;
+        let items = SetIterator::<T, BerParser>::new(data).collect::<Result<Vec<T>>>()?;
+        Ok(SetOf::new(items))
+    }
+}
+
+impl<T> CheckDerConstraints for SetOf<T>
+where
+    T: CheckDerConstraints,
+{
+    fn check_constraints(any: &Any) -> Result<()> {
+        any.tag().assert_eq(Self::TAG)?;
+        any.header.assert_constructed()?;
+        for item in SetIterator::<Any, DerParser>::new(&any.data) {
+            let item = item?;
+            T::check_constraints(&item)?;
+        }
+        Ok(())
     }
 }
 

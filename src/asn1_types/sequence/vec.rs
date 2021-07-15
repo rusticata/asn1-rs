@@ -2,12 +2,6 @@ use crate::*;
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
 
-impl<T> From<SequenceOf<T>> for Vec<T> {
-    fn from(set: SequenceOf<T>) -> Self {
-        set.items
-    }
-}
-
 impl<T> Tagged for SequenceOf<T> {
     const TAG: Tag = Tag::Sequence;
 }

@@ -1,6 +1,6 @@
 use crate::*;
-use alloc::borrow::Cow;
 use alloc::vec::Vec;
+use core::convert::TryFrom;
 
 /// The `SEQUENCE OF` object is an ordered list of homogeneous types.
 #[derive(Debug)]
@@ -46,35 +46,41 @@ impl<'a, T> IntoIterator for &'a mut SequenceOf<T> {
     }
 }
 
-impl<'a, T> FromBer<'a> for SequenceOf<T>
-where
-    T: FromBer<'a>,
-{
-    fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self> {
-        let (rem, seq) = Sequence::from_ber(bytes)?;
-        let data = match seq.content {
-            Cow::Borrowed(b) => b,
-            // Since 'any' is built from 'bytes', it is borrowed by construction
-            _ => unreachable!(),
-        };
-        let v = SequenceIterator::<T, BerParser>::new(data).collect::<Result<Vec<T>>>()?;
-        Ok((rem, SequenceOf::new(v)))
+impl<T> From<SequenceOf<T>> for Vec<T> {
+    fn from(set: SequenceOf<T>) -> Self {
+        set.items
     }
 }
 
-impl<'a, T> FromDer<'a> for SequenceOf<T>
+impl<'a, T> TryFrom<Any<'a>> for SequenceOf<T>
 where
-    T: FromDer<'a>,
+    T: FromBer<'a>,
 {
-    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
-        let (rem, seq) = Sequence::from_der(bytes)?;
-        let data = match seq.content {
-            Cow::Borrowed(b) => b,
-            // Since 'any' is built from 'bytes', it is borrowed by construction
-            _ => unreachable!(),
-        };
-        let v = SequenceIterator::<T, DerParser>::new(data).collect::<Result<Vec<T>>>()?;
-        Ok((rem, SequenceOf::new(v)))
+    type Error = Error;
+
+    fn try_from(any: Any<'a>) -> Result<Self> {
+        any.tag().assert_eq(Self::TAG)?;
+        if !any.header.is_constructed() {
+            return Err(Error::ConstructExpected);
+        }
+        let data = any.into_borrowed()?;
+        let items = SequenceIterator::<T, BerParser>::new(data).collect::<Result<Vec<T>>>()?;
+        Ok(SequenceOf::new(items))
+    }
+}
+
+impl<T> CheckDerConstraints for SequenceOf<T>
+where
+    T: CheckDerConstraints,
+{
+    fn check_constraints(any: &Any) -> Result<()> {
+        any.tag().assert_eq(Self::TAG)?;
+        any.header.assert_constructed()?;
+        for item in SequenceIterator::<Any, DerParser>::new(&any.data) {
+            let item = item?;
+            T::check_constraints(&item)?;
+        }
+        Ok(())
     }
 }
 
