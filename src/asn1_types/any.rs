@@ -51,6 +51,15 @@ impl<'a> Any<'a> {
         self.data
     }
 
+    /// Get the bytes representation of the *content*, if borrowed
+    #[inline]
+    pub fn into_borrowed(self) -> Result<&'a [u8]> {
+        match self.data {
+            Cow::Borrowed(b) => Ok(b),
+            Cow::Owned(_) => Err(Error::LifetimeError),
+        }
+    }
+
     /// Get the bytes representation of the *content*
     pub fn as_bytes(&'a self) -> &'a [u8] {
         &self.data
