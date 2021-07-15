@@ -3,7 +3,10 @@
 //! This is mostly used to verify that required types and functions are implemented,
 //! and that provided API is convenient.
 
-use asn1_rs::{nom, Any, Choice, Error, FromDer, Oid, ParseResult, Sequence, SetOf, Tag};
+use asn1_rs::{
+    nom, Any, CheckDerConstraints, Choice, Error, FromBer, FromDer, Oid, ParseResult, Sequence,
+    SetOf, Tag, Tagged,
+};
 use hex_literal::hex;
 use nom::sequence::pair;
 use std::convert::{TryFrom, TryInto};
@@ -62,6 +65,16 @@ pub struct AttributeTypeAndValue<'a> {
     pub value: AttributeValue<'a>,
 }
 
+impl<'a> FromBer<'a> for AttributeTypeAndValue<'a> {
+    fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self> {
+        let (rem, seq) = Sequence::from_der(bytes)?;
+        let (_, (oid, value)) =
+            seq.parse_into(|i| pair(Oid::from_der, AttributeValue::from_der)(i))?;
+        let attr = AttributeTypeAndValue { oid, value };
+        Ok((rem, attr))
+    }
+}
+
 impl<'a> FromDer<'a> for AttributeTypeAndValue<'a> {
     fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
         let (rem, seq) = Sequence::from_der(bytes)?;
@@ -69,6 +82,13 @@ impl<'a> FromDer<'a> for AttributeTypeAndValue<'a> {
             seq.parse_into(|i| pair(Oid::from_der, AttributeValue::from_der)(i))?;
         let attr = AttributeTypeAndValue { oid, value };
         Ok((rem, attr))
+    }
+}
+
+impl<'a> CheckDerConstraints for AttributeTypeAndValue<'a> {
+    fn check_constraints(any: &Any) -> asn1_rs::Result<()> {
+        any.tag().assert_eq(Sequence::TAG)?;
+        Ok(())
     }
 }
 
