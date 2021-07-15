@@ -12,6 +12,46 @@ impl<'a, T> TaggedValue<'a, Explicit, T> {
     }
 }
 
+impl<'a, T> TaggedValue<'a, Explicit, T> {
+    pub fn from_ber_and_then<F>(
+        class: Class,
+        tag: u32,
+        bytes: &'a [u8],
+        op: F,
+    ) -> ParseResult<'a, T>
+    where
+        F: FnOnce(&'a [u8]) -> ParseResult<T>,
+    {
+        let (rem, any) = Any::from_ber(bytes)?;
+        any.tag().assert_eq(Tag(tag))?;
+        if any.class() != class {
+            return Err(any.tag().invalid_value("Invalid class").into());
+        }
+        let data = any.into_borrowed()?;
+        let (_, res) = op(data)?;
+        Ok((rem, res))
+    }
+
+    pub fn from_der_and_then<F>(
+        class: Class,
+        tag: u32,
+        bytes: &'a [u8],
+        op: F,
+    ) -> ParseResult<'a, T>
+    where
+        F: FnOnce(&'a [u8]) -> ParseResult<T>,
+    {
+        let (rem, any) = Any::from_der(bytes)?;
+        any.tag().assert_eq(Tag(tag))?;
+        if any.class() != class {
+            return Err(any.tag().invalid_value("Invalid class").into());
+        }
+        let data = any.into_borrowed()?;
+        let (_, res) = op(data)?;
+        Ok((rem, res))
+    }
+}
+
 impl<'a, T> FromBer<'a> for TaggedValue<'a, Explicit, T>
 where
     T: FromBer<'a>,
