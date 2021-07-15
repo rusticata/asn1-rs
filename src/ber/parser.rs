@@ -1,6 +1,6 @@
 use crate::error::*;
 use crate::header::*;
-use crate::FromDer;
+use crate::{FromDer, Length, Tag};
 use nom::bytes::streaming::take;
 use nom::{Err, Needed, Offset};
 use rusticata_macros::custom_check;
