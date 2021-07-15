@@ -19,11 +19,13 @@ pub struct Any<'a> {
 
 impl<'a> Any<'a> {
     /// Create a new `Any` from BER/DER header and content
+    #[inline]
     pub const fn new(header: Header<'a>, data: &'a [u8]) -> Self {
         Any { header, data }
     }
 
     /// Create a new `Any` from a tag, and BER/DER content
+    #[inline]
     pub const fn from_tag_and_data(tag: Tag, data: &'a [u8]) -> Self {
         let constructed = matches!(tag, Tag::Sequence | Tag::Set);
         Any {
@@ -51,6 +53,7 @@ impl<'a> Any<'a> {
     }
 
     /// Get the bytes representation of the *content*
+    #[inline]
     pub fn as_bytes(&'a self) -> &'a [u8] {
         &self.data
     }
@@ -64,6 +67,7 @@ impl<'a> Any<'a> {
         }
     }
 
+    #[inline]
     pub fn parse_ber<T>(&'a self) -> ParseResult<'a, T>
     where
         T: FromBer<'a>,
@@ -71,6 +75,7 @@ impl<'a> Any<'a> {
         T::from_ber(&self.data)
     }
 
+    #[inline]
     pub fn parse_der<T>(&'a self) -> ParseResult<'a, T>
     where
         T: FromDer<'a>,
