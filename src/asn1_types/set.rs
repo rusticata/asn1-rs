@@ -292,7 +292,7 @@ impl<'a> TryFrom<Any<'a>> for Set<'a> {
         any.tag().assert_eq(Self::TAG)?;
         any.header.assert_constructed()?;
         Ok(Set {
-            content: any.into_cow(),
+            content: Cow::Borrowed(any.data),
         })
     }
 }

@@ -1,5 +1,4 @@
 use crate::*;
-use alloc::borrow::Cow;
 use core::convert::TryFrom;
 use core::marker::PhantomData;
 
@@ -85,7 +84,7 @@ where
                 tag: T::TAG,
                 ..any.header.clone()
             },
-            data: Cow::Borrowed(&any.data),
+            data: any.data,
         };
         T::check_constraints(&any)?;
         Ok(())

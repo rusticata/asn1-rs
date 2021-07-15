@@ -1,5 +1,4 @@
 use crate::*;
-use alloc::borrow::Cow;
 use alloc::vec::Vec;
 
 impl<T> Tagged for SequenceOf<T> {
@@ -17,12 +16,7 @@ where
     fn from_ber(bytes: &'a [u8]) -> ParseResult<Self> {
         let (rem, any) = Any::from_ber(bytes)?;
         any.header.assert_tag(Self::TAG)?;
-        let data = match any.data {
-            Cow::Borrowed(b) => b,
-            // Since 'any' is built from 'bytes', it is borrowed by construction
-            _ => unreachable!(),
-        };
-        let v = SequenceIterator::<T, BerParser>::new(data).collect::<Result<Vec<T>>>()?;
+        let v = SequenceIterator::<T, BerParser>::new(any.data).collect::<Result<Vec<T>>>()?;
         Ok((rem, v))
     }
 }
@@ -34,12 +28,7 @@ where
     fn from_der(bytes: &'a [u8]) -> ParseResult<Self> {
         let (rem, any) = Any::from_der(bytes)?;
         any.header.assert_tag(Self::TAG)?;
-        let data = match any.data {
-            Cow::Borrowed(b) => b,
-            // Since 'any' is built from 'bytes', it is borrowed by construction
-            _ => unreachable!(),
-        };
-        let v = SequenceIterator::<T, DerParser>::new(data).collect::<Result<Vec<T>>>()?;
+        let v = SequenceIterator::<T, DerParser>::new(any.data).collect::<Result<Vec<T>>>()?;
         Ok((rem, v))
     }
 }

@@ -63,8 +63,7 @@ where
         if !any.header.is_constructed() {
             return Err(Error::ConstructExpected);
         }
-        let data = any.into_borrowed()?;
-        let items = SequenceIterator::<T, BerParser>::new(data).collect::<Result<Vec<T>>>()?;
+        let items = SequenceIterator::<T, BerParser>::new(any.data).collect::<Result<Vec<T>>>()?;
         Ok(SequenceOf::new(items))
     }
 }

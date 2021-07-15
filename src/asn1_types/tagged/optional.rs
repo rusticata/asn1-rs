@@ -1,5 +1,4 @@
 use crate::{Any, Class, Error, FromBer, FromDer, Header, ParseResult, Tag};
-use alloc::borrow::Cow;
 use core::convert::TryFrom;
 
 pub const TAG0: TaggedOptional = TaggedOptional::new(Class::ContextSpecific, Tag(0));
@@ -35,12 +34,7 @@ impl TaggedOptional {
         if any.class() != self.class {
             return Err(Error::UnexpectedClass(any.class()).into());
         }
-        let data = match any.data {
-            Cow::Borrowed(b) => b,
-            // any is just built from borrowed data, so we know it is unreachable
-            Cow::Owned(_) => unreachable!(),
-        };
-        let header = any.header;
+        let Any { header, data } = any;
         let (_, res) = f(header, data)?;
         Ok((rem, Some(res)))
     }
@@ -84,11 +78,7 @@ where
         if any.tag().0 != N {
             Ok(TaggedOptionalExplicit { inner: None })
         } else {
-            let data = match any.data {
-                Cow::Borrowed(b) => b,
-                Cow::Owned(_) => return Err(Error::LifetimeError),
-            };
-            let (_, t) = T::from_ber(data)?;
+            let (_, t) = T::from_ber(any.data)?;
             Ok(TaggedOptionalExplicit { inner: Some(t) })
         }
     }
@@ -120,7 +110,7 @@ where
                     tag: Tag(N),
                     ..any.header.clone()
                 },
-                data: any.into_cow(),
+                data: any.data,
             };
             match T::try_from(any) {
                 Ok(t) => Ok(TaggedOptionalImplicit { inner: Some(t) }),

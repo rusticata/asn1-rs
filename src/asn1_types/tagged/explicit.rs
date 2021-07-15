@@ -1,5 +1,4 @@
 use crate::*;
-use alloc::borrow::Cow;
 use core::marker::PhantomData;
 
 impl<'a, T> TaggedValue<'a, Explicit, T> {
@@ -27,8 +26,7 @@ impl<'a, T> TaggedValue<'a, Explicit, T> {
         if any.class() != class {
             return Err(any.tag().invalid_value("Invalid class").into());
         }
-        let data = any.into_borrowed()?;
-        let (_, res) = op(data)?;
+        let (_, res) = op(any.data)?;
         Ok((rem, res))
     }
 
@@ -46,8 +44,7 @@ impl<'a, T> TaggedValue<'a, Explicit, T> {
         if any.class() != class {
             return Err(any.tag().invalid_value("Invalid class").into());
         }
-        let data = any.into_borrowed()?;
-        let (_, res) = op(data)?;
+        let (_, res) = op(any.data)?;
         Ok((rem, res))
     }
 }
@@ -59,12 +56,7 @@ where
     fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self> {
         let (rem, any) = Any::from_ber(bytes)?;
         let header = any.header;
-        let data = match any.data {
-            Cow::Borrowed(b) => b,
-            // Since 'any' is built from 'bytes', it is borrowed by construction
-            Cow::Owned(_) => unreachable!(),
-        };
-        let (_, inner) = T::from_ber(data)?;
+        let (_, inner) = T::from_ber(any.data)?;
         let tagged = TaggedValue {
             header,
             inner,
@@ -81,12 +73,7 @@ where
     fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
         let (rem, any) = Any::from_der(bytes)?;
         let header = any.header;
-        let data = match any.data {
-            Cow::Borrowed(b) => b,
-            // Since 'any' is built from 'bytes', it is borrowed by construction
-            Cow::Owned(_) => unreachable!(),
-        };
-        let (_, inner) = T::from_der(data)?;
+        let (_, inner) = T::from_der(any.data)?;
         let tagged = TaggedValue {
             header,
             inner,

@@ -12,10 +12,7 @@ pub use num_bigint::{BigInt, BigUint, Sign};
 ///
 /// Returns a byte array of the requested size containing a big endian integer.
 fn decode_slice(any: Any<'_>) -> Result<&[u8]> {
-    let bytes = match any.data {
-        Cow::Borrowed(b) => b,
-        Cow::Owned(_) => unreachable!(),
-    };
+    let bytes = any.data;
 
     // The `INTEGER` type always encodes a signed value, so for unsigned
     // values the leading `0x00` byte may need to be removed.
@@ -424,7 +421,7 @@ impl<'a> TryFrom<Any<'a>> for Integer<'a> {
     fn try_from(any: Any<'a>) -> Result<Integer<'a>> {
         any.tag().assert_eq(Self::TAG)?;
         Ok(Integer {
-            data: any.into_cow(),
+            data: Cow::Borrowed(any.data),
         })
     }
 }

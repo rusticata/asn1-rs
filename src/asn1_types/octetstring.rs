@@ -46,7 +46,7 @@ impl<'a> TryFrom<Any<'a>> for OctetString<'a> {
     fn try_from(any: Any<'a>) -> Result<OctetString<'a>> {
         any.tag().assert_eq(Self::TAG)?;
         Ok(OctetString {
-            data: any.into_cow(),
+            data: Cow::Borrowed(any.data),
         })
     }
 }

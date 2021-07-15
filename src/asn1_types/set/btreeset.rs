@@ -18,8 +18,7 @@ where
         if !any.header.is_constructed() {
             return Err(Error::ConstructExpected);
         }
-        let data = any.into_borrowed()?;
-        let items = SetIterator::<T, BerParser>::new(data).collect::<Result<BTreeSet<T>>>()?;
+        let items = SetIterator::<T, BerParser>::new(any.data).collect::<Result<BTreeSet<T>>>()?;
         Ok(items)
     }
 }
@@ -31,7 +30,7 @@ where
     fn check_constraints(any: &Any) -> Result<()> {
         any.tag().assert_eq(Self::TAG)?;
         any.header.assert_constructed()?;
-        for item in SetIterator::<Any, DerParser>::new(&any.data) {
+        for item in SetIterator::<Any, DerParser>::new(any.data) {
             let item = item?;
             T::check_constraints(&item)?;
         }

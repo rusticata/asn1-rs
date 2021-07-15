@@ -1,10 +1,7 @@
 use asn1_rs::*;
 use hex_literal::hex;
 // use nom::HexDisplay;
-use std::{
-    borrow::Cow,
-    convert::{TryFrom, TryInto},
-};
+use std::convert::{TryFrom, TryInto};
 
 #[test]
 fn to_der_length() {
@@ -61,7 +58,7 @@ fn to_der_header() {
 #[test]
 fn to_der_any() {
     let header = Header::new_simple(Tag::Integer);
-    let any = Any::new(header, Cow::Borrowed(&hex!("02")));
+    let any = Any::new(header, &hex!("02"));
     let v = any.to_der_vec().expect("serialization failed");
     assert_eq!(&v, &[0x02, 0x01, 0x02]);
 }
@@ -69,7 +66,7 @@ fn to_der_any() {
 #[test]
 fn to_der_any_raw() {
     let header = Header::new(Class::Universal, false, Tag::Integer, Length::Definite(3));
-    let any = Any::new(header, Cow::Borrowed(&hex!("02")));
+    let any = Any::new(header, &hex!("02"));
     // to_vec should compute the length
     let v = any.to_der_vec().expect("serialization failed");
     assert_eq!(&v, &[0x02, 0x01, 0x02]);

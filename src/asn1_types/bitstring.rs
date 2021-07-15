@@ -49,14 +49,8 @@ impl<'a> TryFrom<Any<'a>> for BitString<'a> {
         if any.data.is_empty() {
             return Err(Error::InvalidLength);
         }
-        let data = any.into_cow();
-        let (unused_bits, data) = match data {
-            Cow::Borrowed(s) => (s[0], Cow::Borrowed(&s[1..])),
-            Cow::Owned(v) => {
-                let (head, rest) = v.split_at(1);
-                (head[0], Cow::Owned(rest.to_vec()))
-            }
-        };
+        let s = any.data;
+        let (unused_bits, data) = (s[0], Cow::Borrowed(&s[1..]));
         Ok(BitString { unused_bits, data })
     }
 }

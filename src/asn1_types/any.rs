@@ -1,6 +1,5 @@
 use crate::ber::*;
 use crate::*;
-use alloc::borrow::Cow;
 use alloc::string::String;
 use core::convert::TryInto;
 
@@ -8,15 +7,19 @@ use core::convert::TryInto;
 /// that could be encoded.
 ///
 /// It contains a header, and either a reference to or owned data for the object content.
+///
+/// Note: this type is only provided in **borrowed** version (*i.e.* it can own the inner data).
 #[derive(Debug)]
 pub struct Any<'a> {
+    /// The object header
     pub header: Header<'a>,
-    pub data: Cow<'a, [u8]>,
+    /// The object contents
+    pub data: &'a [u8],
 }
 
 impl<'a> Any<'a> {
     /// Create a new `Any` from BER/DER header and content
-    pub const fn new(header: Header<'a>, data: Cow<'a, [u8]>) -> Self {
+    pub const fn new(header: Header<'a>, data: &'a [u8]) -> Self {
         Any { header, data }
     }
 
@@ -31,7 +34,7 @@ impl<'a> Any<'a> {
                 length: Length::Definite(data.len()),
                 raw_tag: None,
             },
-            data: Cow::Borrowed(data),
+            data,
         }
     }
 
@@ -45,25 +48,6 @@ impl<'a> Any<'a> {
     #[inline]
     pub const fn tag(&self) -> Tag {
         self.header.tag
-    }
-
-    /// Get the bytes representation of the *content*
-    pub fn as_cow(&'a self) -> &Cow<'a, [u8]> {
-        &self.data
-    }
-
-    /// Get the bytes representation of the *content*
-    pub fn into_cow(self) -> Cow<'a, [u8]> {
-        self.data
-    }
-
-    /// Get the bytes representation of the *content*, if borrowed
-    #[inline]
-    pub fn into_borrowed(self) -> Result<&'a [u8]> {
-        match self.data {
-            Cow::Borrowed(b) => Ok(b),
-            Cow::Owned(_) => Err(Error::LifetimeError),
-        }
     }
 
     /// Get the bytes representation of the *content*
@@ -143,7 +127,6 @@ impl<'a> FromBer<'a> for Any<'a> {
     fn from_ber(bytes: &'a [u8]) -> ParseResult<Self> {
         let (i, header) = Header::from_ber(bytes)?;
         let (i, data) = ber_get_object_content(i, &header, MAX_RECURSION)?;
-        let data = Cow::Borrowed(data);
         Ok((i, Any { header, data }))
     }
 }
@@ -154,7 +137,6 @@ impl<'a> FromDer<'a> for Any<'a> {
         // X.690 section 10.1: The definite form of length encoding shall be used
         header.length.assert_definite()?;
         let (i, data) = ber_get_object_content(i, &header, MAX_RECURSION)?;
-        let data = Cow::Borrowed(data);
         Ok((i, Any { header, data }))
     }
 }
@@ -165,16 +147,16 @@ impl DynTagged for Any<'_> {
     }
 }
 
-impl<'a> ToStatic for Any<'a> {
-    type Owned = Any<'static>;
+// impl<'a> ToStatic for Any<'a> {
+//     type Owned = Any<'static>;
 
-    fn to_static(&self) -> Self::Owned {
-        Any {
-            header: self.header.to_static(),
-            data: Cow::Owned(self.data.to_vec()),
-        }
-    }
-}
+//     fn to_static(&self) -> Self::Owned {
+//         Any {
+//             header: self.header.to_static(),
+//             data: Cow::Owned(self.data.to_vec()),
+//         }
+//     }
+// }
 
 #[cfg(feature = "std")]
 impl ToDer for Any<'_> {

@@ -1,6 +1,5 @@
 use super::{Explicit, Implicit, TaggedValue};
 use crate::{Any, Class, Error, FromBer, FromDer, Header, ParseResult, Tag, Tagged};
-use alloc::borrow::Cow;
 use core::marker::PhantomData;
 use nom::error::ParseError;
 use nom::IResult;
@@ -133,11 +132,7 @@ where
         any.header
             .assert_tag(tag)
             .map_err(|e| nom::Err::convert(e.into()))?;
-        let data: &'a [u8] = match any.data {
-            Cow::Borrowed(b) => b,
-            Cow::Owned(_) => unreachable!(),
-        };
-        f(data, any.header)
+        f(any.data, any.header)
     })
 }
 
@@ -178,10 +173,6 @@ where
         let header = Header {
             tag: T::TAG,
             ..header.clone()
-        };
-        let data: &'a [u8] = match data {
-            Cow::Borrowed(b) => b,
-            Cow::Owned(_) => unreachable!(),
         };
         f(data, tag, header)
     })

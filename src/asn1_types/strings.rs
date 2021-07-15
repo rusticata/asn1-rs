@@ -76,18 +76,10 @@ macro_rules! asn1_string {
                 use crate::traits::Tagged;
                 use alloc::borrow::Cow;
                 any.tag().assert_eq(Self::TAG)?;
-                Self::test_string_charset(&any.data)?;
+                Self::test_string_charset(any.data)?;
 
-                let data = match any.data {
-                    Cow::Borrowed(b) => {
-                        let s = alloc::str::from_utf8(b)?;
-                        Cow::Borrowed(s)
-                    }
-                    Cow::Owned(v) => {
-                        let s = alloc::string::String::from_utf8(v)?;
-                        Cow::Owned(s)
-                    }
-                };
+                let s = alloc::str::from_utf8(any.data)?;
+                let data = Cow::Borrowed(s);
                 Ok($name { data })
             }
         }
