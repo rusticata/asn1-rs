@@ -1,6 +1,25 @@
 use crate::{ASN1Parser, BerParser, DerParser, Error, FromBer, FromDer, Result};
 use core::marker::PhantomData;
 
+/// An Iterator over binary data, parsing elements of type `T`
+///
+/// This helps parsing `SEQUENCE OF` items of type `T`. The type of parser
+/// (BER/DER) is specified using the generic parameter `F` of this struct.
+///
+/// Note: the iterator must start on the sequence *contents*, not the sequence itself.
+///
+/// # Examples
+///
+/// ```rust
+/// use asn1_rs::{DerParser, Integer, SequenceIterator};
+///
+/// let data = &[0x30, 0x6, 0x2, 0x1, 0x1, 0x2, 0x1, 0x2];
+/// for (idx, item) in SequenceIterator::<Integer, DerParser>::new(&data[2..]).enumerate() {
+///     let item = item.unwrap(); // parsing could have failed
+///     let i = item.as_u32().unwrap(); // integer can be negative, or too large to fit into u32
+///     assert_eq!(i as usize, idx + 1);
+/// }
+/// ```
 #[derive(Debug)]
 pub struct SequenceIterator<'a, T, F>
 where
