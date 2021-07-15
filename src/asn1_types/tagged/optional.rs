@@ -1,12 +1,12 @@
 use crate::{Any, Class, Error, FromBer, FromDer, Header, ParseResult, Tag};
 use core::convert::TryFrom;
 
-pub const TAG0: TaggedOptional = TaggedOptional::new(Class::ContextSpecific, Tag(0));
-pub const TAG1: TaggedOptional = TaggedOptional::new(Class::ContextSpecific, Tag(1));
-pub const TAG2: TaggedOptional = TaggedOptional::new(Class::ContextSpecific, Tag(2));
-pub const TAG3: TaggedOptional = TaggedOptional::new(Class::ContextSpecific, Tag(3));
-pub const TAG4: TaggedOptional = TaggedOptional::new(Class::ContextSpecific, Tag(4));
-pub const TAG5: TaggedOptional = TaggedOptional::new(Class::ContextSpecific, Tag(5));
+pub const TAG_OPT0: TaggedOptional = TaggedOptional::new(Class::ContextSpecific, Tag(0));
+pub const TAG_OPT1: TaggedOptional = TaggedOptional::new(Class::ContextSpecific, Tag(1));
+pub const TAG_OPT2: TaggedOptional = TaggedOptional::new(Class::ContextSpecific, Tag(2));
+pub const TAG_OPT3: TaggedOptional = TaggedOptional::new(Class::ContextSpecific, Tag(3));
+pub const TAG_OPT4: TaggedOptional = TaggedOptional::new(Class::ContextSpecific, Tag(4));
+pub const TAG_OPT5: TaggedOptional = TaggedOptional::new(Class::ContextSpecific, Tag(5));
 
 #[derive(Debug)]
 pub struct TaggedOptional {
