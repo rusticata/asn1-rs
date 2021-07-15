@@ -14,6 +14,16 @@ impl<'a> OctetString<'a> {
             data: Cow::Borrowed(s),
         }
     }
+
+    /// Get the bytes representation of the *content*
+    pub fn as_cow(&'a self) -> &Cow<'a, [u8]> {
+        &self.data
+    }
+
+    /// Get the bytes representation of the *content*
+    pub fn into_cow(self) -> Cow<'a, [u8]> {
+        self.data
+    }
 }
 
 impl<'a> AsRef<[u8]> for OctetString<'a> {

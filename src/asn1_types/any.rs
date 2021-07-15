@@ -35,6 +35,12 @@ impl<'a> Any<'a> {
         }
     }
 
+    /// Return the `Class` of this object
+    #[inline]
+    pub const fn class(&self) -> Class {
+        self.header.class
+    }
+
     /// Return the `Tag` of this object
     #[inline]
     pub const fn tag(&self) -> Tag {

@@ -178,6 +178,11 @@ impl<'a> Oid<'a> {
         self.asn1.as_ref()
     }
 
+    /// Get the bytes representation of the encoded oid
+    pub fn into_cow(self) -> Cow<'a, [u8]> {
+        self.asn1
+    }
+
     /// Convert the OID to a string representation.
     /// The string contains the IDs separated by dots, for ex: "1.2.840.113549.1.1.5"
     #[cfg(feature = "bigint")]
