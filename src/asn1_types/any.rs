@@ -55,6 +55,15 @@ impl<'a> Any<'a> {
         &self.data
     }
 
+    /// Convert the current object to an object with same contents but different tag
+    #[inline]
+    pub fn with_tag(self, tag: Tag) -> Self {
+        Any {
+            header: self.header.with_tag(tag),
+            data: self.data,
+        }
+    }
+
     pub fn parse_ber<T>(&'a self) -> ParseResult<'a, T>
     where
         T: FromBer<'a>,
