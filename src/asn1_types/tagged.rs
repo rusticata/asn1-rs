@@ -4,8 +4,10 @@ use core::marker::PhantomData;
 mod explicit;
 mod helpers;
 mod implicit;
+mod optional;
 
 pub use helpers::*;
+pub use optional::*;
 
 // tag class: universal, application, context-specific, private
 
