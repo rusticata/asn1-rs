@@ -1,5 +1,7 @@
 use crate::*;
 use alloc::borrow::Cow;
+#[cfg(not(feature = "std"))]
+use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::{
@@ -199,7 +201,6 @@ impl<'a> Oid<'a> {
     ///
     /// See also the "bigint" feature of this crate.
     pub fn to_id_string(&self) -> String {
-        use alloc::format;
         if let Some(arcs) = self.iter() {
             let ints: Vec<String> = arcs.map(|i| i.to_string()).collect();
             ints.join(".")
