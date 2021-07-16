@@ -227,3 +227,11 @@ fn from_ber_iter_sequence_incomplete() {
     assert_eq!(iter.next(), Some(Err(Error::Incomplete(Needed::new(1)))));
     assert_eq!(iter.next(), None);
 }
+
+#[test]
+fn from_ber_universalstring() {
+    let input = &hex!("1C 10 00000061 00000062 00000063 00000064");
+    let (rem, result) = UniversalString::from_ber(input).expect("parsing failed");
+    assert_eq!(result.as_ref(), "abcd");
+    assert_eq!(rem, &[]);
+}

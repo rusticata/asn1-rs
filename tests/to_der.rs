@@ -307,3 +307,15 @@ fn to_der_utf8string() {
     let (_, s2) = Utf8String::from_der(&v).expect("decoding serialized object failed");
     assert!(s.eq(&s2));
 }
+
+#[test]
+fn to_der_universalstring() {
+    let s = UniversalString::from("abcdef");
+    let v = s.to_der_vec().expect("serialization failed");
+    assert_eq!(
+        &v,
+        &hex!("1c 18 00000061 00000062 00000063 00000064 00000065 00000066")
+    );
+    let (_, s2) = UniversalString::from_der(&v).expect("decoding serialized object failed");
+    assert!(s.eq(&s2));
+}
