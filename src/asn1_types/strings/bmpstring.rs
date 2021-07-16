@@ -33,6 +33,20 @@ impl<'a> AsRef<str> for BmpString<'a> {
     }
 }
 
+impl<'a> From<&'a str> for BmpString<'a> {
+    fn from(s: &'a str) -> Self {
+        Self::new(s)
+    }
+}
+
+impl From<String> for BmpString<'_> {
+    fn from(s: String) -> Self {
+        Self {
+            data: alloc::borrow::Cow::Owned(s),
+        }
+    }
+}
+
 impl<'a> core::convert::TryFrom<Any<'a>> for BmpString<'a> {
     type Error = Error;
 
