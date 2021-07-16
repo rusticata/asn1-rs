@@ -11,43 +11,48 @@ pub struct Tag(pub u32);
 
 newtype_enum! {
 impl display Tag {
-    EndOfContent = 0x0,
-    Boolean = 0x1,
-    Integer = 0x2,
-    BitString = 0x3,
-    OctetString = 0x4,
-    Null = 0x05,
-    Oid = 0x06,
-    ObjDescriptor = 0x07,
-    External = 0x08,
-    RealType = 0x09,
-    Enumerated = 0xa,
-    EmbeddedPdv = 0xb,
-    Utf8String = 0xc,
-    RelativeOid = 0xd,
+    EndOfContent = 0,
+    Boolean = 1,
+    Integer = 2,
+    BitString = 3,
+    OctetString = 4,
+    Null = 5,
+    Oid = 6,
+    ObjDescriptor = 7,
+    External = 8,
+    RealType = 9,
+    Enumerated = 10,
+    EmbeddedPdv = 11,
+    Utf8String = 12,
+    RelativeOid = 13,
 
-    Sequence = 0x10,
-    Set = 0x11,
-    NumericString = 0x12,
-    PrintableString = 0x13,
-    T61String = 0x14,
-    TeletexString = 0x14,
-    VideotexString = 0x15,
+    Sequence = 16,
+    Set = 17,
+    NumericString = 18,
+    PrintableString = 19,
+    T61String = 20,
+    TeletexString = 20,
+    VideotexString = 21,
 
-    Ia5String = 0x16,
-    UtcTime = 0x17,
-    GeneralizedTime = 0x18,
+    Ia5String = 22,
+    UtcTime = 23,
+    GeneralizedTime = 24,
 
-    GraphicString = 25, // 0x19
-    VisibleString = 26, // 0x1a
-    GeneralString = 27, // 0x1b
+    GraphicString = 25,
+    VisibleString = 26,
+    GeneralString = 27,
 
-    UniversalString = 0x1c,
-    BmpString = 0x1e,
-
-    Invalid = 0xff,
+    UniversalString = 28,
+    BmpString = 30,
 }
 }
+
+pub const TAG0: Tag = Tag(0);
+pub const TAG1: Tag = Tag(1);
+pub const TAG2: Tag = Tag(2);
+pub const TAG3: Tag = Tag(3);
+pub const TAG4: Tag = Tag(4);
+pub const TAG5: Tag = Tag(5);
 
 impl Tag {
     pub const fn assert_eq(&self, tag: Tag) -> Result<()> {
