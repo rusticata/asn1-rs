@@ -17,16 +17,15 @@ pub use parser::*;
 
 pub(crate) const CONTEXT_SPECIFIC: u8 = Class::ContextSpecific as u8;
 
-// tag class: universal, application, context-specific, private
-
-// tag types: IMPLICIT, EXPLICIT
-
+/// A type parameter for `IMPLICIT` tagged values.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Implicit {}
 
+/// A type parameter for `EXPLICIT` tagged values.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Explicit {}
 
+/// A type parameter for tagged values either [`Explicit`] or [`Implicit`].
 pub trait TagKind {}
 
 impl TagKind for Implicit {}

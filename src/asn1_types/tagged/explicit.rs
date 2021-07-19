@@ -63,7 +63,7 @@ where
     }
 }
 
-/// A helper object to parse `[ 0 ] EXPLICIT T`
+/// A helper object to parse `[ n ] EXPLICIT T`
 ///
 /// A helper object implementing [`FromBer`] and [`FromDer`], to parse tagged
 /// optional values.

@@ -17,6 +17,8 @@ use thiserror::Error;
 #[cfg(feature = "std")]
 impl std::error::Error for Error {}
 
+/// The error type for operations of the [`FromBer`](crate::FromBer),
+/// [`FromDer`](crate::FromDer), and associated traits.
 #[derive(Debug, Display, PartialEq)]
 // #[cfg_attr(feature = "std", derive(Error))]
 pub enum Error {
@@ -114,6 +116,7 @@ pub type ParseResult<'a, T> = IResult<&'a [u8], T, Error>;
 /// A specialized `Result` type for all operations from this crate.
 pub type Result<T> = core::result::Result<T, Error>;
 
+/// The error type for serialization operations of the [`ToDer`](crate::ToDer) trait.
 #[cfg(feature = "std")]
 #[derive(Debug, Error)]
 pub enum SerializeError {
