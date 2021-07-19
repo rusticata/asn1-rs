@@ -110,6 +110,7 @@ impl<'a> Any<'a> {
     impl_any_into!(enumerated => Enumerated, "ENUMERATED");
     impl_any_into!(generalizedtime => GeneralizedTime, "GeneralizedTime");
     impl_any_into!(generalstring => GeneralString<'a>, "GeneralString");
+    impl_any_into!(graphicstring => GraphicString<'a>, "GraphicString");
     impl_any_into!(ia5string => Ia5String<'a>, "IA5String");
     impl_any_into!(integer => Integer<'a>, "INTEGER");
     impl_any_into!(null => Null, "NULL");

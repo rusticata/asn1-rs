@@ -1,5 +1,6 @@
 mod bmpstring;
 mod generalstring;
+mod graphicstring;
 mod ia5string;
 mod numericstring;
 mod printablestring;
@@ -14,6 +15,7 @@ mod visiblestring;
 pub use self::str::*;
 pub use bmpstring::*;
 pub use generalstring::*;
+pub use graphicstring::*;
 pub use ia5string::*;
 pub use numericstring::*;
 pub use printablestring::*;
