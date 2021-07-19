@@ -1,4 +1,4 @@
-use crate::Class;
+use crate::{Class, Tag, Tagged};
 use core::marker::PhantomData;
 
 mod builder;
@@ -91,4 +91,8 @@ impl<T, TagKind, const CLASS: u8, const TAG: u32> AsRef<T> for TaggedValue<T, Ta
     fn as_ref(&self) -> &T {
         &self.inner
     }
+}
+
+impl<T, TagKind, const CLASS: u8, const TAG: u32> Tagged for TaggedValue<T, TagKind, CLASS, TAG> {
+    const TAG: Tag = Tag(TAG);
 }
