@@ -18,8 +18,8 @@ pub const TAG_OPT5: TaggedOptional = TaggedOptional::new(Class::ContextSpecific,
 /// It can be used for both EXPLICIT or IMPLICIT tagged objects by using parsing functions that
 /// expect a header (or not) in the contents.
 ///
-/// The [`Self::from`] method is a shortcut to build an object with `ContextSpecific` class and the
-/// given tag. The [`Self::new`] method is more generic.
+/// The [`TaggedOptional::from`] method is a shortcut to build an object with `ContextSpecific`
+/// class and the given tag. The [`TaggedOptional::new`] method is more generic.
 ///
 /// # Examples
 ///
@@ -61,7 +61,7 @@ pub struct TaggedOptional {
 impl TaggedOptional {
     /// Build a new `TaggedOptional` object.
     ///
-    /// If using `Class::ContextSpecific`, using [`Self::from`] with either a `Tag` or `u32` is
+    /// If using `Class::ContextSpecific`, using [`TaggedOptional::from`] with either a `Tag` or `u32` is
     /// a shorter way to build this object.
     pub const fn new(class: Class, tag: Tag) -> Self {
         TaggedOptional { class, tag }
