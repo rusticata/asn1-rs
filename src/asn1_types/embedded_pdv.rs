@@ -85,9 +85,11 @@ impl<'a> TryFrom<Any<'a>> for EmbeddedPdv<'a> {
             }
         };
         // [1] -> data-value-descriptor ObjectDescriptor OPTIONAL
+        // *BUT* WITH COMPONENTS data-value-descriptor ABSENT
         // XXX this should be parse_ber?
-        let (rem, data_value_descriptor) =
-            TaggedOptional::from(1).parse_der(rem, |_, inner| ObjectDescriptor::from_ber(inner))?;
+        // let (rem, data_value_descriptor) =
+        //     TaggedOptional::from(1).parse_der(rem, |_, inner| ObjectDescriptor::from_ber(inner))?;
+        let (rem, data_value_descriptor) = (rem, None);
         // [2] -> data-value OCTET STRING
         let (_, data_value) =
             TaggedValue::<Implicit, &[u8]>::parse_ber(Class::ContextSpecific, Tag(2), rem)?;
