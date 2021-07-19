@@ -333,7 +333,7 @@ fn from_der_opt_int() {
 #[test]
 fn from_der_tagged_explicit() {
     let input = &hex!("a0 03 02 01 02");
-    let (rem, result) = TaggedValue::<Explicit, u32>::from_der(input).expect("parsing failed");
+    let (rem, result) = TaggedParser::<Explicit, u32>::from_der(input).expect("parsing failed");
     assert!(rem.is_empty());
     assert_eq!(result.as_ref(), &2);
 }
@@ -342,17 +342,17 @@ fn from_der_tagged_explicit() {
 fn from_der_tagged_implicit() {
     let input = &hex!("81 04 70 61 73 73");
     let (rem, result) =
-        TaggedValue::<Implicit, Ia5String>::from_der(input).expect("parsing failed");
+        TaggedParser::<Implicit, Ia5String>::from_der(input).expect("parsing failed");
     assert!(rem.is_empty());
     assert_eq!(result.tag(), Tag(1));
     assert_eq!(result.as_ref().as_ref(), "pass");
 
     // try the API verifying class and tag
-    let _ = TaggedValue::<Implicit, Ia5String>::parse_der(Class::ContextSpecific, Tag(1), input)
+    let _ = TaggedParser::<Implicit, Ia5String>::parse_der(Class::ContextSpecific, Tag(1), input)
         .expect("parsing failed");
 
     // test TagParser API
-    let parser = TagParser::implicit()
+    let parser = TaggedParserBuilder::implicit()
         .with_class(Class::ContextSpecific)
         .with_tag(Tag(1))
         .der_parser::<Ia5String>();

@@ -32,7 +32,7 @@ impl<'a> TryFrom<Any<'a>> for EmbeddedPdv<'a> {
         // AUTOMATIC TAGS means all values will be tagged (IMPLICIT)
         // [0] -> identification
         let (rem, seq0) =
-            TaggedValue::<Explicit, Any>::parse_ber(Class::ContextSpecific, Tag(0), data)?;
+            TaggedParser::<Explicit, Any>::parse_ber(Class::ContextSpecific, Tag(0), data)?;
         let inner = seq0.inner;
         let identification = match inner.tag() {
             Tag(0) => {
@@ -92,7 +92,7 @@ impl<'a> TryFrom<Any<'a>> for EmbeddedPdv<'a> {
         let (rem, data_value_descriptor) = (rem, None);
         // [2] -> data-value OCTET STRING
         let (_, data_value) =
-            TaggedValue::<Implicit, &[u8]>::parse_ber(Class::ContextSpecific, Tag(2), rem)?;
+            TaggedParser::<Implicit, &[u8]>::parse_ber(Class::ContextSpecific, Tag(2), rem)?;
         let data_value = data_value.inner;
         let obj = EmbeddedPdv {
             identification,

@@ -269,21 +269,21 @@ fn to_der_sequence() {
 
 #[test]
 fn to_der_tagged_explicit() {
-    let tagged = TaggedValue::new_explicit(Class::ContextSpecific, 1, 2u32);
+    let tagged = TaggedParser::new_explicit(Class::ContextSpecific, 1, 2u32);
     let v = tagged.to_der_vec().expect("serialization failed");
     assert_eq!(&v, &hex!("a1 03 02 01 02"));
     let (_, t2) =
-        TaggedValue::<Explicit, u32>::from_der(&v).expect("decoding serialized object failed");
+        TaggedParser::<Explicit, u32>::from_der(&v).expect("decoding serialized object failed");
     assert!(tagged.eq(&t2));
 }
 
 #[test]
 fn to_der_tagged_implicit() {
-    let tagged = TaggedValue::new_implicit(Class::ContextSpecific, false, 1, 2u32);
+    let tagged = TaggedParser::new_implicit(Class::ContextSpecific, false, 1, 2u32);
     let v = tagged.to_der_vec().expect("serialization failed");
     assert_eq!(&v, &hex!("81 01 02"));
     let (_, t2) =
-        TaggedValue::<Implicit, u32>::from_der(&v).expect("decoding serialized object failed");
+        TaggedParser::<Implicit, u32>::from_der(&v).expect("decoding serialized object failed");
     assert!(tagged.eq(&t2));
 }
 

@@ -47,13 +47,6 @@ impl display Tag {
 }
 }
 
-pub const TAG0: Tag = Tag(0);
-pub const TAG1: Tag = Tag(1);
-pub const TAG2: Tag = Tag(2);
-pub const TAG3: Tag = Tag(3);
-pub const TAG4: Tag = Tag(4);
-pub const TAG5: Tag = Tag(5);
-
 impl Tag {
     pub const fn assert_eq(&self, tag: Tag) -> Result<()> {
         if self.0 == tag.0 {

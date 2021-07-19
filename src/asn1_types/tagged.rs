@@ -1,13 +1,21 @@
-use crate::{Class, DynTagged, FromBer, FromDer, Header, ParseResult, Result, Tag};
+use crate::Class;
 use core::marker::PhantomData;
 
+mod builder;
 mod explicit;
 mod helpers;
 mod implicit;
 mod optional;
+mod parser;
 
+pub use builder::*;
+pub use explicit::*;
 pub use helpers::*;
+pub use implicit::*;
 pub use optional::*;
+pub use parser::*;
+
+pub(crate) const CONTEXT_SPECIFIC: u8 = Class::ContextSpecific as u8;
 
 // tag class: universal, application, context-specific, private
 
@@ -24,74 +32,63 @@ pub trait TagKind {}
 impl TagKind for Implicit {}
 impl TagKind for Explicit {}
 
+/// Helper object for creating `FromBer`/`FromDer` types for TAGGED OPTIONAL types
+///
+/// When parsing `ContextSpecific` (most common class), see [`TaggedExplicit`] and
+/// [`TaggedImplicit`] alias types.
+///
+/// # Examples
+///
+/// To parse a `[APPLICATION 0] EXPLICIT INTEGER` object:
+///
+/// ```rust
+/// use asn1_rs::{Explicit, FromBer, Integer, TaggedValue};
+///
+/// let bytes = &[0x60, 0x03, 0x2, 0x1, 0x2];
+///
+/// // If tagged object is present (and has expected tag), parsing succeeds:
+/// let (_, tagged) = TaggedValue::<Integer, Explicit, 0b01, 0>::from_ber(bytes).unwrap();
+/// assert_eq!(tagged, TaggedValue::explicit(Integer::from(2)));
+/// ```
 #[derive(Debug, PartialEq)]
-pub struct TaggedValue<'a, TagKind, T> {
-    pub header: Header<'a>,
-    pub inner: T,
+pub struct TaggedValue<T, TagKind, const CLASS: u8, const TAG: u32> {
+    pub(crate) inner: T,
 
     tag_kind: PhantomData<TagKind>,
 }
 
-impl<'a, TagKind, T> TaggedValue<'a, TagKind, T> {
-    pub const fn new(header: Header<'a>, inner: T) -> Self {
+impl<T, TagKind, const CLASS: u8, const TAG: u32> TaggedValue<T, TagKind, CLASS, TAG> {
+    /// Consumes the `TaggedParser`, returning the wrapped value.
+    #[inline]
+    pub fn into_inner(self) -> T {
+        self.inner
+    }
+}
+
+impl<T, const CLASS: u8, const TAG: u32> TaggedValue<T, Explicit, CLASS, TAG> {
+    /// Constructs a new `EXPLICIT TaggedParser` with the provided value
+    #[inline]
+    pub const fn explicit(inner: T) -> Self {
         TaggedValue {
-            header,
             inner,
             tag_kind: PhantomData,
         }
     }
+}
 
-    pub const fn assert_class(&self, class: Class) -> Result<()> {
-        self.header.assert_class(class)
-    }
-
-    pub const fn assert_tag(&self, tag: Tag) -> Result<()> {
-        self.header.assert_tag(tag)
-    }
-
+impl<T, const CLASS: u8, const TAG: u32> TaggedValue<T, Implicit, CLASS, TAG> {
+    /// Constructs a new `IMPLICIT TaggedParser` with the provided value
     #[inline]
-    pub const fn class(&self) -> Class {
-        self.header.class
-    }
-
-    #[inline]
-    pub const fn tag(&self) -> Tag {
-        self.header.tag
+    pub const fn implicit(inner: T) -> Self {
+        TaggedValue {
+            inner,
+            tag_kind: PhantomData,
+        }
     }
 }
 
-impl<'a, TagKind, T> AsRef<T> for TaggedValue<'a, TagKind, T> {
+impl<T, TagKind, const CLASS: u8, const TAG: u32> AsRef<T> for TaggedValue<T, TagKind, CLASS, TAG> {
     fn as_ref(&self) -> &T {
         &self.inner
-    }
-}
-
-impl<'a, TagKind, T> TaggedValue<'a, TagKind, T>
-where
-    Self: FromBer<'a>,
-{
-    pub fn parse_ber(class: Class, tag: Tag, bytes: &'a [u8]) -> ParseResult<'a, Self> {
-        let (rem, t) = TaggedValue::<TagKind, T>::from_ber(bytes)?;
-        t.assert_class(class)?;
-        t.assert_tag(tag)?;
-        Ok((rem, t))
-    }
-}
-
-impl<'a, TagKind, T> TaggedValue<'a, TagKind, T>
-where
-    Self: FromDer<'a>,
-{
-    pub fn parse_der(class: Class, tag: Tag, bytes: &'a [u8]) -> ParseResult<'a, Self> {
-        let (rem, t) = TaggedValue::<TagKind, T>::from_der(bytes)?;
-        t.assert_class(class)?;
-        t.assert_tag(tag)?;
-        Ok((rem, t))
-    }
-}
-
-impl<'a, TagKind, T> DynTagged for TaggedValue<'a, TagKind, T> {
-    fn tag(&self) -> Tag {
-        self.tag()
     }
 }

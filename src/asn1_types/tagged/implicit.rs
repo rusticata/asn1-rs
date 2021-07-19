@@ -2,17 +2,73 @@ use crate::*;
 use core::convert::TryFrom;
 use core::marker::PhantomData;
 
-impl<'a, T> TaggedValue<'a, Implicit, T> {
-    pub const fn new_implicit(class: Class, constructed: bool, tag: u32, inner: T) -> Self {
-        Self {
-            header: Header::new(class, constructed, Tag(tag), Length::Definite(0)),
-            inner,
-            tag_kind: PhantomData,
+impl<'a, T, const CLASS: u8, const TAG: u32> TryFrom<Any<'a>>
+    for TaggedValue<T, Implicit, CLASS, TAG>
+where
+    T: TryFrom<Any<'a>, Error = Error>,
+    T: Tagged,
+{
+    type Error = Error;
+
+    fn try_from(any: Any<'a>) -> Result<Self> {
+        any.tag().assert_eq(Tag(TAG))?;
+        // XXX if input is empty, this function is not called
+
+        if any.class() as u8 != CLASS {
+            return Err(Error::UnexpectedClass(any.class()));
+        }
+        let any = Any {
+            header: Header {
+                tag: T::TAG,
+                ..any.header.clone()
+            },
+            data: any.data,
+        };
+        match T::try_from(any) {
+            Ok(inner) => Ok(TaggedValue::implicit(inner)),
+            Err(e) => Err(e),
         }
     }
 }
 
-impl<'a, T> FromBer<'a> for TaggedValue<'a, Implicit, T>
+impl<'a, T, const CLASS: u8, const TAG: u32> CheckDerConstraints
+    for TaggedValue<T, Implicit, CLASS, TAG>
+where
+    T: CheckDerConstraints,
+    T: Tagged,
+{
+    fn check_constraints(any: &Any) -> Result<()> {
+        any.header.length.assert_definite()?;
+        let header = any.header.clone().with_tag(T::TAG);
+        let inner = Any::new(header, any.data);
+        T::check_constraints(&inner)?;
+        Ok(())
+    }
+}
+
+/// A helper object to parse `[ n ] IMPLICIT T`
+///
+/// A helper object implementing [`FromBer`] and [`FromDer`], to parse tagged
+/// optional values.
+///
+/// This helper expects context-specific tags.
+/// See [`TaggedValue`] or [`TaggedParser`] for more generic implementations if needed.
+///
+/// # Examples
+///
+/// To parse a `[0] IMPLICIT INTEGER OPTIONAL` object:
+///
+/// ```rust
+/// use asn1_rs::{FromBer, Integer, TaggedImplicit, TaggedValue};
+///
+/// let bytes = &[0xa0, 0x1, 0x2];
+///
+/// let (_, tagged) = TaggedImplicit::<Integer, 0>::from_ber(bytes).unwrap();
+/// assert_eq!(tagged, TaggedValue::implicit(Integer::from(2)));
+/// ```
+pub type TaggedImplicit<T, const TAG: u32> = TaggedValue<T, Implicit, CONTEXT_SPECIFIC, TAG>;
+
+impl<'a, T> FromBer<'a> for TaggedParser<'a, Implicit, T>
 where
     T: TryFrom<Any<'a>, Error = Error>,
     T: Tagged,
@@ -29,7 +85,7 @@ where
         };
         match T::try_from(any) {
             Ok(t) => {
-                let tagged_value = TaggedValue {
+                let tagged_value = TaggedParser {
                     header,
                     inner: t,
                     tag_kind: PhantomData,
@@ -41,7 +97,7 @@ where
     }
 }
 
-impl<'a, T> FromDer<'a> for TaggedValue<'a, Implicit, T>
+impl<'a, T> FromDer<'a> for TaggedParser<'a, Implicit, T>
 where
     T: TryFrom<Any<'a>, Error = Error>,
     T: CheckDerConstraints,
@@ -60,7 +116,7 @@ where
         T::check_constraints(&any)?;
         match T::try_from(any) {
             Ok(t) => {
-                let tagged_value = TaggedValue {
+                let tagged_value = TaggedParser {
                     header,
                     inner: t,
                     tag_kind: PhantomData,
@@ -72,7 +128,7 @@ where
     }
 }
 
-impl<'a, T> CheckDerConstraints for TaggedValue<'a, Implicit, T>
+impl<'a, T> CheckDerConstraints for TaggedParser<'a, Implicit, T>
 where
     T: CheckDerConstraints,
     T: Tagged,
@@ -92,7 +148,7 @@ where
 }
 
 #[cfg(feature = "std")]
-impl<'a, T> ToDer for TaggedValue<'a, Implicit, T>
+impl<'a, T> ToDer for TaggedParser<'a, Implicit, T>
 where
     T: ToDer,
 {

@@ -1,5 +1,5 @@
 use crate::error::*;
-use crate::{Any, Class, Explicit, Implicit, Tag, TaggedValue};
+use crate::{Any, Class, Explicit, Implicit, Tag, TaggedParser};
 use core::convert::{TryFrom, TryInto};
 #[cfg(feature = "std")]
 use std::io::Write;
@@ -290,8 +290,8 @@ where
 /// let tagged = 4u32.explicit(Class::ContextSpecific, 1);
 /// ```
 pub trait AsTaggedExplicit<'a>: Sized {
-    fn explicit(self, class: Class, tag: u32) -> TaggedValue<'a, Explicit, Self> {
-        TaggedValue::new_explicit(class, tag, self)
+    fn explicit(self, class: Class, tag: u32) -> TaggedParser<'a, Explicit, Self> {
+        TaggedParser::new_explicit(class, tag, self)
     }
 }
 
@@ -313,8 +313,8 @@ pub trait AsTaggedImplicit<'a>: Sized {
         class: Class,
         constructed: bool,
         tag: u32,
-    ) -> TaggedValue<'a, Implicit, Self> {
-        TaggedValue::new_implicit(class, constructed, tag, self)
+    ) -> TaggedParser<'a, Implicit, Self> {
+        TaggedParser::new_implicit(class, constructed, tag, self)
     }
 }
 

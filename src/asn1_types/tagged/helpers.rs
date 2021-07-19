@@ -1,118 +1,20 @@
-use super::{Explicit, Implicit, TaggedValue};
-use crate::{Any, Class, Error, FromBer, FromDer, Header, ParseResult, Tag, Tagged};
-use core::marker::PhantomData;
+use super::{Explicit, Implicit, TaggedParser};
+use crate::{Any, Error, FromDer, Header, ParseResult, Tag, Tagged};
 use nom::error::ParseError;
 use nom::IResult;
-
-/// A builder for parsing tagged values (`IMPLICIT` or `EXPLICIT`)
-///
-/// # Examples
-///
-/// ```
-/// use asn1_rs::{Class, Tag, TagParser};
-///
-/// let parser = TagParser::explicit()
-///     .with_class(Class::ContextSpecific)
-///     .with_tag(Tag(0))
-///     .der_parser::<u32>();
-///
-/// let input = &[0xa0, 0x03, 0x02, 0x01, 0x02];
-/// let (rem, tagged) = parser(input).expect("parsing failed");
-///
-/// assert!(rem.is_empty());
-/// assert_eq!(tagged.tag(), Tag(0));
-/// assert_eq!(tagged.as_ref(), &2);
-/// ```
-#[derive(Clone, Copy, Debug)]
-pub struct TagParser<TagKind> {
-    class: Class,
-    tag: Tag,
-    tag_kind: PhantomData<TagKind>,
-}
-
-impl<TagKind> TagParser<TagKind> {
-    /// Create a default `TagParser` builder
-    ///
-    /// `TagKind` must be specified as either [`Explicit`] or [`Implicit`]
-    ///
-    /// ```
-    /// use asn1_rs::{Explicit, TagParser};
-    ///
-    /// let builder = TagParser::<Explicit>::new();
-    /// ```
-    pub const fn new() -> Self {
-        TagParser {
-            class: Class::Universal,
-            tag: Tag(0),
-            tag_kind: PhantomData,
-        }
-    }
-
-    /// Set the expected `Class` for the builder
-    pub const fn with_class(self, class: Class) -> Self {
-        Self { class, ..self }
-    }
-
-    /// Set the expected `Tag` for the builder
-    pub const fn with_tag(self, tag: Tag) -> Self {
-        Self { tag, ..self }
-    }
-}
-
-impl TagParser<Explicit> {
-    /// Create a `TagParser` builder for `EXPLICIT` tagged values
-    pub const fn explicit() -> Self {
-        TagParser::new()
-    }
-}
-
-impl TagParser<Implicit> {
-    /// Create a `TagParser` builder for `IMPLICIT` tagged values
-    pub const fn implicit() -> Self {
-        TagParser::new()
-    }
-}
-
-impl<TagKind> TagParser<TagKind> {
-    /// Create the BER parser from the builder parameters
-    ///
-    /// This method will consume the builder and return a parser (to be used as a function).
-    pub fn ber_parser<'a, T>(
-        self,
-    ) -> impl Fn(&'a [u8]) -> ParseResult<'a, TaggedValue<'a, TagKind, T>>
-    where
-        TaggedValue<'a, TagKind, T>: FromBer<'a>,
-    {
-        move |bytes: &[u8]| TaggedValue::<TagKind, T>::parse_ber(self.class, self.tag, bytes)
-    }
-}
-
-impl<TagKind> TagParser<TagKind> {
-    /// Create the DER parser from the builder parameters
-    ///
-    /// This method will consume the builder and return a parser (to be used as a function).
-    pub fn der_parser<'a, T>(
-        self,
-    ) -> impl Fn(&'a [u8]) -> ParseResult<'a, TaggedValue<'a, TagKind, T>>
-    where
-        TaggedValue<'a, TagKind, T>: FromDer<'a>,
-    {
-        move |bytes: &[u8]| TaggedValue::<TagKind, T>::parse_der(self.class, self.tag, bytes)
-    }
-}
 
 // helper functions for parsing tagged objects
 
 pub fn parse_der_tagged_explicit<'a, IntoTag, T>(
     tag: IntoTag,
-) -> impl FnMut(&'a [u8]) -> ParseResult<TaggedValue<'a, Explicit, T>>
+) -> impl FnMut(&'a [u8]) -> ParseResult<TaggedParser<'a, Explicit, T>>
 where
     IntoTag: Into<Tag>,
-    TaggedValue<'a, Explicit, T>: FromDer<'a>,
+    TaggedParser<'a, Explicit, T>: FromDer<'a>,
 {
     let tag = tag.into();
     move |i| {
-        let (rem, tagged) = TaggedValue::from_der(i)?;
+        let (rem, tagged) = TaggedParser::from_der(i)?;
         tagged.assert_tag(tag)?;
         Ok((rem, tagged))
     }
@@ -138,15 +40,15 @@ where
 
 pub fn parse_der_tagged_implicit<'a, IntoTag, T>(
     tag: IntoTag,
-) -> impl FnMut(&'a [u8]) -> ParseResult<TaggedValue<'a, Implicit, T>>
+) -> impl FnMut(&'a [u8]) -> ParseResult<TaggedParser<'a, Implicit, T>>
 where
     IntoTag: Into<Tag>,
     // T: TryFrom<Any<'a>, Error = Error> + Tagged,
-    TaggedValue<'a, Implicit, T>: FromDer<'a>,
+    TaggedParser<'a, Implicit, T>: FromDer<'a>,
 {
     let tag = tag.into();
     move |i| {
-        let (rem, tagged) = TaggedValue::from_der(i)?;
+        let (rem, tagged) = TaggedParser::from_der(i)?;
         tagged.assert_tag(tag)?;
         Ok((rem, tagged))
     }
