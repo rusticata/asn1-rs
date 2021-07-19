@@ -275,6 +275,13 @@ fn to_der_tagged_explicit() {
     let (_, t2) =
         TaggedParser::<Explicit, u32>::from_der(&v).expect("decoding serialized object failed");
     assert!(tagged.eq(&t2));
+    // TaggedValue API
+    let tagged = TaggedValue::explicit(2u32);
+    let v = tagged.to_der_vec().expect("serialization failed");
+    assert_eq!(&v, &hex!("a1 03 02 01 02"));
+    let (_, t2) =
+        TaggedExplicit::<u32, 1>::from_der(&v).expect("decoding serialized object failed");
+    assert!(tagged.eq(&t2));
 }
 
 #[test]
@@ -284,6 +291,13 @@ fn to_der_tagged_implicit() {
     assert_eq!(&v, &hex!("81 01 02"));
     let (_, t2) =
         TaggedParser::<Implicit, u32>::from_der(&v).expect("decoding serialized object failed");
+    assert!(tagged.eq(&t2));
+    // TaggedValue API
+    let tagged = TaggedValue::implicit(2u32);
+    let v = tagged.to_der_vec().expect("serialization failed");
+    assert_eq!(&v, &hex!("81 01 02"));
+    let (_, t2) =
+        TaggedImplicit::<u32, 1>::from_der(&v).expect("decoding serialized object failed");
     assert!(tagged.eq(&t2));
 }
 

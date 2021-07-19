@@ -46,6 +46,46 @@ where
     }
 }
 
+#[cfg(feature = "std")]
+impl<T, const CLASS: u8, const TAG: u32> ToDer for TaggedValue<T, Implicit, CLASS, TAG>
+where
+    T: ToDer,
+{
+    fn to_der_len(&self) -> Result<usize> {
+        self.inner.to_der_len()
+    }
+
+    fn write_der(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let class =
+            Class::try_from(CLASS).map_err(|_| SerializeError::InvalidClass { class: CLASS })?;
+        let mut v = Vec::new();
+        let inner_len = self.inner.write_der_content(&mut v)?;
+        // XXX X.690 section 8.14.3: if implicing tagging was used [...]:
+        // XXX a) the encoding shall be constructed if the base encoding is constructed, and shall be primitive otherwise
+        let constructed = matches!(TAG, 16 | 17);
+        let header = Header::new(class, constructed, self.tag(), Length::Definite(inner_len));
+        let sz = header.write_der_header(writer)?;
+        let sz = sz + writer.write(&v)?;
+        Ok(sz)
+    }
+
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let mut sink = std::io::sink();
+        let class =
+            Class::try_from(CLASS).map_err(|_| SerializeError::InvalidClass { class: CLASS })?;
+        let inner_len = self.inner.write_der_content(&mut sink)?;
+        // XXX X.690 section 8.14.3: if implicing tagging was used [...]:
+        // XXX a) the encoding shall be constructed if the base encoding is constructed, and shall be primitive otherwise
+        let constructed = matches!(TAG, 16 | 17);
+        let header = Header::new(class, constructed, self.tag(), Length::Definite(inner_len));
+        header.write_der_header(writer).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        self.inner.write_der(writer)
+    }
+}
+
 /// A helper object to parse `[ n ] IMPLICIT T`
 ///
 /// A helper object implementing [`FromBer`] and [`FromDer`], to parse tagged
@@ -96,6 +136,8 @@ where
         }
     }
 }
+
+// implementations for TaggedParser
 
 impl<'a, T> FromDer<'a> for TaggedParser<'a, Implicit, T>
 where

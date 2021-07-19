@@ -120,6 +120,9 @@ pub enum SerializeError {
     #[error("ASN.1 error: {0:?}")]
     ASN1Error(#[from] Error),
 
+    #[error("Invalid Class {class:}")]
+    InvalidClass { class: u8 },
+
     #[error("Invalid Length")]
     InvalidLength,
 

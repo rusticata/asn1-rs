@@ -33,6 +33,36 @@ where
     }
 }
 
+#[cfg(feature = "std")]
+impl<T, const CLASS: u8, const TAG: u32> ToDer for TaggedValue<T, Explicit, CLASS, TAG>
+where
+    T: ToDer,
+{
+    fn to_der_len(&self) -> Result<usize> {
+        let sz = self.inner.to_der_len()?;
+        if sz < 127 {
+            // 1 (class+tag) + 1 (length) + len
+            Ok(2 + sz)
+        } else {
+            // 1 (class+tag) + n (length) + len
+            let n = Length::Definite(sz).to_der_len()?;
+            Ok(1 + n + sz)
+        }
+    }
+
+    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        let inner_len = self.inner.to_der_len()?;
+        let class =
+            Class::try_from(CLASS).map_err(|_| SerializeError::InvalidClass { class: CLASS })?;
+        let header = Header::new(class, true, self.tag(), Length::Definite(inner_len));
+        header.write_der_header(writer).map_err(Into::into)
+    }
+
+    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+        self.inner.write_der(writer)
+    }
+}
+
 /// A helper object to parse `[ 0 ] EXPLICIT T`
 ///
 /// A helper object implementing [`FromBer`] and [`FromDer`], to parse tagged
@@ -55,6 +85,8 @@ where
 /// assert_eq!(tagged, TaggedValue::explicit(Integer::from(2)));
 /// ```
 pub type TaggedExplicit<T, const TAG: u32> = TaggedValue<T, Explicit, CONTEXT_SPECIFIC, TAG>;
+
+// implementations for TaggedParser
 
 impl<'a, T> TaggedParser<'a, Implicit, T> {
     pub const fn new_implicit(class: Class, constructed: bool, tag: u32, inner: T) -> Self {
