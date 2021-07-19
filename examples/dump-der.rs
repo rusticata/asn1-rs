@@ -151,6 +151,11 @@ fn print_der_any(any: Any, depth: usize, ctx: &Context) {
             let b = any.bool().unwrap();
             indent_println!(depth + 1, "BOOLEAN: {}", b.to_string().green());
         }
+        Tag::EmbeddedPdv => {
+            let e = any.embedded_pdv().unwrap();
+            indent_println!(depth + 1, "EMBEDDED PDV: {:?}", e);
+            print_hex_dump(e.data_value, ctx.hex_max);
+        }
         Tag::Enumerated => {
             let i = any.enumerated().unwrap();
             indent_println!(depth + 1, "ENUMERATED: {}", i.0);

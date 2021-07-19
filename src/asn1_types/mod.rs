@@ -2,6 +2,7 @@ mod any;
 mod bitstring;
 mod boolean;
 mod choice;
+mod embedded_pdv;
 mod end_of_content;
 mod enumerated;
 mod generalizedtime;
@@ -19,7 +20,7 @@ mod tagged;
 mod utctime;
 
 pub use {
-    any::*, bitstring::*, boolean::*, choice::*, end_of_content::*, enumerated::*,
+    any::*, bitstring::*, boolean::*, choice::*, embedded_pdv::*, end_of_content::*, enumerated::*,
     generalizedtime::*, integer::*, null::*, object_descriptor::*, octetstring::*, oid::*,
     optional::*, real::*, sequence::*, set::*, strings::*, tagged::*, utctime::*,
 };

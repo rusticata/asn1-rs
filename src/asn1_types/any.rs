@@ -107,6 +107,7 @@ impl<'a> Any<'a> {
     impl_any_into!(bmpstring => BmpString<'a>, "BmpString");
     impl_any_into!(bool => bool, "BOOLEAN");
     impl_any_into!(boolean => Boolean, "BOOLEAN");
+    impl_any_into!(embedded_pdv => EmbeddedPdv<'a>, "EMBEDDED PDV");
     impl_any_into!(enumerated => Enumerated, "ENUMERATED");
     impl_any_into!(generalizedtime => GeneralizedTime, "GeneralizedTime");
     impl_any_into!(generalstring => GeneralString<'a>, "GeneralString");
