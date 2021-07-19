@@ -158,6 +158,13 @@ impl<'a> FromDer<'a> for Any<'a> {
     }
 }
 
+impl CheckDerConstraints for Any<'_> {
+    fn check_constraints(any: &Any) -> Result<()> {
+        any.header.length().assert_definite()?;
+        Ok(())
+    }
+}
+
 impl DynTagged for Any<'_> {
     fn tag(&self) -> Tag {
         self.tag()
