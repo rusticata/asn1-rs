@@ -152,6 +152,14 @@ impl<'a> Header<'a> {
     }
 }
 
+impl From<Tag> for Header<'_> {
+    #[inline]
+    fn from(tag: Tag) -> Self {
+        let constructed = matches!(tag, Tag::Sequence | Tag::Set);
+        Self::new(Class::Universal, constructed, tag, Length::Definite(0))
+    }
+}
+
 impl<'a> ToStatic for Header<'a> {
     type Owned = Header<'static>;
 
