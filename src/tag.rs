@@ -18,7 +18,7 @@ impl display Tag {
     OctetString = 4,
     Null = 5,
     Oid = 6,
-    ObjDescriptor = 7,
+    ObjectDescriptor = 7,
     External = 8,
     RealType = 9,
     Enumerated = 10,

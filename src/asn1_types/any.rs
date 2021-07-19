@@ -115,6 +115,7 @@ impl<'a> Any<'a> {
     impl_any_into!(integer => Integer<'a>, "INTEGER");
     impl_any_into!(null => Null, "NULL");
     impl_any_into!(numericstring => NumericString<'a>, "NumericString");
+    impl_any_into!(objectdescriptor => ObjectDescriptor<'a>, "ObjectDescriptor");
     impl_any_into!(octetstring => OctetString<'a>, "OCTET STRING");
     impl_any_into!(oid => Oid<'a>, "OBJECT IDENTIFIER");
     /// Attempt to convert object to `Oid` (ASN.1 type: `RELATIVE-OID`).
