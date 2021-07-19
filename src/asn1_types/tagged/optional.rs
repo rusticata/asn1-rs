@@ -3,7 +3,7 @@ use crate::{
     ParseResult, Tag, Tagged,
 };
 use core::convert::TryFrom;
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 pub const TAG_OPT0: TaggedOptional = TaggedOptional::new(Class::ContextSpecific, Tag(0));
 pub const TAG_OPT1: TaggedOptional = TaggedOptional::new(Class::ContextSpecific, Tag(1));
