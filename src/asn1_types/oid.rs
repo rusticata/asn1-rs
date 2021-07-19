@@ -12,8 +12,9 @@ use core::{
 use num_bigint::BigUint;
 use num_traits::Num;
 
+/// An error for OID parsing functions.
 #[derive(Debug)]
-pub enum ParseError {
+pub enum OidParseError {
     TooShort,
     /// Signalizes that the first or second component is too large.
     /// The first must be within the range 0 to 6 (inclusive).
@@ -126,7 +127,7 @@ impl<'a> Oid<'a> {
 
     /// Build an OID from an array of object identifier components.
     /// This method allocates memory on the heap.
-    pub fn from<'b>(s: &'b [u64]) -> core::result::Result<Oid<'static>, ParseError> {
+    pub fn from<'b>(s: &'b [u64]) -> core::result::Result<Oid<'static>, OidParseError> {
         if s.len() < 2 {
             if s.len() == 1 && s[0] == 0 {
                 return Ok(Oid {
@@ -134,10 +135,10 @@ impl<'a> Oid<'a> {
                     relative: false,
                 });
             }
-            return Err(ParseError::TooShort);
+            return Err(OidParseError::TooShort);
         }
         if s[0] >= 7 || s[1] >= 40 {
-            return Err(ParseError::FirstComponentsTooLarge);
+            return Err(OidParseError::FirstComponentsTooLarge);
         }
         let asn1_encoded: Vec<u8> = [(s[0] * 40 + s[1]) as u8]
             .iter()
@@ -151,9 +152,9 @@ impl<'a> Oid<'a> {
     }
 
     /// Build a relative OID from an array of object identifier components.
-    pub fn from_relative<'b>(s: &'b [u64]) -> core::result::Result<Oid<'static>, ParseError> {
+    pub fn from_relative<'b>(s: &'b [u64]) -> core::result::Result<Oid<'static>, OidParseError> {
         if s.is_empty() {
-            return Err(ParseError::TooShort);
+            return Err(OidParseError::TooShort);
         }
         let asn1_encoded: Vec<u8> = encode_relative(s).collect();
         Ok(Oid {
@@ -374,11 +375,11 @@ impl<'a> fmt::Debug for Oid<'a> {
 }
 
 impl<'a> FromStr for Oid<'a> {
-    type Err = ParseError;
+    type Err = OidParseError;
 
     fn from_str(s: &str) -> core::result::Result<Self, Self::Err> {
         let v: core::result::Result<Vec<_>, _> = s.split('.').map(|c| c.parse::<u64>()).collect();
-        v.map_err(|_| ParseError::ParseIntError)
+        v.map_err(|_| OidParseError::ParseIntError)
             .and_then(|v| Oid::from(&v))
     }
 }
