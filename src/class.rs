@@ -8,9 +8,13 @@ pub struct BerClassFromIntError(pub(crate) ());
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 #[repr(u8)]
 pub enum Class {
+    /// `Universal` class of tags (`0b00`)
     Universal = 0b00,
+    /// `Application` class of tags (`0b01`)
     Application = 0b01,
+    /// `Context-Specific` class of tags (`0b10`)
     ContextSpecific = 0b10,
+    /// `Private` class of tags (`0b11`)
     Private = 0b11,
 }
 

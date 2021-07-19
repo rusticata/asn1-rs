@@ -34,8 +34,12 @@ impl TagKind for Explicit {}
 
 /// Helper object for creating `FromBer`/`FromDer` types for TAGGED OPTIONAL types
 ///
-/// When parsing `ContextSpecific` (most common class), see [`TaggedExplicit`] and
+/// When parsing `ContextSpecific` (the most common class), see [`TaggedExplicit`] and
 /// [`TaggedImplicit`] alias types.
+///
+/// # Notes
+///
+/// `CLASS` must be between 0 and 4. See [`Class`] for possible values for the `CLASS` parameter.
 ///
 /// # Examples
 ///
