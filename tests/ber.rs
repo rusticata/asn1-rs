@@ -50,6 +50,7 @@ fn from_ber_embedded_pdv() {
     );
     assert_eq!(result.data_value, &[0xaa, 0xa0]);
 }
+
 #[test]
 fn from_ber_endofcontent() {
     let input = &hex!("00 00");
