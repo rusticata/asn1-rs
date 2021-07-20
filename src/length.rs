@@ -98,8 +98,8 @@ impl ToDer for Length {
             Length::Definite(l) => match l {
                 0..=0x7f => Ok(1),
                 0x80..=0xff => Ok(2),
-                0x100..=0x7fff => Ok(3),
-                0x8000..=0xffff => Ok(4),
+                0x100..=0xffff => Ok(3),
+                0x1_0000..=0xffff_ffff => Ok(4),
                 _ => Err(Error::InvalidLength),
             },
         }
@@ -118,18 +118,19 @@ impl ToDer for Length {
                     Ok(sz)
                 } else {
                     // Long form
-                    let mut sz = 0;
-                    let mut val = l;
-                    loop {
-                        if val <= 127 {
-                            sz += writer.write(&[val as u8])?;
-                            return Ok(sz);
-                        } else {
-                            let b = (val & 0b0111_1111) as u8 | 0b1000_0000;
-                            sz += writer.write(&[b])?;
-                            val >>= 7;
-                        }
+                    let b = l.to_be_bytes();
+                    // skip leading zeroes
+                    // we do not have to test for length, l cannot be 0
+                    let mut idx = 0;
+                    while b[idx] == 0 {
+                        idx += 1;
                     }
+                    let b = &b[idx..];
+                    // first byte: 0x80 + length of length
+                    let b0 = 0x80 | (b.len() as u8);
+                    let sz = writer.write(&[b0])?;
+                    let sz = sz + writer.write(&b)?;
+                    Ok(sz)
                 }
             }
         }

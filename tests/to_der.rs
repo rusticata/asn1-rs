@@ -16,7 +16,15 @@ fn to_der_length() {
     // definite, long form
     let length = Length::Definite(250);
     let v = length.to_der_vec().expect("serialization failed");
-    assert_eq!(&v, &[0xfa, 0x01]);
+    assert_eq!(&v, &[0x81, 0xfa]);
+}
+
+#[test]
+fn to_der_length_long() {
+    let s = core::str::from_utf8(&[0x41; 256]).unwrap();
+    let v = s.to_der_vec().expect("serialization failed");
+    assert_eq!(&v[..4], &[0x0c, 0x82, 0x01, 0x00]);
+    assert_eq!(&v[4..], s.as_bytes());
 }
 
 #[test]
