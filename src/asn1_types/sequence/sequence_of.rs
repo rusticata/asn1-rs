@@ -4,22 +4,56 @@ use core::convert::TryFrom;
 use core::iter::FromIterator;
 
 /// The `SEQUENCE OF` object is an ordered list of homogeneous types.
+///
+/// # Examples
+///
+/// ```
+/// use asn1_rs::SequenceOf;
+/// use std::iter::FromIterator;
+///
+/// // build set
+/// let it = [2, 3, 4].iter();
+/// let seq = SequenceOf::from_iter(it);
+///
+/// // `seq` now contains the serialized DER representation of the array
+///
+/// // iterate objects
+/// let mut sum = 0;
+/// for item in seq.iter() {
+///     // item has type `Result<u32>`, since parsing the serialized bytes could fail
+///     sum += *item;
+/// }
+/// assert_eq!(sum, 9);
+///
+/// ```
 #[derive(Debug)]
 pub struct SequenceOf<T> {
     pub(crate) items: Vec<T>,
 }
 
 impl<T> SequenceOf<T> {
+    /// Builds a `SEQUENCE OF` from the provided content
+    #[inline]
     pub const fn new(items: Vec<T>) -> Self {
         SequenceOf { items }
     }
 
+    /// Returns the length of this `SEQUENCE` (the number of items).
+    #[inline]
     pub fn len(&self) -> usize {
         self.items.len()
     }
 
+    /// Returns `true` if this `SEQUENCE` is empty.
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.items.is_empty()
+    }
+
+    /// Returns an iterator over the items of the `SEQUENCE`.
+    #[inline]
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
+        self.items.iter()
     }
 }
 

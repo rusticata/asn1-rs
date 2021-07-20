@@ -3,22 +3,57 @@ use alloc::vec::Vec;
 use core::convert::TryFrom;
 use core::iter::FromIterator;
 
+/// The `SET OF` object is an unordered list of homogeneous types.
+///
+/// # Examples
+///
+/// ```
+/// use asn1_rs::SetOf;
+/// use std::iter::FromIterator;
+///
+/// // build set
+/// let it = [2, 3, 4].iter();
+/// let set = SetOf::from_iter(it);
+///
+/// // `set` now contains the serialized DER representation of the array
+///
+/// // iterate objects
+/// let mut sum = 0;
+/// for item in set.iter() {
+///     // item has type `Result<u32>`, since parsing the serialized bytes could fail
+///     sum += *item;
+/// }
+/// assert_eq!(sum, 9);
+///
+/// ```
 #[derive(Debug)]
 pub struct SetOf<T> {
     items: Vec<T>,
 }
 
 impl<T> SetOf<T> {
+    /// Builds a `SET OF` from the provided content
+    #[inline]
     pub const fn new(items: Vec<T>) -> Self {
         SetOf { items }
     }
 
+    /// Returns the length of this `SET` (the number of items).
+    #[inline]
     pub fn len(&self) -> usize {
         self.items.len()
     }
 
+    /// Returns `true` if this `SET` is empty.
+    #[inline]
     pub fn is_empty(&self) -> bool {
         self.items.is_empty()
+    }
+
+    /// Returns an iterator over the items of the `SET`.
+    #[inline]
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
+        self.items.iter()
     }
 }
 
