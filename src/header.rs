@@ -103,6 +103,12 @@ impl<'a> Header<'a> {
         self.length
     }
 
+    /// Return the raw tag encoding, if it was stored in this object
+    #[inline]
+    pub fn raw_tag(&self) -> Option<&[u8]> {
+        self.raw_tag.as_ref().map(|cow| cow.as_ref())
+    }
+
     /// Test if object is primitive
     #[inline]
     pub const fn is_primitive(&self) -> bool {

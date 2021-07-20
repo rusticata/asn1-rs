@@ -217,6 +217,30 @@ fn from_ber_iter_sequence() {
 }
 
 #[test]
+fn from_ber_tag_custom() {
+    // canonical tag encoding
+    let input = &hex!("8f 02 12 34");
+    let (rem, any) = Any::from_ber(input).expect("parsing failed");
+    assert!(rem.is_empty());
+    assert_eq!(any.tag(), Tag(15));
+    // non-canonical tag encoding
+    let input = &hex!("9f 0f 02 12 34");
+    let (rem, any) = Any::from_ber(input).expect("parsing failed");
+    assert!(rem.is_empty());
+    assert_eq!(any.tag(), Tag(15));
+    assert_eq!(any.header.raw_tag(), Some(&[0x9f, 0x0f][..]));
+}
+
+#[test]
+fn from_ber_tag_long() {
+    let input = &hex!("9f a2 22 01 00");
+    let (rem, any) = Any::from_ber(input).expect("parsing failed");
+    assert!(rem.is_empty());
+    assert_eq!(any.tag(), Tag(0x1122));
+    assert_eq!(any.header.raw_tag(), Some(&[0x9f, 0xa2, 0x22][..]));
+}
+
+#[test]
 fn from_ber_iter_sequence_incomplete() {
     let input = &hex!("30 09 02 03 01 00 01 02 03 01 00");
     let (rem, result) = Sequence::from_ber(input).expect("parsing failed");
