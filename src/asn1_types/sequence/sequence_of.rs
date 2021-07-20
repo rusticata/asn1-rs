@@ -1,6 +1,7 @@
 use crate::*;
 use alloc::vec::Vec;
 use core::convert::TryFrom;
+use core::iter::FromIterator;
 
 /// The `SEQUENCE OF` object is an ordered list of homogeneous types.
 #[derive(Debug)]
@@ -49,6 +50,13 @@ impl<'a, T> IntoIterator for &'a mut SequenceOf<T> {
 impl<T> From<SequenceOf<T>> for Vec<T> {
     fn from(set: SequenceOf<T>) -> Self {
         set.items
+    }
+}
+
+impl<T> FromIterator<T> for SequenceOf<T> {
+    fn from_iter<IT: IntoIterator<Item = T>>(iter: IT) -> Self {
+        let items = iter.into_iter().collect();
+        SequenceOf::new(items)
     }
 }
 

@@ -1,6 +1,7 @@
 use crate::*;
 use alloc::vec::Vec;
 use core::convert::TryFrom;
+use core::iter::FromIterator;
 
 #[derive(Debug)]
 pub struct SetOf<T> {
@@ -48,6 +49,13 @@ impl<'a, T> IntoIterator for &'a mut SetOf<T> {
 impl<T> From<SetOf<T>> for Vec<T> {
     fn from(set: SetOf<T>) -> Self {
         set.items
+    }
+}
+
+impl<T> FromIterator<T> for SetOf<T> {
+    fn from_iter<IT: IntoIterator<Item = T>>(iter: IT) -> Self {
+        let items = iter.into_iter().collect();
+        SetOf::new(items)
     }
 }
 
