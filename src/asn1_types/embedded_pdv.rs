@@ -8,7 +8,7 @@ pub struct EmbeddedPdv<'a> {
     pub data_value: &'a [u8],
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum PdvIdentification<'a> {
     Syntaxes {
         s_abstract: Oid<'a>,
