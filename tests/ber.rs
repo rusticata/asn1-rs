@@ -105,6 +105,35 @@ fn from_ber_int() {
 }
 
 #[test]
+fn from_ber_length_incomplete() {
+    let input = &hex!("30");
+    let res = u8::from_ber(input).expect_err("parsing should have failed");
+    assert_eq!(res, nom::Err::Incomplete(Needed::new(1)));
+    let input = &hex!("02");
+    let res = u8::from_ber(input).expect_err("parsing should have failed");
+    assert_eq!(res, nom::Err::Incomplete(Needed::new(1)));
+    let input = &hex!("02 05");
+    let res = u8::from_ber(input).expect_err("parsing should have failed");
+    assert_eq!(res, nom::Err::Incomplete(Needed::new(5)));
+    let input = &hex!("02 85");
+    let res = u8::from_ber(input).expect_err("parsing should have failed");
+    assert_eq!(res, nom::Err::Incomplete(Needed::new(5)));
+    let input = &hex!("02 85 ff");
+    let res = u8::from_ber(input).expect_err("parsing should have failed");
+    assert_eq!(res, nom::Err::Incomplete(Needed::new(4)));
+}
+
+#[test]
+fn from_ber_length_invalid() {
+    let input = &hex!("02 ff 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 10");
+    let res = u8::from_ber(input).expect_err("parsing should have failed");
+    assert_eq!(res, nom::Err::Error(Error::InvalidLength));
+    let input = &hex!("02 85 ff ff ff ff ff 00");
+    let res = u8::from_ber(input).expect_err("parsing should have failed");
+    assert!(res.is_incomplete());
+}
+
+#[test]
 fn from_ber_octetstring() {
     let input = &hex!("04 05 41 41 41 41 41");
     let (rem, result) = OctetString::from_ber(input).expect("parsing failed");
@@ -229,6 +258,20 @@ fn from_ber_tag_custom() {
     assert!(rem.is_empty());
     assert_eq!(any.tag(), Tag(15));
     assert_eq!(any.header.raw_tag(), Some(&[0x9f, 0x0f][..]));
+}
+
+#[test]
+fn from_ber_tag_incomplete() {
+    let input = &hex!("9f a2 a2");
+    let res = Any::from_ber(input).expect_err("parsing should have failed");
+    assert_eq!(res, nom::Err::Error(Error::InvalidTag));
+}
+
+#[test]
+fn from_ber_tag_overflow() {
+    let input = &hex!("9f a2 a2 a2 a2 a2 a2 22 01 00");
+    let res = Any::from_ber(input).expect_err("parsing should have failed");
+    assert_eq!(res, nom::Err::Error(Error::InvalidTag));
 }
 
 #[test]
