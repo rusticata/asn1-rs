@@ -22,7 +22,7 @@ impl<'a> TryFrom<Any<'a>> for Enumerated {
     fn try_from(any: Any<'a>) -> Result<Enumerated> {
         any.tag().assert_eq(Self::TAG)?;
         any.header.assert_primitive()?;
-        let res_u64 = bytes_to_u64(&any.data)?;
+        let res_u64 = bytes_to_u64(any.data)?;
         if res_u64 > (<u32>::MAX as u64) {
             return Err(Error::IntegerTooLarge);
         }

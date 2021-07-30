@@ -64,7 +64,7 @@ impl<'a> core::convert::TryFrom<Any<'a>> for BmpString<'a> {
             })
             .collect::<Vec<_>>();
 
-        let s = String::from_utf16(&v)?;
+        let s = String::from_utf16(v)?;
         let data = Cow::Owned(s);
 
         Ok(BmpString { data })
@@ -107,6 +107,6 @@ impl ToDer for BmpString<'_> {
     }
 
     fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        writer.write(&self.data.as_bytes()).map_err(Into::into)
+        writer.write(self.data.as_bytes()).map_err(Into::into)
     }
 }

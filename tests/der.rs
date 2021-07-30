@@ -56,7 +56,7 @@ fn from_der_bitstring() {
 fn from_der_bitstring_constructed() {
     let bytes: &[u8] = &hex!("23 81 0c 03 03 00 0a 3b 03 05 04 5f 29 1c d0");
     assert_eq!(
-        BitString::from_der(&bytes),
+        BitString::from_der(bytes),
         Err(Err::Failure(Error::ConstructUnexpected))
     );
 }
@@ -134,7 +134,7 @@ fn from_der_generalizedtime() {
 fn from_der_indefinite_length() {
     let bytes: &[u8] = &hex!("23 80 03 03 00 0a 3b 03 05 04 5f 29 1c d0 00 00");
     assert_eq!(
-        BitString::from_der(&bytes),
+        BitString::from_der(bytes),
         Err(Err::Error(Error::IndefiniteLengthUnexpected))
     );
 }
@@ -187,7 +187,7 @@ fn from_der_oid() {
 fn from_der_optional() {
     let input = &hex!("30 0a 0a 03 00 00 01 02 03 01 00 01");
     let (rem, result) = Sequence::from_der_and_then(input, |input| {
-        let (i, obj0) = <Option<Enumerated>>::from_der(&input)?;
+        let (i, obj0) = <Option<Enumerated>>::from_der(input)?;
         let (i, obj1) = u32::from_der(i)?;
         Ok((i, (obj0, obj1)))
     })

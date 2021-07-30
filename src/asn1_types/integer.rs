@@ -26,7 +26,7 @@ fn decode_slice(any: Any<'_>) -> Result<&[u8]> {
         [] => Err(Error::DerConstraintFailed),
         [0] => Ok(bytes),
         [0, byte, ..] if *byte < 0x80 => Err(Error::DerConstraintFailed),
-        [0, rest @ ..] => Ok(&rest),
+        [0, rest @ ..] => Ok(rest),
         [byte, ..] if *byte >= 0x80 => Err(Error::IntegerTooLarge),
         _ => Ok(bytes),
     }
@@ -35,7 +35,7 @@ fn decode_slice(any: Any<'_>) -> Result<&[u8]> {
 /// Decode an unsigned integer into a byte array of the requested size
 /// containing a big endian integer.
 fn decode_array_uint<const N: usize>(any: Any<'_>) -> Result<[u8; N]> {
-    if is_highest_bit_set(&any.data) {
+    if is_highest_bit_set(any.data) {
         return Err(Error::IntegerNegative);
     }
     let input = decode_slice(any)?;

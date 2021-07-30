@@ -129,7 +129,7 @@ impl ToDer for Length {
                     // first byte: 0x80 + length of length
                     let b0 = 0x80 | (b.len() as u8);
                     let sz = writer.write(&[b0])?;
-                    let sz = sz + writer.write(&b)?;
+                    let sz = sz + writer.write(b)?;
                     Ok(sz)
                 }
             }

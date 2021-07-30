@@ -356,7 +356,7 @@ impl ToDer for Header<'_> {
     fn write_der_raw(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         // use raw_tag if present
         let sz = match &self.raw_tag {
-            Some(t) => writer.write(&t)?,
+            Some(t) => writer.write(t)?,
             None => (self.class, self.constructed, self.tag).write_der_header(writer)?,
         };
         let sz = sz + self.length.write_der_header(writer)?;

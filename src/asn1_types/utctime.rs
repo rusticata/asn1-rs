@@ -132,7 +132,7 @@ impl<'a> TryFrom<Any<'a>> for UtcTime {
             return Err(Error::StringInvalidCharset);
         }
 
-        UtcTime::from_bytes(&any.data)
+        UtcTime::from_bytes(any.data)
     }
 }
 

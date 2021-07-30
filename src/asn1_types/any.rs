@@ -55,7 +55,7 @@ impl<'a> Any<'a> {
     /// Get the bytes representation of the *content*
     #[inline]
     pub fn as_bytes(&'a self) -> &'a [u8] {
-        &self.data
+        self.data
     }
 
     /// Convert the current object to an object with same contents but different tag
@@ -72,7 +72,7 @@ impl<'a> Any<'a> {
     where
         T: FromBer<'a>,
     {
-        T::from_ber(&self.data)
+        T::from_ber(self.data)
     }
 
     #[inline]
@@ -80,7 +80,7 @@ impl<'a> Any<'a> {
     where
         T: FromDer<'a>,
     {
-        T::from_der(&self.data)
+        T::from_der(self.data)
     }
 }
 
@@ -202,13 +202,13 @@ impl ToDer for Any<'_> {
     }
 
     fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        writer.write(&self.data).map_err(Into::into)
+        writer.write(self.data).map_err(Into::into)
     }
 
     /// Similar to using `to_der`, but uses header without computing length value
     fn write_der_raw(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let sz = self.header.write_der_header(writer)?;
-        let sz = sz + writer.write(&self.data)?;
+        let sz = sz + writer.write(self.data)?;
         Ok(sz)
     }
 }

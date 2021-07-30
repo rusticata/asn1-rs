@@ -55,7 +55,7 @@ where
         if self.has_error || self.data.is_empty() {
             return None;
         }
-        match T::from_ber(&self.data) {
+        match T::from_ber(self.data) {
             Ok((rem, obj)) => {
                 self.data = rem;
                 Some(Ok(obj))
@@ -83,7 +83,7 @@ where
         if self.has_error || self.data.is_empty() {
             return None;
         }
-        match T::from_der(&self.data) {
+        match T::from_der(self.data) {
             Ok((rem, obj)) => {
                 self.data = rem;
                 Some(Ok(obj))

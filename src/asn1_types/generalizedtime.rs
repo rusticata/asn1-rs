@@ -176,7 +176,7 @@ impl<'a> TryFrom<Any<'a>> for GeneralizedTime {
             return Err(Error::StringInvalidCharset);
         }
 
-        GeneralizedTime::from_bytes(&any.data)
+        GeneralizedTime::from_bytes(any.data)
     }
 }
 

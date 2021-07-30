@@ -27,7 +27,7 @@ where
 {
     fn check_constraints(any: &Any) -> Result<()> {
         any.header.length.assert_definite()?;
-        let (_, inner) = Any::from_ber(&any.data)?;
+        let (_, inner) = Any::from_ber(any.data)?;
         T::check_constraints(&inner)?;
         Ok(())
     }
@@ -186,7 +186,7 @@ where
 {
     fn check_constraints(any: &Any) -> Result<()> {
         any.header.length.assert_definite()?;
-        let (_, inner_any) = Any::from_der(&any.data)?;
+        let (_, inner_any) = Any::from_der(any.data)?;
         T::check_constraints(&inner_any)?;
         Ok(())
     }

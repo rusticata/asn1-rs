@@ -117,7 +117,7 @@ where
     fn check_constraints(any: &Any) -> Result<()> {
         any.tag().assert_eq(Self::TAG)?;
         any.header.assert_constructed()?;
-        for item in SequenceIterator::<Any, DerParser>::new(&any.data) {
+        for item in SequenceIterator::<Any, DerParser>::new(any.data) {
             let item = item?;
             T::check_constraints(&item)?;
         }

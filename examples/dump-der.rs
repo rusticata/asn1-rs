@@ -109,7 +109,7 @@ fn print_der_any(any: Any, depth: usize, ctx: &Context) {
         Class::Universal => (),
         Class::ContextSpecific | Class::Application => {
             // attempt to decode inner object (if EXPLICIT)
-            match Any::from_der(&any.data) {
+            match Any::from_der(any.data) {
                 Ok((rem2, inner)) => {
                     indent_println!(
                         depth + 1,
