@@ -268,6 +268,7 @@ pub struct Integer<'a> {
 
 impl<'a> Integer<'a> {
     /// Creates a new `Integer` containing the given value (borrowed).
+    #[inline]
     pub const fn new(s: &'a [u8]) -> Self {
         Integer {
             data: Cow::Borrowed(s),
@@ -275,6 +276,7 @@ impl<'a> Integer<'a> {
     }
 
     /// Creates a borrowed `Any` for this object
+    #[inline]
     pub fn any(&'a self) -> Any<'a> {
         Any::from_tag_and_data(Self::TAG, &self.data)
     }
@@ -467,9 +469,40 @@ impl ToDer for Integer<'_> {
     }
 }
 
+/// Helper macro to declare integers at compile-time
+///
+/// [`Integer`] stores the encoded representation of the integer, so declaring
+/// an integer requires to either use a runtime function or provide the encoded value.
+/// This macro simplifies this task by encoding the value.
+/// It can be used the following ways:
+///
+/// - `int!(1234)`: Create a const expression for the corresponding `Integer<'static>`
+/// - `int!(raw 1234)`: Return the DER encoded form as a byte array (hex-encoded, big-endian
+///    representation from the integer, with leading zeroes removed).
+///
+/// # Examples
+///
+/// ```rust
+/// use asn1_rs::{int, Integer};
+///
+/// const INT0: Integer = int!(1234);
+/// ```
+#[macro_export]
+macro_rules! int {
+    (raw $item:expr) => {
+        $crate::export::macro_oid::encode_int!($item)
+    };
+    ($item:expr) => {
+        $crate::Integer::new(
+            &$crate::int!(raw $item),
+        )
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use crate::FromDer;
+    use std::convert::TryInto;
 
     // Vectors from Section 5.7 of:
     // https://luca.ntop.org/Teaching/Appunti/asn1.html
@@ -530,5 +563,11 @@ mod tests {
         assert!(i16::from_der(&[0x02, 0x02, 0x00, 0x00]).is_err());
         assert!(u8::from_der(&[0x02, 0x02, 0x00, 0x00]).is_err());
         assert!(u16::from_der(&[0x02, 0x02, 0x00, 0x00]).is_err());
+    }
+
+    #[test]
+    fn declare_int() {
+        let int = super::int!(1234);
+        assert_eq!(int.try_into(), Ok(1234));
     }
 }

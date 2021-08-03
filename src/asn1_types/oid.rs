@@ -383,3 +383,73 @@ impl<'a> FromStr for Oid<'a> {
             .and_then(|v| Oid::from(&v))
     }
 }
+
+/// Helper macro to declare integers at compile-time
+///
+/// Since the DER encoded oids are not very readable we provide a
+/// procedural macro `oid!`. The macro can be used the following ways:
+///
+/// - `oid!(1.4.42.23)`: Create a const expression for the corresponding `Oid<'static>`
+/// - `oid!(rel 42.23)`: Create a const expression for the corresponding relative `Oid<'static>`
+/// - `oid!(raw 1.4.42.23)`/`oid!(raw rel 42.23)`: Obtain the DER encoded form as a byte array.
+///
+/// # Comparing oids
+///
+/// Comparing a parsed oid to a static oid is probably the most common
+/// thing done with oids in your code. The `oid!` macro can be used in expression positions for
+/// this purpose. For example
+/// ```
+/// use asn1_rs::{oid, Oid};
+///
+/// # let some_oid: Oid<'static> = oid!(1.2.456);
+/// const SOME_STATIC_OID: Oid<'static> = oid!(1.2.456);
+/// assert_eq!(some_oid, SOME_STATIC_OID)
+/// ```
+/// To get a relative Oid use `oid!(rel 1.2)`.
+///
+/// Because of limitations for procedural macros ([rust issue](https://github.com/rust-lang/rust/issues/54727))
+/// and constants used in patterns ([rust issue](https://github.com/rust-lang/rust/issues/31434))
+/// the `oid` macro can not directly be used in patterns, also not through constants.
+/// You can do this, though:
+/// ```
+/// # use asn1_rs::{oid, Oid};
+/// # let some_oid: Oid<'static> = oid!(1.2.456);
+/// const SOME_OID: Oid<'static> = oid!(1.2.456);
+/// if some_oid == SOME_OID || some_oid == oid!(1.2.456) {
+///     println!("match");
+/// }
+///
+/// // Alternatively, compare the DER encoded form directly:
+/// const SOME_OID_RAW: &[u8] = &oid!(raw 1.2.456);
+/// match some_oid.as_bytes() {
+///     SOME_OID_RAW => println!("match"),
+///     _ => panic!("no match"),
+/// }
+/// ```
+/// *Attention*, be aware that the latter version might not handle the case of a relative oid correctly. An
+/// extra check might be necessary.
+#[macro_export]
+macro_rules! oid {
+    (raw $items:expr) => {
+        $crate::export::macro_oid::encode_oid!($items)
+    };
+    (rel $items:expr) => {
+        $crate::Oid::new_relative($crate::export::borrow::Cow::Borrowed(
+            &$crate::oid!(raw $items),
+        ))
+    };
+    ($items:expr) => {
+        $crate::Oid::new($crate::export::borrow::Cow::Borrowed(
+            &$crate::oid!(raw $items),
+        ))
+    };
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn declare_oid() {
+        let oid = super::oid!(1.2.840 .113549 .1);
+        assert_eq!(oid.to_string(), "1.2.840.113549.1");
+    }
+}

@@ -40,6 +40,7 @@ serialize = ["cookie-factory"]
 std = []
 
 [dependencies]
+asn1-rs-macro-oid = { version="0.1", path="./macro-oid" }
 chrono = {version="0.4.19", optional=true }
 cookie-factory = { version="0.3.0", optional=true }
 displaydoc = "0.2.2"
