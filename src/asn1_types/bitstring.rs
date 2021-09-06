@@ -1,7 +1,8 @@
 use crate::*;
 use alloc::borrow::Cow;
+#[cfg(feature = "bits")]
+use bitvec::{order::Msb0, slice::BitSlice};
 use core::convert::TryFrom;
-use nom::bitvec::{order::Msb0, slice::BitSlice};
 
 /// ASN.1 `BITSTRING` type
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -30,8 +31,9 @@ impl<'a> BitString<'a> {
     }
 
     /// Constructs a shared `&BitSlice` reference over the object data.
+    #[cfg(feature = "bits")]
     pub fn as_bitslice(&self) -> Option<&BitSlice<Msb0, u8>> {
-        BitSlice::<Msb0, _>::from_slice(&self.data)
+        BitSlice::<Msb0, _>::from_slice(&self.data).ok()
     }
 }
 
@@ -129,5 +131,16 @@ mod tests {
         assert!(obj.is_set(7));
         assert!(!obj.is_set(9));
         assert!(obj.is_set(17));
+    }
+
+    #[cfg(feature = "bits")]
+    #[test]
+    fn test_bitstring_to_bitvec() {
+        let obj = BitString::new(0, &[0x0f, 0x00, 0x40]);
+        let bv = obj.as_bitslice().expect("could not get bitslice");
+        assert_eq!(bv.get(0).as_deref(), Some(&false));
+        assert_eq!(bv.get(7).as_deref(), Some(&true));
+        assert_eq!(bv.get(9).as_deref(), Some(&false));
+        assert_eq!(bv.get(17).as_deref(), Some(&true));
     }
 }

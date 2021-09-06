@@ -35,23 +35,25 @@ rustdoc-args = ["--cfg", "docsrs"]
 [features]
 default = ["std"]
 bigint = ["num-bigint"]
+bits = ["bitvec"]
 datetime = ["chrono"]
 serialize = ["cookie-factory"]
 std = []
 
 [dependencies]
 asn1-rs-macro-oid = { version="0.1", path="./macro-oid" }
-chrono = {version="0.4.19", optional=true }
+bitvec = { version="0.22", optional=true }
+chrono = { version="0.4.19", optional=true }
 cookie-factory = { version="0.3.0", optional=true }
 displaydoc = "0.2.2"
-nom = "6.1.2"
+nom = { version="7.0", default_features=false, features=["std"] }
 num-bigint = { version = "0.4", optional = true }
 num-traits = "0.2.14"
-rusticata-macros = "3.1"
+rusticata-macros = "4.0"
 thiserror = "1.0.25"
 
 [dev-dependencies]
 colored = "2.0"
 hex-literal = "0.3.1"
-oid-registry = { version="0.1.4", features=["crypto","x509"] }
+oid-registry = { version="0.2.0-beta1", features=["crypto","x509"] }
 pem = "0.8.3"
