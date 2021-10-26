@@ -57,4 +57,4 @@ thiserror = "1.0.25"
 colored = "2.0"
 hex-literal = "0.3.1"
 oid-registry = { version="0.2.0", features=["crypto","x509"] }
-pem = "0.8.3"
+pem = "1.0.1"
