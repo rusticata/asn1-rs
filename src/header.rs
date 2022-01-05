@@ -152,6 +152,27 @@ impl<'a> Header<'a> {
             Err(Error::ConstructExpected)
         }
     }
+
+    /// Test if object class is Universal
+    #[inline]
+    pub const fn is_universal(&self) -> bool {
+        self.class as u8 == Class::Universal as u8
+    }
+    /// Test if object class is Application
+    #[inline]
+    pub const fn is_application(&self) -> bool {
+        self.class as u8 == Class::Application as u8
+    }
+    /// Test if object class is Context-specific
+    #[inline]
+    pub const fn is_contextspecific(&self) -> bool {
+        self.class as u8 == Class::ContextSpecific as u8
+    }
+    /// Test if object class is Private
+    #[inline]
+    pub const fn is_private(&self) -> bool {
+        self.class as u8 == Class::Private as u8
+    }
 }
 
 impl From<Tag> for Header<'_> {
