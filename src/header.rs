@@ -69,7 +69,7 @@ impl<'a> Header<'a> {
 
     /// Set the length of this `Header`
     #[inline]
-    pub fn with_lenth(self, length: Length) -> Self {
+    pub fn with_length(self, length: Length) -> Self {
         Self { length, ..self }
     }
 
