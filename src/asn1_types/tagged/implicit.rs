@@ -15,7 +15,8 @@ where
         // XXX if input is empty, this function is not called
 
         if any.class() as u8 != CLASS {
-            return Err(Error::UnexpectedClass(any.class()));
+            let class = Class::try_from(CLASS).ok();
+            return Err(Error::unexpected_class(class, any.class()));
         }
         let any = Any {
             header: Header {

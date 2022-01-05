@@ -124,11 +124,7 @@ impl<'a> Header<'a> {
     /// Return error if class is not the expected class
     #[inline]
     pub const fn assert_class(&self, class: Class) -> Result<()> {
-        if self.class as u8 == class as u8 {
-            Ok(())
-        } else {
-            Err(Error::UnexpectedClass(class))
-        }
+        self.class.assert_eq(class)
     }
 
     /// Return error if tag is not the expected tag

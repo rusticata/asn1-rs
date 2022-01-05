@@ -18,6 +18,19 @@ pub enum Class {
     Private = 0b11,
 }
 
+impl Class {
+    pub const fn assert_eq(&self, class: Class) -> Result<(), crate::error::Error> {
+        if *self as u8 == class as u8 {
+            Ok(())
+        } else {
+            Err(crate::error::Error::UnexpectedClass {
+                expected: Some(class),
+                actual: *self,
+            })
+        }
+    }
+}
+
 impl fmt::Display for Class {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let s = match self {

@@ -3,7 +3,7 @@ use alloc::str;
 use alloc::string;
 use alloc::string::String;
 use displaydoc::Display;
-use nom::error::{ErrorKind, ParseError};
+use nom::error::{ErrorKind, FromExternalError, ParseError};
 use nom::IResult;
 #[cfg(feature = "std")]
 use std::io;
@@ -22,6 +22,10 @@ impl std::error::Error for Error {}
 #[derive(Debug, Display, PartialEq)]
 // #[cfg_attr(feature = "std", derive(Error))]
 pub enum Error {
+    /// BER object does not have the expected type
+    BerTypeError,
+    /// BER object does not have the expected value
+    BerValueError,
     /// Invalid Length
     InvalidLength,
     /// Invalid Value when parsing object with tag {tag:?} {msg:}
@@ -32,8 +36,11 @@ pub enum Error {
     UnknownTag(u32),
     /// Unexpected Tag (expected: {expected:?}, actual: {actual:?})
     UnexpectedTag { expected: Option<Tag>, actual: Tag },
-    /// Unexpected Class (expected: {0:?}
-    UnexpectedClass(Class),
+    /// Unexpected Class (expected: {expected:?}, actual: {actual:?})
+    UnexpectedClass {
+        expected: Option<Class>,
+        actual: Class,
+    },
 
     /// Indefinite length not allowed
     IndefiniteLengthUnexpected,
@@ -68,6 +75,26 @@ pub enum Error {
     NomError(ErrorKind),
 }
 
+impl Error {
+    /// Build an error from the provided invalid value
+    #[inline]
+    pub const fn invalid_value(tag: Tag, msg: String) -> Self {
+        Self::InvalidValue { tag, msg }
+    }
+
+    /// Build an error from the provided unexpected class
+    #[inline]
+    pub const fn unexpected_class(expected: Option<Class>, actual: Class) -> Self {
+        Self::UnexpectedClass { expected, actual }
+    }
+
+    /// Build an error from the provided unexpected tag
+    #[inline]
+    pub const fn unexpected_tag(expected: Option<Tag>, actual: Tag) -> Self {
+        Self::UnexpectedTag { expected, actual }
+    }
+}
+
 impl<'a> ParseError<&'a [u8]> for Error {
     fn from_error_kind(_input: &'a [u8], kind: ErrorKind) -> Self {
         Error::NomError(kind)
@@ -79,7 +106,7 @@ impl<'a> ParseError<&'a [u8]> for Error {
 
 impl From<Error> for nom::Err<Error> {
     fn from(e: Error) -> Self {
-        nom::Err::Failure(e)
+        nom::Err::Error(e)
     }
 }
 
@@ -107,6 +134,12 @@ impl From<nom::Err<Error>> for Error {
             nom::Err::Incomplete(n) => Self::Incomplete(n),
             nom::Err::Error(e) | nom::Err::Failure(e) => e,
         }
+    }
+}
+
+impl<I, E> FromExternalError<I, E> for Error {
+    fn from_external_error(_input: I, kind: ErrorKind, _e: E) -> Error {
+        Error::NomError(kind)
     }
 }
 

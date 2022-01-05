@@ -13,7 +13,8 @@ where
         any.tag().assert_eq(Tag(TAG))?;
         any.header.assert_constructed()?;
         if any.class() as u8 != CLASS {
-            return Err(Error::UnexpectedClass(any.class()));
+            let class = Class::try_from(CLASS).ok();
+            return Err(Error::unexpected_class(class, any.class()));
         }
         let (_, inner) = T::from_ber(any.data)?;
         Ok(TaggedValue::explicit(inner))

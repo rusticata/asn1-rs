@@ -96,7 +96,7 @@ impl OptTaggedParser {
             return Ok((bytes, None));
         }
         if any.class() != self.class {
-            return Err(Error::UnexpectedClass(any.class()).into());
+            return Err(Error::unexpected_class(Some(self.class), any.class()).into());
         }
         let Any { header, data } = any;
         let (_, res) = f(header, data)?;
@@ -136,7 +136,7 @@ impl OptTaggedParser {
             return Ok((bytes, None));
         }
         if any.class() != self.class {
-            return Err(Error::UnexpectedClass(any.class()).into());
+            return Err(Error::unexpected_class(Some(self.class), any.class()).into());
         }
         let Any { header, data } = any;
         let (_, res) = f(header, data)?;
