@@ -431,15 +431,15 @@ impl<'a> FromStr for Oid<'a> {
 #[macro_export]
 macro_rules! oid {
     (raw $items:expr) => {
-        $crate::export::macro_oid::encode_oid!($items)
+        $crate::exports::macro_oid::encode_oid!($items)
     };
     (rel $items:expr) => {
-        $crate::Oid::new_relative($crate::export::borrow::Cow::Borrowed(
-            &$crate::oid!(raw $items),
+        $crate::Oid::new_relative($crate::exports::borrow::Cow::Borrowed(
+            &$crate::exports::macro_oid::encode_oid!(rel $items),
         ))
     };
     ($items:expr) => {
-        $crate::Oid::new($crate::export::borrow::Cow::Borrowed(
+        $crate::Oid::new($crate::exports::borrow::Cow::Borrowed(
             &$crate::oid!(raw $items),
         ))
     };
@@ -447,9 +447,31 @@ macro_rules! oid {
 
 #[cfg(test)]
 mod tests {
+    use crate::Oid;
+
     #[test]
     fn declare_oid() {
         let oid = super::oid!(1.2.840 .113549 .1);
         assert_eq!(oid.to_string(), "1.2.840.113549.1");
+    }
+
+    const OID_RSA_ENCRYPTION: &[u8] = &oid!(raw 1.2.840.113549.1.1.1);
+    const OID_EC_PUBLIC_KEY: &[u8] = &oid!(raw 1.2.840.10045.2.1);
+    #[allow(clippy::match_like_matches_macro)]
+    fn compare_oid(oid: &Oid) -> bool {
+        match oid.as_bytes() {
+            OID_RSA_ENCRYPTION => true,
+            OID_EC_PUBLIC_KEY => true,
+            _ => false,
+        }
+    }
+
+    #[rustfmt::skip::macros(oid)]
+    #[test]
+    fn test_compare_oid() {
+        let oid = Oid::from(&[1, 2, 840, 113_549, 1, 1, 1]).unwrap();
+        assert_eq!(oid, oid!(1.2.840.113549.1.1.1));
+        let oid = Oid::from(&[1, 2, 840, 113_549, 1, 1, 1]).unwrap();
+        assert!(compare_oid(&oid));
     }
 }
