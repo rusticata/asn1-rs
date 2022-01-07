@@ -107,6 +107,7 @@ fn from_der_generalizedtime() {
 
         assert_eq!(result.utc_datetime(), datetime);
     }
+    let _ = result;
     // local time with fractional seconds (should fail: no 'Z' at end)
     let input = b"\x18\x1019851106210627.3";
     let result = GeneralizedTime::from_der(input).expect_err("should not parse");
@@ -123,6 +124,7 @@ fn from_der_generalizedtime() {
         assert_eq!(result.0.millisecond, Some(3));
         assert_eq!(result.0.tz, ASN1TimeZone::Z);
     }
+    let _ = result;
     // local time with fractional seconds, and with local time 5 hours retarded in relation to coordinated universal time.
     // (should fail: no 'Z' at end)
     let input = b"\x18\x1519851106210627.3-0500";
@@ -288,6 +290,7 @@ fn from_der_utctime() {
 
         assert_eq!(result.utc_datetime(), datetime);
     }
+    let _ = result;
 }
 
 #[test]

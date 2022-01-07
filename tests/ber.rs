@@ -70,6 +70,7 @@ fn from_ber_generalizedtime() {
 
         assert_eq!(result.utc_datetime(), datetime);
     }
+    let _ = result;
     // local time with fractional seconds
     let input = b"\x18\x1019851106210627.3";
     let (rem, result) = GeneralizedTime::from_ber(input).expect("parsing failed");
@@ -82,6 +83,7 @@ fn from_ber_generalizedtime() {
         assert_eq!(result.0.millisecond, Some(3));
         assert_eq!(result.0.tz, ASN1TimeZone::Undefined);
     }
+    let _ = result;
     // coordinated universal time with fractional seconds
     let input = b"\x18\x1119851106210627.3Z";
     let (rem, result) = GeneralizedTime::from_ber(input).expect("parsing failed");
@@ -94,6 +96,7 @@ fn from_ber_generalizedtime() {
         assert_eq!(result.0.millisecond, Some(3));
         assert_eq!(result.0.tz, ASN1TimeZone::Z);
     }
+    let _ = result;
     // local time with fractional seconds, and with local time 5 hours retarded in relation to coordinated universal time.
     let input = b"\x18\x1519851106210627.3-0500";
     let (rem, result) = GeneralizedTime::from_ber(input).expect("parsing failed");
@@ -106,6 +109,7 @@ fn from_ber_generalizedtime() {
         assert_eq!(result.0.millisecond, Some(3));
         assert_eq!(result.0.tz, ASN1TimeZone::Offset(-1, 5, 0));
     }
+    let _ = result;
 }
 
 #[test]
