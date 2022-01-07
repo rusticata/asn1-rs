@@ -193,5 +193,5 @@ pub use nom::{Err, IResult, Needed};
 #[doc(hidden)]
 pub mod exports {
     pub use alloc::borrow;
-    pub use asn1_rs_macro_oid as macro_oid;
+    pub use asn1_rs_impl;
 }

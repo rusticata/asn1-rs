@@ -439,11 +439,11 @@ impl<'a> FromStr for Oid<'a> {
 #[macro_export]
 macro_rules! oid {
     (raw $items:expr) => {
-        $crate::exports::macro_oid::encode_oid!($items)
+        $crate::exports::asn1_rs_impl::encode_oid!($items)
     };
     (rel $items:expr) => {
         $crate::Oid::new_relative($crate::exports::borrow::Cow::Borrowed(
-            &$crate::exports::macro_oid::encode_oid!(rel $items),
+            &$crate::exports::asn1_rs_impl::encode_oid!(rel $items),
         ))
     };
     ($items:expr) => {

@@ -490,10 +490,10 @@ impl ToDer for Integer<'_> {
 #[macro_export]
 macro_rules! int {
     (raw $item:expr) => {
-        $crate::exports::macro_oid::encode_int!($item)
+        $crate::exports::asn1_rs_impl::encode_int!($item)
     };
     (rel $item:expr) => {
-        $crate::exports::macro_oid::encode_int!(rel $item)
+        $crate::exports::asn1_rs_impl::encode_int!(rel $item)
     };
     ($item:expr) => {
         $crate::Integer::new(

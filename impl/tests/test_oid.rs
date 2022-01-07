@@ -1,4 +1,4 @@
-use asn1_rs_macro_oid::{encode_int, encode_oid};
+use asn1_rs_impl::{encode_int, encode_oid};
 
 #[test]
 fn test_encode_oid() {
