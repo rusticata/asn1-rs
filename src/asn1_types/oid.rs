@@ -177,8 +177,16 @@ impl<'a> Oid<'a> {
     }
 
     /// Get the encoded oid without the header.
+    #[inline]
     pub fn as_bytes(&self) -> &[u8] {
         self.asn1.as_ref()
+    }
+
+    /// Get the encoded oid without the header.
+    #[deprecated(since = "0.2.0", note = "Use `as_bytes` instead")]
+    #[inline]
+    pub fn bytes(&self) -> &[u8] {
+        self.as_bytes()
     }
 
     /// Get the bytes representation of the encoded oid
