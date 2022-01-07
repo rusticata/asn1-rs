@@ -1,5 +1,5 @@
 use asn1_rs::*;
-use derive_asn1_rs::*;
+use asn1_rs_derive::*;
 use hex_literal::hex;
 
 #[derive(Debug, PartialEq, DerSequence)]
