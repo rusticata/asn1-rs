@@ -10,13 +10,20 @@ pub fn derive_ber_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
         _ => panic!("Unsupported type, cannot derive"),
     };
 
+    let debug_derive = ast.attrs.iter().any(|attr| {
+        attr.path
+            .is_ident(&Ident::new("debug_derive", Span::call_site()))
+    });
+
     let impl_tryfrom = container.gen_tryfrom();
     let impl_tagged = container.gen_tagged();
     let ts = s.gen_impl(quote! {
         #impl_tryfrom
         #impl_tagged
     });
-    eprintln!("{}", ts.to_string());
+    if debug_derive {
+        eprintln!("{}", ts.to_string());
+    }
     ts
 }
 
@@ -24,9 +31,14 @@ pub fn derive_der_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
     let ast = s.ast();
 
     let container = match &ast.data {
-        Data::Struct(s) => Container::from_datastruct(s),
+        Data::Struct(ds) => Container::from_datastruct(ds, ast),
         _ => panic!("Unsupported type, cannot derive"),
     };
+
+    let debug_derive = ast.attrs.iter().any(|attr| {
+        attr.path
+            .is_ident(&Ident::new("debug_derive", Span::call_site()))
+    });
 
     let impl_tryfrom = container.gen_tryfrom();
     let impl_tagged = container.gen_tagged();
