@@ -2,6 +2,12 @@ use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{parse_quote, Data, DataStruct, DeriveInput, Ident, Lifetime, WherePredicate};
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum Asn1Type {
+    Ber,
+    Der,
+}
+
 pub fn derive_ber_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
     let ast = s.ast();
 
@@ -18,6 +24,8 @@ pub fn derive_ber_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
     let impl_tryfrom = container.gen_tryfrom();
     let impl_tagged = container.gen_tagged();
     let ts = s.gen_impl(quote! {
+        extern crate asn1_rs;
+
         #impl_tryfrom
         #impl_tagged
     });
@@ -42,11 +50,15 @@ pub fn derive_der_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
 
     let impl_tryfrom = container.gen_tryfrom();
     let impl_tagged = container.gen_tagged();
-    let impl_checkconstraints = container.gen_checkconstraints();
+    // let impl_checkconstraints = container.gen_checkconstraints();
+    let impl_fromder = container.gen_fromder();
     let ts = s.gen_impl(quote! {
+        extern crate asn1_rs;
+
         #impl_tryfrom
         #impl_tagged
-        #impl_checkconstraints
+        //#impl_checkconstraints
+        #impl_fromder
     });
     if debug_derive {
         eprintln!("{}", ts.to_string());
@@ -55,15 +67,13 @@ pub fn derive_der_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
 }
 
 pub struct Container {
-    parse_content: TokenStream,
     field_names: Vec<Ident>,
     where_predicates: Vec<WherePredicate>,
 }
 
 impl Container {
     pub fn from_datastruct(ds: &DataStruct, ast: &DeriveInput) -> Self {
-        let parse_content = derive_ber_sequence_content(ds);
-        let field_names = ds.fields.iter().map(|f| f.ident.clone().unwrap()).collect();
+        let field_names: Vec<_> = ds.fields.iter().map(|f| f.ident.clone().unwrap()).collect();
         // dbg!(s);
 
         // get lifetimes from generics
@@ -77,21 +87,19 @@ impl Container {
         };
 
         Container {
-            parse_content,
             field_names,
             where_predicates,
         }
     }
 
     pub fn gen_tryfrom(&self) -> TokenStream {
-        let parse_content = &self.parse_content;
         let field_names = &self.field_names;
+        let parse_content = derive_ber_sequence_content(&field_names, Asn1Type::Ber);
         let lifetime = Lifetime::new("'ber", Span::call_site());
         let wh = &self.where_predicates;
         // note: `gen impl` in synstructure takes care of appending extra where clauses if any, and removing
         // the `where` statement if there are none.
         quote! {
-            extern crate asn1_rs;
             use asn1_rs::{Any, FromBer};
             use core::convert::TryFrom;
 
@@ -121,25 +129,54 @@ impl Container {
         }
     }
 
+    #[allow(dead_code)]
     pub fn gen_checkconstraints(&self) -> TokenStream {
         quote! {
             gen impl<'ber> asn1_rs::CheckDerConstraints for @Self {
-                fn check_constraints(_any: &Any) -> Result<()> {
+                fn check_constraints(any: &Any) -> Result<()> {
+                    any.tag().assert_eq(Self::TAG)?;
                     Ok(())
+                }
+            }
+        }
+    }
+
+    pub fn gen_fromder(&self) -> TokenStream {
+        let lifetime = Lifetime::new("'ber", Span::call_site());
+        let wh = &self.where_predicates;
+        let field_names = &self.field_names;
+        let parse_content = derive_ber_sequence_content(&field_names, Asn1Type::Der);
+        // note: `gen impl` in synstructure takes care of appending extra where clauses if any, and removing
+        // the `where` statement if there are none.
+        quote! {
+            use asn1_rs::{FromDer, Tagged};
+
+            gen impl<#lifetime> asn1_rs::FromDer<#lifetime> for @Self where #(#wh)+* {
+                fn from_der(bytes: &#lifetime [u8]) -> asn1_rs::ParseResult<#lifetime, Self> {
+                    let (rem, any) = asn1_rs::Any::from_der(bytes)?;
+                    any.header.assert_tag(Self::TAG)?;
+                    let i = any.data;
+                    //
+                    #parse_content
+                    //
+                    // let _ = i; // XXX check if empty?
+                    Ok((rem,Self{#(#field_names),*}))
                 }
             }
         }
     }
 }
 
-fn derive_ber_sequence_content(s: &DataStruct) -> TokenStream {
-    let field_parsers: Vec<_> = s
-        .fields
+fn derive_ber_sequence_content(field_names: &[Ident], asn1_type: Asn1Type) -> TokenStream {
+    let from = match asn1_type {
+        Asn1Type::Ber => quote! {FromBer::from_ber},
+        Asn1Type::Der => quote! {FromDer::from_der},
+    };
+    let field_parsers: Vec<_> = field_names
         .iter()
-        .map(|f| {
-            let name = &f.ident;
+        .map(|name| {
             quote! {
-                let (i, #name) = FromBer::from_ber(i)?;
+                let (i, #name) = #from(i)?;
             }
         })
         .collect();

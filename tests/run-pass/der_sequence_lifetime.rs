@@ -1,4 +1,4 @@
-use asn1_rs::*;
+use asn1_rs::{DerSequence, FromDer};
 use hex_literal::hex;
 
 // simple lifetime
