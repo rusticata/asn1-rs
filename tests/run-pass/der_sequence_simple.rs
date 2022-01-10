@@ -1,5 +1,4 @@
 use asn1_rs::*;
-use asn1_rs_derive::*;
 use hex_literal::hex;
 
 #[derive(Debug, PartialEq, DerSequence)]
@@ -9,8 +8,7 @@ pub struct T1 {
     c: u16,
 }
 
-#[test]
-fn test_derive() {
+fn main() {
     let input = &hex!("30090201 01020102 020103");
     let (rem, t1) = T1::from_der(input).expect("parsing failed");
     assert!(rem.is_empty());

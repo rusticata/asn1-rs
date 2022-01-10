@@ -190,6 +190,37 @@ pub use traits::*;
 pub use nom;
 pub use nom::{Err, IResult, Needed};
 
+/// # DerSequence custom derive
+///
+/// `DerSequence` is a custom derive attribute, to derive a DER [`Sequence`] parser automatically from the structure definition.
+///
+/// Parsers will be derive for all struct members. Every member type must implement the [`FromDer`] trait.
+///
+/// ## Examples
+///
+/// To parse the following ASN.1 structure:
+/// <pre>
+/// S ::= SEQUENCE {
+///     a INTEGER(0..2^32),
+///     b INTEGER(0..2^16),
+///     c INTEGER(0..2^16),
+/// }
+/// </pre>
+///
+/// Define a structure and add the `DerSequence` derive:
+///
+/// ```rust
+/// use asn1_rs::*;
+///
+/// #[derive(DerSequence)]
+/// struct S {
+///   a: u32,
+///   b: u16,
+///   c: u16
+/// }
+/// ```
+pub use asn1_rs_derive::DerSequence;
+
 #[doc(hidden)]
 pub mod exports {
     pub use alloc::borrow;
