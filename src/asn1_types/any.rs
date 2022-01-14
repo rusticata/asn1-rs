@@ -32,7 +32,7 @@ impl<'a> Any<'a> {
             header: Header {
                 tag,
                 constructed,
-                class: crate::Class::Universal,
+                class: Class::Universal,
                 length: Length::Definite(data.len()),
                 raw_tag: None,
             },
@@ -170,6 +170,7 @@ impl<'a> FromDer<'a> for Any<'a> {
 impl CheckDerConstraints for Any<'_> {
     fn check_constraints(any: &Any) -> Result<()> {
         any.header.length().assert_definite()?;
+        // if len < 128, must use short form (10.1: minimum number of octets)
         Ok(())
     }
 }

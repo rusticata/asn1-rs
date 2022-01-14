@@ -1,6 +1,7 @@
 use crate::datetime::decode_decimal;
 use crate::*;
 use alloc::format;
+use alloc::string::String;
 #[cfg(feature = "datetime")]
 use chrono::{DateTime, TimeZone, Utc};
 use core::convert::TryFrom;
@@ -185,7 +186,7 @@ impl fmt::Display for GeneralizedTime {
         let dt = &self.0;
         let fsec = match self.0.millisecond {
             Some(v) => format!(".{}", v),
-            None => format!(""),
+            None => String::new(),
         };
         match dt.tz {
             ASN1TimeZone::Undefined => write!(
