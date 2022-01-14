@@ -46,25 +46,34 @@ impl<'a> Any<'a> {
         self.header.class
     }
 
+    /// Update the class of the current object
+    #[inline]
+    pub fn with_class(self, class: Class) -> Self {
+        Any {
+            header: self.header.with_class(class),
+            ..self
+        }
+    }
+
     /// Return the `Tag` of this object
     #[inline]
     pub const fn tag(&self) -> Tag {
         self.header.tag
     }
 
-    /// Get the bytes representation of the *content*
-    #[inline]
-    pub fn as_bytes(&'a self) -> &'a [u8] {
-        self.data
-    }
-
-    /// Convert the current object to an object with same contents but different tag
+    /// Update the tag of the current object
     #[inline]
     pub fn with_tag(self, tag: Tag) -> Self {
         Any {
             header: self.header.with_tag(tag),
             data: self.data,
         }
+    }
+
+    /// Get the bytes representation of the *content*
+    #[inline]
+    pub fn as_bytes(&'a self) -> &'a [u8] {
+        self.data
     }
 
     #[inline]
