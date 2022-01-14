@@ -9,7 +9,7 @@ use core::convert::TryInto;
 /// It contains a header, and either a reference to or owned data for the object content.
 ///
 /// Note: this type is only provided in **borrowed** version (*i.e.* it can own the inner data).
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Any<'a> {
     /// The object header
     pub header: Header<'a>,
