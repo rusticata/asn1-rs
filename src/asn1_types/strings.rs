@@ -26,6 +26,27 @@ pub use utf8string::*;
 pub use videotexstring::*;
 pub use visiblestring::*;
 
+/// Base trait for BER string objects and character set validation
+///
+/// This trait is implemented by several types, and is used to determine if some bytes
+/// would be valid for the given type.
+///
+/// # Example
+///
+/// ```rust
+/// use asn1_rs::{PrintableString, TestValidCharset, VisibleString};
+///
+/// let bytes: &[u8] = b"abcd*4";
+/// let res = PrintableString::test_valid_charset(bytes);
+/// assert!(res.is_err());
+/// let res = VisibleString::test_valid_charset(bytes);
+/// assert!(res.is_ok());
+/// ```
+pub trait TestValidCharset {
+    /// Check character set for this object type.
+    fn test_valid_charset(i: &[u8]) -> crate::Result<()>;
+}
+
 #[doc(hidden)]
 #[macro_export]
 macro_rules! asn1_string {
@@ -78,7 +99,7 @@ macro_rules! asn1_string {
                 use crate::traits::Tagged;
                 use alloc::borrow::Cow;
                 any.tag().assert_eq(Self::TAG)?;
-                Self::test_string_charset(any.data)?;
+                <$name>::test_valid_charset(any.data)?;
 
                 let s = alloc::str::from_utf8(any.data)?;
                 let data = Cow::Borrowed(s);

@@ -1,12 +1,13 @@
 use crate::asn1_string;
 use crate::Result;
+use crate::TestValidCharset;
 use alloc::string::String;
 
 asn1_string!(Utf8String);
 
-impl<'a> Utf8String<'a> {
-    fn test_string_charset(_i: &[u8]) -> Result<()> {
-        // no need to check, str::from_utf8 will check bytes
+impl<'a> TestValidCharset for Utf8String<'a> {
+    fn test_valid_charset(i: &[u8]) -> Result<()> {
+        let _ = std::str::from_utf8(i)?;
         Ok(())
     }
 }

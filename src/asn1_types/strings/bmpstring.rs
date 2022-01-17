@@ -82,6 +82,21 @@ impl<'a> Tagged for BmpString<'a> {
     const TAG: Tag = Tag::BmpString;
 }
 
+impl<'a> TestValidCharset for BmpString<'a> {
+    fn test_valid_charset(i: &[u8]) -> Result<()> {
+        if i.len() % 2 != 0 {
+            return Err(Error::StringInvalidCharset);
+        }
+        let iter = i.chunks(2).map(|s| ((s[0] as u16) << 8) | (s[1] as u16));
+        for c in char::decode_utf16(iter) {
+            if c.is_err() {
+                return Err(Error::StringInvalidCharset);
+            }
+        }
+        Ok(())
+    }
+}
+
 #[cfg(feature = "std")]
 impl ToDer for BmpString<'_> {
     fn to_der_len(&self) -> Result<usize> {
