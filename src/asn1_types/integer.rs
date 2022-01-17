@@ -8,28 +8,35 @@ use core::convert::{TryFrom, TryInto};
 pub use num_bigint::{BigInt, BigUint, Sign};
 
 /// Decode an unsigned integer into a big endian byte slice with all leading
-/// zeroes removed.
-///
-/// Returns a byte array of the requested size containing a big endian integer.
-fn decode_slice(any: Any<'_>) -> Result<&[u8]> {
+/// zeroes removed (if positive) and extra 0xff remove (if negative)
+fn trim_slice(any: Any<'_>) -> Result<&[u8]> {
     let bytes = any.data;
 
-    // The `INTEGER` type always encodes a signed value, so for unsigned
-    // values the leading `0x00` byte may need to be removed.
-    //
-    // We also disallow a leading byte which would overflow a signed ASN.1
-    // integer (since we're decoding an unsigned integer).
-    // We expect all such cases to have a leading `0x00` byte.
-    //
-    // DER check have been moved to CheckDerConstraints
-    match bytes {
-        [] => Err(Error::DerConstraintFailed),
-        [0] => Ok(bytes),
-        [0, byte, ..] if *byte < 0x80 => Err(Error::DerConstraintFailed),
-        [0, rest @ ..] => Ok(rest),
-        [byte, ..] if *byte >= 0x80 => Err(Error::IntegerTooLarge),
-        _ => Ok(bytes),
+    if bytes.is_empty() || (bytes[0] != 0x00 && bytes[0] != 0xff) {
+        return Ok(bytes);
     }
+
+    match bytes.iter().position(|&b| b != 0) {
+        // first byte is not 0
+        Some(0) => (),
+        // all bytes are 0
+        None => return Ok(&bytes[bytes.len() - 1..]),
+        Some(first) => return Ok(&bytes[first..]),
+    }
+
+    // same for negative integers : skip byte 0->n if byte 0->n = 0xff AND byte n+1 >= 0x80
+    match bytes.windows(2).position(|s| match s {
+        &[a, b] => !(a == 0xff && b >= 0x80),
+        _ => true,
+    }) {
+        // first byte is not 0xff
+        Some(0) => (),
+        // all bytes are 0xff
+        None => return Ok(&bytes[bytes.len() - 1..]),
+        Some(first) => return Ok(&bytes[first..]),
+    }
+
+    Ok(bytes)
 }
 
 /// Decode an unsigned integer into a byte array of the requested size
@@ -38,7 +45,7 @@ fn decode_array_uint<const N: usize>(any: Any<'_>) -> Result<[u8; N]> {
     if is_highest_bit_set(any.data) {
         return Err(Error::IntegerNegative);
     }
-    let input = decode_slice(any)?;
+    let input = trim_slice(any)?;
 
     if input.len() > N {
         return Err(Error::IntegerTooLarge);
@@ -497,7 +504,7 @@ macro_rules! int {
 
 #[cfg(test)]
 mod tests {
-    use crate::FromDer;
+    use crate::{Any, FromDer, Header, Tag};
     use std::convert::TryInto;
 
     // Vectors from Section 5.7 of:
@@ -565,5 +572,44 @@ mod tests {
     fn declare_int() {
         let int = super::int!(1234);
         assert_eq!(int.try_into(), Ok(1234));
+    }
+
+    #[test]
+    fn trim_slice() {
+        use super::trim_slice;
+        let h = Header::new_simple(Tag(0));
+        // no zero nor ff - nothing to remove
+        let input: &[u8] = &[0x7f, 0xff, 0x00, 0x02];
+        assert_eq!(Ok(input), trim_slice(Any::new(h.clone(), input)));
+        //
+        // 0x00
+        //
+        // empty - nothing to remove
+        let input: &[u8] = &[];
+        assert_eq!(Ok(input), trim_slice(Any::new(h.clone(), input)));
+        // one zero - nothing to remove
+        let input: &[u8] = &[0];
+        assert_eq!(Ok(input), trim_slice(Any::new(h.clone(), input)));
+        // all zeroes - keep only one
+        let input: &[u8] = &[0, 0, 0];
+        assert_eq!(Ok(&input[2..]), trim_slice(Any::new(h.clone(), input)));
+        // some zeroes - keep only the non-zero part
+        let input: &[u8] = &[0, 0, 1];
+        assert_eq!(Ok(&input[2..]), trim_slice(Any::new(h.clone(), input)));
+        //
+        // 0xff
+        //
+        // one ff - nothing to remove
+        let input: &[u8] = &[0xff];
+        assert_eq!(Ok(input), trim_slice(Any::new(h.clone(), input)));
+        // all ff - keep only one
+        let input: &[u8] = &[0xff, 0xff, 0xff];
+        assert_eq!(Ok(&input[2..]), trim_slice(Any::new(h.clone(), input)));
+        // some ff - keep only the non-zero part
+        let input: &[u8] = &[0xff, 0xff, 1];
+        assert_eq!(Ok(&input[1..]), trim_slice(Any::new(h.clone(), input)));
+        // some ff and a MSB 1 - keep only the non-zero part
+        let input: &[u8] = &[0xff, 0xff, 0x80, 1];
+        assert_eq!(Ok(&input[2..]), trim_slice(Any::new(h.clone(), input)));
     }
 }
