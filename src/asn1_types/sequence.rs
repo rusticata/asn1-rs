@@ -177,7 +177,7 @@ impl<'a> Sequence<'a> {
     {
         match self.content {
             Cow::Borrowed(b) => f(b),
-            _ => Err(nom::Err::Failure(Error::LifetimeError)),
+            _ => Err(nom::Err::Error(Error::LifetimeError)),
         }
     }
 

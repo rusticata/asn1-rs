@@ -132,7 +132,7 @@ macro_rules! der_constraint_fail_if(
     ($slice:expr, $cond:expr) => (
         {
             if $cond {
-                return Err(::nom::Err::Failure(Error::DerConstraintFailed));
+                return Err(::nom::Err::Error(Error::DerConstraintFailed));
             }
         }
     );

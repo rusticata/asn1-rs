@@ -92,7 +92,7 @@ where
 {
     fn from_ber(bytes: &'a [u8]) -> ParseResult<T> {
         let (i, any) = Any::from_ber(bytes)?;
-        let result = any.try_into().map_err(nom::Err::Failure)?;
+        let result = any.try_into().map_err(nom::Err::Error)?;
         Ok((i, result))
     }
 }
@@ -160,10 +160,10 @@ where
         let (i, any) = Any::from_der(bytes)?;
         // X.690 section 10.1: definite form of length encoding shall be used
         if !any.header.length.is_definite() {
-            return Err(nom::Err::Failure(Error::IndefiniteLengthUnexpected));
+            return Err(nom::Err::Error(Error::IndefiniteLengthUnexpected));
         }
-        <T as CheckDerConstraints>::check_constraints(&any).map_err(nom::Err::Failure)?;
-        let result = any.try_into().map_err(nom::Err::Failure)?;
+        <T as CheckDerConstraints>::check_constraints(&any).map_err(nom::Err::Error)?;
+        let result = any.try_into().map_err(nom::Err::Error)?;
         Ok((i, result))
     }
 }
