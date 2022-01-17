@@ -93,17 +93,7 @@ macro_rules! impl_int {
         }
         impl<'a> CheckDerConstraints for $int {
             fn check_constraints(any: &Any) -> Result<()> {
-                any.header.assert_primitive()?;
-                any.header.length.assert_definite()?;
-                match any.as_bytes() {
-                    [] => Err(Error::DerConstraintFailed),
-                    [0] => Ok(()),
-                    [0, byte, ..] if *byte < 0x80 => Err(Error::DerConstraintFailed),
-                    // [0, ..] => Ok(()),
-                    // [byte, ..] if *byte >= 0x80 => Err(Error::IntegerTooLarge),
-                    _ => Ok(()),
-                }
-                // Ok(())
+                check_der_int_constraints(any)
             }
         }
 
@@ -150,17 +140,7 @@ macro_rules! impl_uint {
         }
         impl<'a> CheckDerConstraints for $ty {
             fn check_constraints(any: &Any) -> Result<()> {
-                any.header.assert_primitive()?;
-                any.header.length.assert_definite()?;
-                match any.as_bytes() {
-                    [] => Err(Error::DerConstraintFailed),
-                    [0] => Ok(()),
-                    [0, byte, ..] if *byte < 0x80 => Err(Error::DerConstraintFailed),
-                    // [0, ..] => Ok(()),
-                    // [byte, ..] if *byte >= 0x80 => Err(Error::IntegerTooLarge),
-                    _ => Ok(()),
-                }
-                // Ok(())
+                check_der_int_constraints(any)
             }
         }
 
@@ -430,8 +410,21 @@ impl<'a> TryFrom<Any<'a>> for Integer<'a> {
 
 impl<'a> CheckDerConstraints for Integer<'a> {
     fn check_constraints(any: &Any) -> Result<()> {
-        any.header.assert_primitive()?;
-        Ok(())
+        check_der_int_constraints(any)
+    }
+}
+
+fn check_der_int_constraints(any: &Any) -> Result<()> {
+    any.header.assert_primitive()?;
+    any.header.length.assert_definite()?;
+    match any.as_bytes() {
+        [] => Err(Error::DerConstraintFailed),
+        [0] => Ok(()),
+        // leading zeroes
+        [0, byte, ..] if *byte < 0x80 => Err(Error::DerConstraintFailed),
+        // negative integer with non-minimal encoding
+        [0xff, byte, ..] if *byte >= 0x80 => Err(Error::DerConstraintFailed),
+        _ => Ok(()),
     }
 }
 
