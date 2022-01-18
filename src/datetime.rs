@@ -10,7 +10,7 @@ pub enum ASN1TimeZone {
     Offset(i8, u16, u16),
 }
 
-#[derive(Debug, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub struct ASN1DateTime {
     pub year: u32,
     pub month: u16,
