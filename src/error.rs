@@ -18,6 +18,8 @@ impl std::error::Error for DerConstraint {}
 pub enum DerConstraint {
     /// Indefinite length not allowed
     IndefiniteLength,
+    /// Object must not be constructed
+    Constructed,
     /// Object must be constructed,
     NotConstructed,
     /// DateTime object is missing timezone
