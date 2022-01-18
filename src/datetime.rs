@@ -1,4 +1,7 @@
 use crate::{Result, Tag};
+use alloc::format;
+use alloc::string::ToString;
+use core::fmt;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, PartialOrd, Ord)]
 pub enum ASN1TimeZone {
@@ -44,6 +47,20 @@ impl ASN1DateTime {
             millisecond,
             tz,
         }
+    }
+}
+
+impl fmt::Display for ASN1DateTime {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let fractional = match self.millisecond {
+            None => "".to_string(),
+            Some(v) => format!(".{}", v),
+        };
+        write!(
+            f,
+            "{:04}{:02}{:02}{:02}{:02}{:02}{}Z",
+            self.year, self.month, self.day, self.hour, self.minute, self.second, fractional,
+        )
     }
 }
 
