@@ -121,6 +121,14 @@ fn from_ber_int() {
 }
 
 #[test]
+fn from_ber_relative_oid() {
+    let input = &hex!("0d 04 c2 7b 03 02");
+    let (rem, result) = Oid::from_ber_relative(input).expect("parsing failed");
+    assert_eq!(result, Oid::from_relative(&[8571, 3, 2]).unwrap());
+    assert_eq!(rem, &[]);
+}
+
+#[test]
 fn from_ber_length_incomplete() {
     let input = &hex!("30");
     let res = u8::from_ber(input).expect_err("parsing should have failed");

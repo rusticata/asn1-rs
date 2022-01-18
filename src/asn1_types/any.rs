@@ -1,5 +1,6 @@
 use crate::ber::*;
 use crate::*;
+use alloc::borrow::Cow;
 use alloc::string::String;
 use core::convert::TryInto;
 
@@ -131,7 +132,8 @@ impl<'a> Any<'a> {
     /// Attempt to convert object to `Oid` (ASN.1 type: `RELATIVE-OID`).
     pub fn relative_oid(self) -> Result<Oid<'a>> {
         self.header.assert_tag(Tag::RelativeOid)?;
-        self.try_into()
+        let asn1 = Cow::Borrowed(self.data);
+        Ok(Oid::new_relative(asn1))
     }
     impl_any_into!(printablestring => PrintableString<'a>, "PrintableString");
     impl_any_into!(sequence => Sequence<'a>, "SEQUENCE");
