@@ -215,13 +215,13 @@ impl<'a> CheckDerConstraints for GeneralizedTime {
     fn check_constraints(any: &Any) -> Result<()> {
         // X.690 section 11.7.1: The encoding shall terminate with a "Z"
         if any.data.last() != Some(&b'Z') {
-            return Err(Error::DerConstraintFailed);
+            return Err(Error::DerConstraintFailed(DerConstraint::MissingTimeZone));
         }
         // X.690 section 11.7.2: The seconds element shall always be present.
         // XXX
         // X.690 section 11.7.4: The decimal point element, if present, shall be the point option "."
         if any.data.iter().any(|&b| b == b',') {
-            return Err(Error::DerConstraintFailed);
+            return Err(Error::DerConstraintFailed(DerConstraint::MissingSeconds));
         }
         Ok(())
     }

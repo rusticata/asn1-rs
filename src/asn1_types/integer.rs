@@ -425,12 +425,16 @@ fn check_der_int_constraints(any: &Any) -> Result<()> {
     any.header.assert_primitive()?;
     any.header.length.assert_definite()?;
     match any.as_bytes() {
-        [] => Err(Error::DerConstraintFailed),
+        [] => Err(Error::DerConstraintFailed(DerConstraint::IntegerEmpty)),
         [0] => Ok(()),
         // leading zeroes
-        [0, byte, ..] if *byte < 0x80 => Err(Error::DerConstraintFailed),
+        [0, byte, ..] if *byte < 0x80 => Err(Error::DerConstraintFailed(
+            DerConstraint::IntegerLeadingZeroes,
+        )),
         // negative integer with non-minimal encoding
-        [0xff, byte, ..] if *byte >= 0x80 => Err(Error::DerConstraintFailed),
+        [0xff, byte, ..] if *byte >= 0x80 => {
+            Err(Error::DerConstraintFailed(DerConstraint::IntegerLeadingFF))
+        }
         _ => Ok(()),
     }
 }

@@ -43,7 +43,12 @@ fn from_der_bitstring() {
     //
     let input = &hex!("03 04 06 6e 5d e0");
     let res = BitString::from_der(input);
-    assert_eq!(res, Err(Err::Error(Error::DerConstraintFailed)));
+    assert_eq!(
+        res,
+        Err(Err::Error(Error::DerConstraintFailed(
+            DerConstraint::UnusedBitsNotZero
+        )))
+    );
     //
     // long form of length (invalid, < 127)
     //
@@ -84,7 +89,12 @@ fn from_der_bool() {
     //
     let input = &hex!("01 01 7f");
     let res = Boolean::from_der(input);
-    assert_eq!(res, Err(Err::Error(Error::DerConstraintFailed)));
+    assert_eq!(
+        res,
+        Err(Err::Error(Error::DerConstraintFailed(
+            DerConstraint::InvalidBoolean
+        )))
+    );
 }
 
 #[test]
@@ -111,7 +121,10 @@ fn from_der_generalizedtime() {
     // local time with fractional seconds (should fail: no 'Z' at end)
     let input = b"\x18\x1019851106210627.3";
     let result = GeneralizedTime::from_der(input).expect_err("should not parse");
-    assert_eq!(result, nom::Err::Error(Error::DerConstraintFailed));
+    assert_eq!(
+        result,
+        nom::Err::Error(Error::DerConstraintFailed(DerConstraint::MissingTimeZone))
+    );
     // coordinated universal time with fractional seconds
     let input = b"\x18\x1119851106210627.3Z";
     let (rem, result) = GeneralizedTime::from_der(input).expect("parsing failed");
@@ -129,7 +142,10 @@ fn from_der_generalizedtime() {
     // (should fail: no 'Z' at end)
     let input = b"\x18\x1519851106210627.3-0500";
     let result = GeneralizedTime::from_der(input).expect_err("should not parse");
-    assert_eq!(result, nom::Err::Error(Error::DerConstraintFailed));
+    assert_eq!(
+        result,
+        nom::Err::Error(Error::DerConstraintFailed(DerConstraint::MissingTimeZone))
+    );
 }
 
 #[test]
@@ -137,7 +153,9 @@ fn from_der_indefinite_length() {
     let bytes: &[u8] = &hex!("23 80 03 03 00 0a 3b 03 05 04 5f 29 1c d0 00 00");
     assert_eq!(
         BitString::from_der(bytes),
-        Err(Err::Error(Error::IndefiniteLengthUnexpected))
+        Err(Err::Error(Error::DerConstraintFailed(
+            DerConstraint::IndefiniteLength
+        )))
     );
 }
 

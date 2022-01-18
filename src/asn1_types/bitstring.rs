@@ -76,7 +76,7 @@ impl<'a> CheckDerConstraints for BitString<'a> {
                 let unused_bits = any.data[0];
                 let last_byte = any.data[len - 1];
                 if last_byte.trailing_zeros() < unused_bits as u32 {
-                    return Err(Error::DerConstraintFailed);
+                    return Err(Error::DerConstraintFailed(DerConstraint::UnusedBitsNotZero));
                 }
 
                 Ok(())

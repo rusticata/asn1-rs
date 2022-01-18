@@ -259,7 +259,9 @@ impl<'a> FromDer<'a> for Header<'a> {
             }
             (_, 0) => {
                 // Indefinite form is not allowed in DER (10.1)
-                return Err(::nom::Err::Error(Error::IndefiniteLengthUnexpected));
+                return Err(::nom::Err::Error(Error::DerConstraintFailed(
+                    DerConstraint::IndefiniteLength,
+                )));
             }
             (_, l1) => {
                 // if len is 0xff -> error (8.1.3.5)
@@ -267,7 +269,11 @@ impl<'a> FromDer<'a> for Header<'a> {
                     return Err(::nom::Err::Error(Error::InvalidLength));
                 }
                 // DER(9.1) if len is 0 (indefinite form), obj must be constructed
-                der_constraint_fail_if!(&i[1..], len.1 == 0 && el.1 != 1);
+                der_constraint_fail_if!(
+                    &i[1..],
+                    len.1 == 0 && el.1 != 1,
+                    DerConstraint::NotConstructed
+                );
                 let (i3, llen) = take(l1)(i2)?;
                 match bytes_to_u64(llen) {
                     Ok(l) => {

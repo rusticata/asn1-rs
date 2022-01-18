@@ -160,7 +160,9 @@ where
         let (i, any) = Any::from_der(bytes)?;
         // X.690 section 10.1: definite form of length encoding shall be used
         if !any.header.length.is_definite() {
-            return Err(nom::Err::Error(Error::IndefiniteLengthUnexpected));
+            return Err(nom::Err::Error(Error::DerConstraintFailed(
+                DerConstraint::IndefiniteLength,
+            )));
         }
         <T as CheckDerConstraints>::check_constraints(&any).map_err(nom::Err::Error)?;
         let result = any.try_into().map_err(nom::Err::Error)?;

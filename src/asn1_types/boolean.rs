@@ -50,7 +50,7 @@ impl<'a> CheckDerConstraints for Boolean {
         let c = any.data[0];
         // X.690 section 11.1
         if !(c == 0 || c == 0xff) {
-            return Err(Error::DerConstraintFailed);
+            return Err(Error::DerConstraintFailed(DerConstraint::InvalidBoolean));
         }
         Ok(())
     }
@@ -98,7 +98,7 @@ impl<'a> CheckDerConstraints for bool {
         let c = any.data[0];
         // X.690 section 11.1
         if !(c == 0 || c == 0xff) {
-            return Err(Error::DerConstraintFailed);
+            return Err(Error::DerConstraintFailed(DerConstraint::InvalidBoolean));
         }
         Ok(())
     }

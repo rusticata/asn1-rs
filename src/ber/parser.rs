@@ -129,10 +129,10 @@ pub(crate) fn parse_ber_length_byte(i: &[u8]) -> ParseResult<(u8, u8)> {
 #[doc(hidden)]
 #[macro_export]
 macro_rules! der_constraint_fail_if(
-    ($slice:expr, $cond:expr) => (
+    ($slice:expr, $cond:expr, $constraint:expr) => (
         {
             if $cond {
-                return Err(::nom::Err::Error(Error::DerConstraintFailed));
+                return Err(::nom::Err::Error(Error::DerConstraintFailed($constraint)));
             }
         }
     );

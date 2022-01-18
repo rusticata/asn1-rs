@@ -10,6 +10,32 @@ use std::io;
 #[cfg(feature = "std")]
 use thiserror::Error;
 
+#[cfg(feature = "std")]
+impl std::error::Error for DerConstraint {}
+
+#[derive(Debug, Display, PartialEq)]
+/// Error types for DER constraints
+pub enum DerConstraint {
+    /// Indefinite length not allowed
+    IndefiniteLength,
+    /// Object must be constructed,
+    NotConstructed,
+    /// DateTime object is missing timezone
+    MissingTimeZone,
+    /// DateTime object is missing seconds
+    MissingSeconds,
+    /// Bitstring unused bits must be set to zero
+    UnusedBitsNotZero,
+    /// Boolean value must be 0x00 of 0xff
+    InvalidBoolean,
+    /// Integer must not be empty
+    IntegerEmpty,
+    /// Leading zeroes in Integer encoding
+    IntegerLeadingZeroes,
+    /// Leading 0xff in negative Integer encoding
+    IntegerLeadingFF,
+}
+
 // XXX
 // thiserror does not work in no_std
 // see https://github.com/dtolnay/thiserror/pull/64
@@ -61,7 +87,7 @@ pub enum Error {
     StringInvalidCharset,
 
     /// DER Failed constraint
-    DerConstraintFailed,
+    DerConstraintFailed(DerConstraint),
 
     /// Requesting borrowed data from a temporary object
     LifetimeError,
