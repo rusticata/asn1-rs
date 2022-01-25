@@ -44,6 +44,10 @@ of `nom::IResult`. This means that most `nom` combinators (`map`, `many0`, etc.)
 combination to objects and methods from this crate. Reading the nom documentation may
 help understanding how to write and combine parsers and use the output.
 
+**Minimum Supported Rust Version**: 1.53.0
+
+Note: if the `bits` feature is enabled, MSRV is 1.56.0 (due to `bitvec` 1.0)
+
 ## Examples
 
 Parse 2 BER integers:
