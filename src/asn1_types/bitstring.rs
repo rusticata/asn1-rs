@@ -32,8 +32,8 @@ impl<'a> BitString<'a> {
 
     /// Constructs a shared `&BitSlice` reference over the object data.
     #[cfg(feature = "bits")]
-    pub fn as_bitslice(&self) -> Option<&BitSlice<Msb0, u8>> {
-        BitSlice::<Msb0, _>::from_slice(&self.data).ok()
+    pub fn as_bitslice(&self) -> Option<&BitSlice<u8, Msb0>> {
+        BitSlice::<_, Msb0>::try_from_slice(&self.data).ok()
     }
 }
 
