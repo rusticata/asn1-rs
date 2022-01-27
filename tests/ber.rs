@@ -1,6 +1,8 @@
 use asn1_rs::*;
 use hex_literal::hex;
 use nom::Needed;
+#[cfg(feature = "datetime")]
+use time::macros::datetime;
 
 #[test]
 fn from_ber_any() {
@@ -65,7 +67,6 @@ fn from_ber_generalizedtime() {
     assert_eq!(rem, &[0xff]);
     #[cfg(feature = "datetime")]
     {
-        use time::macros::datetime;
         let datetime = datetime! {2002-12-13 14:29:23 UTC};
 
         assert_eq!(result.utc_datetime(), Ok(datetime));
@@ -79,7 +80,6 @@ fn from_ber_generalizedtime() {
     assert_eq!(result.0.tz, ASN1TimeZone::Undefined);
     #[cfg(feature = "datetime")]
     {
-        use time::macros::datetime;
         let datetime = datetime! {1985-11-06 21:06:27.300_000_000 UTC};
         assert_eq!(result.utc_datetime(), Ok(datetime));
     }
@@ -92,7 +92,6 @@ fn from_ber_generalizedtime() {
     assert_eq!(result.0.tz, ASN1TimeZone::Z);
     #[cfg(feature = "datetime")]
     {
-        use time::macros::datetime;
         let datetime = datetime! {1985-11-06 21:06:27.300_000_000 UTC};
         assert_eq!(result.utc_datetime(), Ok(datetime));
     }
@@ -105,8 +104,6 @@ fn from_ber_generalizedtime() {
     assert_eq!(result.0.tz, ASN1TimeZone::Z);
     #[cfg(feature = "datetime")]
     {
-        use time::macros::datetime;
-        dbg!(&result);
         let datetime = datetime! {1985-11-06 21:06:27.03 UTC};
         assert_eq!(result.utc_datetime(), Ok(datetime));
     }
@@ -119,7 +116,6 @@ fn from_ber_generalizedtime() {
     assert_eq!(result.0.tz, ASN1TimeZone::Offset(-5, 0));
     #[cfg(feature = "datetime")]
     {
-        use time::macros::datetime;
         let datetime = datetime! {1985-11-06 21:06:27.300_000_000 -05:00};
         assert_eq!(result.utc_datetime(), Ok(datetime));
     }
