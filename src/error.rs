@@ -13,7 +13,7 @@ use thiserror::Error;
 #[cfg(feature = "std")]
 impl std::error::Error for DerConstraint {}
 
-#[derive(Debug, Display, PartialEq)]
+#[derive(Clone, Copy, Debug, Display, PartialEq)]
 /// Error types for DER constraints
 pub enum DerConstraint {
     /// Indefinite length not allowed
@@ -47,7 +47,7 @@ impl std::error::Error for Error {}
 
 /// The error type for operations of the [`FromBer`](crate::FromBer),
 /// [`FromDer`](crate::FromDer), and associated traits.
-#[derive(Debug, Display, PartialEq)]
+#[derive(Clone, Debug, Display, PartialEq)]
 // #[cfg_attr(feature = "std", derive(Error))]
 pub enum Error {
     /// BER object does not have the expected type
