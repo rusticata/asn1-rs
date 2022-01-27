@@ -158,7 +158,7 @@ rust_2018_idioms,*/
 missing_debug_implementations,
 )]
 // pragmas for doc
-#![deny(broken_intra_doc_links)]
+#![deny(rustdoc::broken_intra_doc_links)]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![doc(test(
 no_crate_inject,
