@@ -78,6 +78,7 @@ impl GeneralizedTime {
             [b'.' | b',', rem @ ..] => {
                 let mut fsecond = 0;
                 let mut rem = rem;
+                let mut digits = 0;
                 for idx in 0..=4 {
                     if rem.is_empty() {
                         if idx == 0 {
@@ -86,6 +87,7 @@ impl GeneralizedTime {
                                 "malformed time string (dot or comma but no digits)",
                             ));
                         }
+                        digits = idx;
                         break;
                     }
                     if idx == 4 {
@@ -95,10 +97,11 @@ impl GeneralizedTime {
                     }
                     match rem[0] {
                         b'0'..=b'9' => {
-                            // XXX check for overflow in mul
-                            fsecond = fsecond * 10 + (rem[0] - b'0') as u32;
+                            // cannot overflow, max 4 digits will be read
+                            fsecond = fsecond * 10 + (rem[0] - b'0') as u16;
                         }
                         b'Z' | b'+' | b'-' => {
+                            digits = idx;
                             break;
                         }
                         _ => {
@@ -109,6 +112,13 @@ impl GeneralizedTime {
                     }
                     rem = &rem[1..];
                 }
+                // fix fractional seconds depending on the number of digits
+                // for ex, date "xxxx.3" means 3000 milliseconds, not 3
+                let fsecond = match digits {
+                    1 => fsecond * 100,
+                    2 => fsecond * 10,
+                    _ => fsecond,
+                };
                 (Some(fsecond), rem)
             }
             _ => (None, rem),
