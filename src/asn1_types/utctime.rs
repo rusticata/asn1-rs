@@ -1,9 +1,9 @@
 use crate::datetime::decode_decimal;
 use crate::*;
-#[cfg(feature = "datetime")]
-use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, TimeZone, Utc};
 use core::convert::TryFrom;
 use core::fmt;
+#[cfg(feature = "datetime")]
+use time::OffsetDateTime;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct UtcTime(pub ASN1DateTime);
@@ -59,12 +59,12 @@ impl UtcTime {
             [b'+', h1, h2, m1, m2] => {
                 let hh = decode_decimal(Self::TAG, *h1, *h2)?;
                 let mm = decode_decimal(Self::TAG, *m1, *m2)?;
-                ASN1TimeZone::Offset(1, hh, mm)
+                ASN1TimeZone::Offset(hh as i8, mm as i8)
             }
             [b'-', h1, h2, m1, m2] => {
                 let hh = decode_decimal(Self::TAG, *h1, *h2)?;
                 let mm = decode_decimal(Self::TAG, *m1, *m2)?;
-                ASN1TimeZone::Offset(-1, hh, mm)
+                ASN1TimeZone::Offset(-(hh as i8), mm as i8)
             }
             _ => return Err(Self::TAG.invalid_value("malformed time string: no time zone")),
         };
@@ -99,23 +99,17 @@ impl UtcTime {
     /// Return a ISO 8601 combined date and time with time zone.
     #[cfg(feature = "datetime")]
     #[cfg_attr(docsrs, doc(cfg(feature = "datetime")))]
-    pub fn utc_datetime(&self) -> DateTime<Utc> {
-        let dt = &self.0;
-        // XXX Utc only if Z
-        Utc.ymd(dt.year as i32, dt.month as u32, dt.day as u32)
-            .and_hms(dt.hour as u32, dt.minute as u32, dt.second as u32)
+    #[inline]
+    pub fn utc_datetime(&self) -> Result<OffsetDateTime> {
+        self.0.to_datetime()
     }
 
     /// Returns the number of non-leap seconds since the midnight on January 1, 1970.
     #[cfg(feature = "datetime")]
     #[cfg_attr(docsrs, doc(cfg(feature = "datetime")))]
-    pub fn timestamp(&self) -> i64 {
-        let dt = &self.0;
-        let d = NaiveDate::from_ymd(dt.year as i32, dt.month as u32, dt.day as u32);
-        let t = NaiveTime::from_hms(dt.hour as u32, dt.minute as u32, dt.second as u32);
-        let ndt = NaiveDateTime::new(d, t);
-        // XXX offset?
-        ndt.timestamp()
+    pub fn timestamp(&self) -> Result<i64> {
+        let dt = self.0.to_datetime()?;
+        Ok(dt.unix_timestamp())
     }
 }
 
@@ -142,14 +136,14 @@ impl fmt::Display for UtcTime {
         match dt.tz {
             ASN1TimeZone::Z | ASN1TimeZone::Undefined => write!(
                 f,
-                "{:04}-{:02}-{:02} {:02}:{:02}:{:02} Z",
+                "{:04}-{:02}-{:02} {:02}:{:02}:{:02}Z",
                 dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second
             ),
-            ASN1TimeZone::Offset(sign, hh, mm) => {
-                let s = if sign > 0 { '+' } else { '-' };
+            ASN1TimeZone::Offset(hh, mm) => {
+                let (s, hh) = if hh > 0 { ('+', hh) } else { ('-', -hh) };
                 write!(
                     f,
-                    "{:04}-{:02}-{:02} {:02}:{:02}:{:02} {}{:02}{:02}",
+                    "{:04}-{:02}-{:02} {:02}:{:02}:{:02}{}{:02}{:02}",
                     dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, s, hh, mm
                 )
             }

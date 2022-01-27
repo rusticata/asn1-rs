@@ -112,10 +112,9 @@ fn from_der_generalizedtime() {
     assert_eq!(rem, &[0xff]);
     #[cfg(feature = "datetime")]
     {
-        use chrono::{TimeZone, Utc};
-        let datetime = Utc.ymd(2002, 12, 13).and_hms(14, 29, 23);
-
-        assert_eq!(result.utc_datetime(), datetime);
+        use time::macros::datetime;
+        let datetime = datetime! {2002-12-13 14:29:23 UTC};
+        assert_eq!(result.utc_datetime(), Ok(datetime));
     }
     let _ = result;
     // local time with fractional seconds (should fail: no 'Z' at end)
@@ -129,13 +128,13 @@ fn from_der_generalizedtime() {
     let input = b"\x18\x1119851106210627.3Z";
     let (rem, result) = GeneralizedTime::from_der(input).expect("parsing failed");
     assert!(rem.is_empty());
+    assert_eq!(result.0.millisecond, Some(300));
+    assert_eq!(result.0.tz, ASN1TimeZone::Z);
     #[cfg(feature = "datetime")]
     {
-        use chrono::{TimeZone, Utc};
-        let datetime = Utc.ymd(1985, 11, 6).and_hms(21, 6, 27);
-        assert_eq!(result.utc_datetime(), datetime);
-        assert_eq!(result.0.millisecond, Some(3));
-        assert_eq!(result.0.tz, ASN1TimeZone::Z);
+        use time::macros::datetime;
+        let datetime = datetime! {1985-11-06 21:06:27.3 UTC};
+        assert_eq!(result.utc_datetime(), Ok(datetime));
     }
     let _ = result;
     // local time with fractional seconds, and with local time 5 hours retarded in relation to coordinated universal time.
@@ -303,10 +302,10 @@ fn from_der_utctime() {
     assert_eq!(rem, &[0xff]);
     #[cfg(feature = "datetime")]
     {
-        use chrono::{TimeZone, Utc};
-        let datetime = Utc.ymd(2, 12, 13).and_hms(14, 29, 23);
+        use time::macros::datetime;
+        let datetime = datetime! {2-12-13 14:29:23 UTC};
 
-        assert_eq!(result.utc_datetime(), datetime);
+        assert_eq!(result.utc_datetime(), Ok(datetime));
     }
     let _ = result;
 }

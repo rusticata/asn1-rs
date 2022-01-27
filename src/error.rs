@@ -87,6 +87,8 @@ pub enum Error {
 
     /// Invalid encoding or forbidden characters in string
     StringInvalidCharset,
+    /// Invalid Date or Time
+    InvalidDateTime,
 
     /// DER Failed constraint
     DerConstraintFailed(DerConstraint),

@@ -2,10 +2,10 @@ use crate::datetime::decode_decimal;
 use crate::*;
 use alloc::format;
 use alloc::string::String;
-#[cfg(feature = "datetime")]
-use chrono::{DateTime, TimeZone, Utc};
 use core::convert::TryFrom;
 use core::fmt;
+#[cfg(feature = "datetime")]
+use time::OffsetDateTime;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct GeneralizedTime(pub ASN1DateTime);
@@ -142,12 +142,12 @@ impl GeneralizedTime {
             [b'+', h1, h2, m1, m2] => {
                 let hh = decode_decimal(Self::TAG, *h1, *h2)?;
                 let mm = decode_decimal(Self::TAG, *m1, *m2)?;
-                ASN1TimeZone::Offset(1, hh, mm)
+                ASN1TimeZone::Offset(hh as i8, mm as i8)
             }
             [b'-', h1, h2, m1, m2] => {
                 let hh = decode_decimal(Self::TAG, *h1, *h2)?;
                 let mm = decode_decimal(Self::TAG, *m1, *m2)?;
-                ASN1TimeZone::Offset(-1, hh, mm)
+                ASN1TimeZone::Offset(-(hh as i8), mm as i8)
             }
             _ => return Err(Self::TAG.invalid_value("malformed time string: no time zone")),
         };
@@ -166,11 +166,8 @@ impl GeneralizedTime {
     /// Return a ISO 8601 combined date and time with time zone.
     #[cfg(feature = "datetime")]
     #[cfg_attr(docsrs, doc(cfg(feature = "datetime")))]
-    pub fn utc_datetime(&self) -> DateTime<Utc> {
-        let dt = &self.0;
-        // XXX Utc only if Z
-        Utc.ymd(dt.year as i32, dt.month as u32, dt.day as u32)
-            .and_hms(dt.hour as u32, dt.minute as u32, dt.second as u32)
+    pub fn utc_datetime(&self) -> Result<OffsetDateTime> {
+        self.0.to_datetime()
     }
 }
 
@@ -206,14 +203,14 @@ impl fmt::Display for GeneralizedTime {
             ),
             ASN1TimeZone::Z => write!(
                 f,
-                "{:04}-{:02}-{:02} {:02}:{:02}:{:02}{} Z",
+                "{:04}-{:02}-{:02} {:02}:{:02}:{:02}{}Z",
                 dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, fsec
             ),
-            ASN1TimeZone::Offset(sign, hh, mm) => {
-                let s = if sign > 0 { '+' } else { '-' };
+            ASN1TimeZone::Offset(hh, mm) => {
+                let (s, hh) = if hh > 0 { ('+', hh) } else { ('-', -hh) };
                 write!(
                     f,
-                    "{:04}-{:02}-{:02} {:02}:{:02}:{:02}{} {}{:02}{:02}",
+                    "{:04}-{:02}-{:02} {:02}:{:02}:{:02}{}{}{:02}{:02}",
                     dt.year, dt.month, dt.day, dt.hour, dt.minute, dt.second, fsec, s, hh, mm
                 )
             }

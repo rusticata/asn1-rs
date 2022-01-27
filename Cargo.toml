@@ -37,7 +37,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 default = ["std"]
 bigint = ["num-bigint"]
 bits = ["bitvec"]
-datetime = ["chrono"]
+datetime = ["time"]
 serialize = ["cookie-factory"]
 std = []
 
@@ -45,7 +45,6 @@ std = []
 asn1-rs-derive = { version="0.1", path="./derive" }
 asn1-rs-impl = { version="0.1", path="./impl" }
 bitvec = { version="1.0", optional=true }
-chrono = { version="0.4.19", optional=true }
 cookie-factory = { version="0.3.0", optional=true }
 displaydoc = "0.2.2"
 nom = { version="7.0", default_features=false, features=["std"] }
@@ -53,6 +52,7 @@ num-bigint = { version = "0.4", optional = true }
 num-traits = "0.2.14"
 rusticata-macros = "4.0"
 thiserror = "1.0.25"
+time = { version="0.3", features=["macros", "parsing", "formatting"], optional=true }
 
 [dev-dependencies]
 colored = "2.0"

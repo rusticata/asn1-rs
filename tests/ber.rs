@@ -65,49 +65,63 @@ fn from_ber_generalizedtime() {
     assert_eq!(rem, &[0xff]);
     #[cfg(feature = "datetime")]
     {
-        use chrono::{TimeZone, Utc};
-        let datetime = Utc.ymd(2002, 12, 13).and_hms(14, 29, 23);
+        use time::macros::datetime;
+        let datetime = datetime! {2002-12-13 14:29:23 UTC};
 
-        assert_eq!(result.utc_datetime(), datetime);
+        assert_eq!(result.utc_datetime(), Ok(datetime));
     }
     let _ = result;
     // local time with fractional seconds
     let input = b"\x18\x1019851106210627.3";
     let (rem, result) = GeneralizedTime::from_ber(input).expect("parsing failed");
     assert!(rem.is_empty());
+    assert_eq!(result.0.millisecond, Some(300));
+    assert_eq!(result.0.tz, ASN1TimeZone::Undefined);
     #[cfg(feature = "datetime")]
     {
-        use chrono::{TimeZone, Utc};
-        let datetime = Utc.ymd(1985, 11, 6).and_hms(21, 6, 27);
-        assert_eq!(result.utc_datetime(), datetime);
-        assert_eq!(result.0.millisecond, Some(3));
-        assert_eq!(result.0.tz, ASN1TimeZone::Undefined);
+        use time::macros::datetime;
+        let datetime = datetime! {1985-11-06 21:06:27.300_000_000 UTC};
+        assert_eq!(result.utc_datetime(), Ok(datetime));
     }
     let _ = result;
     // coordinated universal time with fractional seconds
     let input = b"\x18\x1119851106210627.3Z";
     let (rem, result) = GeneralizedTime::from_ber(input).expect("parsing failed");
     assert!(rem.is_empty());
+    assert_eq!(result.0.millisecond, Some(300));
+    assert_eq!(result.0.tz, ASN1TimeZone::Z);
     #[cfg(feature = "datetime")]
     {
-        use chrono::{TimeZone, Utc};
-        let datetime = Utc.ymd(1985, 11, 6).and_hms(21, 6, 27);
-        assert_eq!(result.utc_datetime(), datetime);
-        assert_eq!(result.0.millisecond, Some(3));
-        assert_eq!(result.0.tz, ASN1TimeZone::Z);
+        use time::macros::datetime;
+        let datetime = datetime! {1985-11-06 21:06:27.300_000_000 UTC};
+        assert_eq!(result.utc_datetime(), Ok(datetime));
+    }
+    let _ = result;
+    // coordinated universal time with fractional seconds
+    let input = b"\x18\x1219851106210627.03Z";
+    let (rem, result) = GeneralizedTime::from_ber(input).expect("parsing failed");
+    assert!(rem.is_empty());
+    assert_eq!(result.0.millisecond, Some(30));
+    assert_eq!(result.0.tz, ASN1TimeZone::Z);
+    #[cfg(feature = "datetime")]
+    {
+        use time::macros::datetime;
+        dbg!(&result);
+        let datetime = datetime! {1985-11-06 21:06:27.03 UTC};
+        assert_eq!(result.utc_datetime(), Ok(datetime));
     }
     let _ = result;
     // local time with fractional seconds, and with local time 5 hours retarded in relation to coordinated universal time.
     let input = b"\x18\x1519851106210627.3-0500";
     let (rem, result) = GeneralizedTime::from_ber(input).expect("parsing failed");
     assert!(rem.is_empty());
+    assert_eq!(result.0.millisecond, Some(300));
+    assert_eq!(result.0.tz, ASN1TimeZone::Offset(-5, 0));
     #[cfg(feature = "datetime")]
     {
-        use chrono::{TimeZone, Utc};
-        let datetime = Utc.ymd(1985, 11, 6).and_hms(21, 6, 27);
-        assert_eq!(result.utc_datetime(), datetime);
-        assert_eq!(result.0.millisecond, Some(3));
-        assert_eq!(result.0.tz, ASN1TimeZone::Offset(-1, 5, 0));
+        use time::macros::datetime;
+        let datetime = datetime! {1985-11-06 21:06:27.300_000_000 -05:00};
+        assert_eq!(result.utc_datetime(), Ok(datetime));
     }
     let _ = result;
 }
