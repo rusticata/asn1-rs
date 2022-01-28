@@ -77,7 +77,7 @@ impl ASN1DateTime {
     }
 
     #[cfg(feature = "datetime")]
-    pub(crate) fn to_datetime(&self) -> Result<OffsetDateTime> {
+    pub fn to_datetime(&self) -> Result<OffsetDateTime> {
         use crate::Error;
 
         self.to_time_datetime().map_err(|_| Error::InvalidDateTime)
