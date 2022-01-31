@@ -57,6 +57,6 @@ time = { version="0.3", features=["macros", "parsing", "formatting"], optional=t
 [dev-dependencies]
 colored = "2.0"
 hex-literal = "0.3.1"
-oid-registry = { version="0.2", features=["crypto","x509"] }
+oid-registry = { version="0.3", features=["crypto","x509"] }
 pem = "1.0"
 trybuild = "1.0"
