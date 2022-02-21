@@ -2,8 +2,7 @@ use crate::ber::*;
 use crate::*;
 use alloc::borrow::Cow;
 use alloc::string::String;
-use core::convert::TryInto;
-use std::convert::TryFrom;
+use core::convert::{TryFrom, TryInto};
 
 /// The `Any` object is not strictly an ASN.1 type, but holds a generic description of any object
 /// that could be encoded.
