@@ -6,6 +6,14 @@ impl<'a> TryFrom<Any<'a>> for &'a str {
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<&'a str> {
+        TryFrom::try_from(&any)
+    }
+}
+
+impl<'a, 'b> TryFrom<&'b Any<'a>> for &'a str {
+    type Error = Error;
+
+    fn try_from(any: &'b Any<'a>) -> Result<&'a str> {
         any.tag().assert_eq(Self::TAG)?;
         let s = Utf8String::try_from(any)?;
         match s.data {

@@ -3,13 +3,14 @@ use crate::*;
 use alloc::borrow::Cow;
 use alloc::string::String;
 use core::convert::TryInto;
+use std::convert::TryFrom;
 
 /// The `Any` object is not strictly an ASN.1 type, but holds a generic description of any object
 /// that could be encoded.
 ///
 /// It contains a header, and either a reference to or owned data for the object content.
 ///
-/// Note: this type is only provided in **borrowed** version (*i.e.* it can own the inner data).
+/// Note: this type is only provided in **borrowed** version (*i.e.* it cannot own the inner data).
 #[derive(Clone, Debug, PartialEq)]
 pub struct Any<'a> {
     /// The object header
@@ -112,6 +113,23 @@ macro_rules! impl_any_into {
     };
 }
 
+macro_rules! impl_any_as {
+    (IMPL $sname:expr, $fn_name:ident => $ty:ty, $asn1:expr) => {
+        #[doc = "Attempt to create ASN.1 type `"]
+        #[doc = $asn1]
+        #[doc = "` from this object."]
+        #[inline]
+        pub fn $fn_name(&self) -> Result<$ty> {
+            TryFrom::try_from(self)
+        }
+    };
+    ($fn_name:ident => $ty:ty, $asn1:expr) => {
+        impl_any_as! {
+            IMPL stringify!($ty), $fn_name => $ty, $asn1
+        }
+    };
+}
+
 impl<'a> Any<'a> {
     impl_any_into!(bitstring => BitString<'a>, "BIT STRING");
     impl_any_into!(bmpstring => BmpString<'a>, "BmpString");
@@ -122,6 +140,11 @@ impl<'a> Any<'a> {
     impl_any_into!(generalizedtime => GeneralizedTime, "GeneralizedTime");
     impl_any_into!(generalstring => GeneralString<'a>, "GeneralString");
     impl_any_into!(graphicstring => GraphicString<'a>, "GraphicString");
+    impl_any_into!(i8 => i8, "INTEGER");
+    impl_any_into!(i16 => i16, "INTEGER");
+    impl_any_into!(i32 => i32, "INTEGER");
+    impl_any_into!(i64 => i64, "INTEGER");
+    impl_any_into!(i128 => i128, "INTEGER");
     impl_any_into!(ia5string => Ia5String<'a>, "IA5String");
     impl_any_into!(integer => Integer<'a>, "INTEGER");
     impl_any_into!(null => Null, "NULL");
@@ -136,19 +159,66 @@ impl<'a> Any<'a> {
         Ok(Oid::new_relative(asn1))
     }
     impl_any_into!(printablestring => PrintableString<'a>, "PrintableString");
+    // XXX REAL
     impl_any_into!(sequence => Sequence<'a>, "SEQUENCE");
     impl_any_into!(set => Set<'a>, "SET");
+    impl_any_into!(str => &'a str, "UTF8String");
     impl_any_into!(string => String, "UTF8String");
     impl_any_into!(teletexstring => TeletexString<'a>, "TeletexString");
     impl_any_into!(u8 => u8, "INTEGER");
     impl_any_into!(u16 => u16, "INTEGER");
     impl_any_into!(u32 => u32, "INTEGER");
     impl_any_into!(u64 => u64, "INTEGER");
+    impl_any_into!(u128 => u128, "INTEGER");
     impl_any_into!(universalstring => UniversalString<'a>, "UniversalString");
     impl_any_into!(utctime => UtcTime, "UTCTime");
     impl_any_into!(utf8string => Utf8String<'a>, "UTF8String");
     impl_any_into!(videotexstring => VideotexString<'a>, "VideotexString");
     impl_any_into!(visiblestring => VisibleString<'a>, "VisibleString");
+
+    impl_any_as!(as_bitstring => BitString, "BITSTRING");
+    impl_any_as!(as_bool => bool, "BOOLEAN");
+    impl_any_as!(as_boolean => Boolean, "BOOLEAN");
+    impl_any_as!(as_embedded_pdv => EmbeddedPdv, "EMBEDDED PDV");
+    impl_any_as!(as_endofcontent => EndOfContent, "END OF CONTENT (not a real ASN.1 type)");
+    impl_any_as!(as_enumerated => Enumerated, "ENUMERATED");
+    impl_any_as!(as_generalizedtime => GeneralizedTime, "GeneralizedTime");
+    impl_any_as!(as_generalstring => GeneralizedTime, "GeneralString");
+    impl_any_as!(as_graphicstring => GraphicString, "GraphicString");
+    impl_any_as!(as_i8 => i8, "INTEGER");
+    impl_any_as!(as_i16 => i16, "INTEGER");
+    impl_any_as!(as_i32 => i32, "INTEGER");
+    impl_any_as!(as_i64 => i64, "INTEGER");
+    impl_any_as!(as_i128 => i128, "INTEGER");
+    impl_any_as!(as_ia5string => Ia5String, "IA5String");
+    impl_any_as!(as_integer => Integer, "INTEGER");
+    impl_any_as!(as_null => Null, "NULL");
+    impl_any_as!(as_numericstring => NumericString, "NumericString");
+    impl_any_as!(as_objectdescriptor => ObjectDescriptor, "OBJECT IDENTIFIER");
+    impl_any_as!(as_octetstring => OctetString, "OCTET STRING");
+    impl_any_as!(as_oid => Oid, "OBJECT IDENTIFIER");
+    /// Attempt to create ASN.1 type `RELATIVE-OID` from this object.
+    pub fn as_relative_oid(self) -> Result<Oid<'a>> {
+        self.header.assert_tag(Tag::RelativeOid)?;
+        let asn1 = Cow::Borrowed(self.data);
+        Ok(Oid::new_relative(asn1))
+    }
+    impl_any_as!(as_printablestring => PrintableString, "PrintableString");
+    impl_any_as!(as_sequence => Sequence, "SEQUENCE");
+    impl_any_as!(as_set => Set, "SET");
+    impl_any_as!(as_str => &str, "UTF8String");
+    impl_any_as!(as_string => String, "UTF8String");
+    impl_any_as!(as_teletexstring => TeletexString, "TeletexString");
+    impl_any_as!(as_u8 => u8, "INTEGER");
+    impl_any_as!(as_u16 => u16, "INTEGER");
+    impl_any_as!(as_u32 => u32, "INTEGER");
+    impl_any_as!(as_u64 => u64, "INTEGER");
+    impl_any_as!(as_u128 => u128, "INTEGER");
+    impl_any_as!(as_universalstring => UniversalString, "UniversalString");
+    impl_any_as!(as_utctime => UtcTime, "UTCTime");
+    impl_any_as!(as_utf8string => Utf8String, "UTF8String");
+    impl_any_as!(as_videotexstring => VideotexString, "VideotexString");
+    impl_any_as!(as_visiblestring => VisibleString, "VisibleString");
 }
 
 impl<'a> FromBer<'a> for Any<'a> {

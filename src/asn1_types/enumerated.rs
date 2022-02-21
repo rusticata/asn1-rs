@@ -20,6 +20,14 @@ impl<'a> TryFrom<Any<'a>> for Enumerated {
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<Enumerated> {
+        TryFrom::try_from(&any)
+    }
+}
+
+impl<'a, 'b> TryFrom<&'b Any<'a>> for Enumerated {
+    type Error = Error;
+
+    fn try_from(any: &'b Any<'a>) -> Result<Enumerated> {
         any.tag().assert_eq(Self::TAG)?;
         any.header.assert_primitive()?;
         let res_u64 = bytes_to_u64(any.data)?;

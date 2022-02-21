@@ -34,6 +34,15 @@ impl<'a> TryFrom<Any<'a>> for Boolean {
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<Boolean> {
+        TryFrom::try_from(&any)
+    }
+}
+
+// non-consuming version
+impl<'a, 'b> TryFrom<&'b Any<'a>> for Boolean {
+    type Error = Error;
+
+    fn try_from(any: &'b Any<'a>) -> Result<Boolean> {
         any.tag().assert_eq(Self::TAG)?;
         // X.690 section 8.2.1:
         // The encoding of a boolean value shall be primitive. The contents octets shall consist of a single octet
@@ -87,6 +96,14 @@ impl<'a> TryFrom<Any<'a>> for bool {
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<bool> {
+        TryFrom::try_from(&any)
+    }
+}
+
+impl<'a, 'b> TryFrom<&'b Any<'a>> for bool {
+    type Error = Error;
+
+    fn try_from(any: &'b Any<'a>) -> Result<bool> {
         any.tag().assert_eq(Self::TAG)?;
         let b = Boolean::try_from(any)?;
         Ok(b.bool())

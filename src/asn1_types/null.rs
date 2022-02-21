@@ -15,6 +15,14 @@ impl<'a> TryFrom<Any<'a>> for Null {
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<Null> {
+        TryFrom::try_from(&any)
+    }
+}
+
+impl<'a, 'b> TryFrom<&'b Any<'a>> for Null {
+    type Error = Error;
+
+    fn try_from(any: &'b Any<'a>) -> Result<Null> {
         any.tag().assert_eq(Self::TAG)?;
         if !any.header.length.is_null() {
             return Err(Error::InvalidLength);

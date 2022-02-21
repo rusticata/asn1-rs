@@ -47,6 +47,15 @@ impl<'a> TryFrom<Any<'a>> for BitString<'a> {
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<BitString<'a>> {
+        TryFrom::try_from(&any)
+    }
+}
+
+// non-consuming version
+impl<'a, 'b> TryFrom<&'b Any<'a>> for BitString<'a> {
+    type Error = Error;
+
+    fn try_from(any: &'b Any<'a>) -> Result<BitString<'a>> {
         any.tag().assert_eq(Self::TAG)?;
         if any.data.is_empty() {
             return Err(Error::InvalidLength);

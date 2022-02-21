@@ -42,6 +42,14 @@ impl<'a> TryFrom<Any<'a>> for Oid<'a> {
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<Self> {
+        TryFrom::try_from(&any)
+    }
+}
+
+impl<'a, 'b> TryFrom<&'b Any<'a>> for Oid<'a> {
+    type Error = Error;
+
+    fn try_from(any: &'b Any<'a>) -> Result<Self> {
         // check that any.data.last().unwrap() >> 7 == 0u8
         let asn1 = Cow::Borrowed(any.data);
         Ok(Oid::new(asn1))

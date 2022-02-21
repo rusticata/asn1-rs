@@ -28,6 +28,14 @@ impl<'a> TryFrom<Any<'a>> for EmbeddedPdv<'a> {
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<Self> {
+        TryFrom::try_from(&any)
+    }
+}
+
+impl<'a, 'b> TryFrom<&'b Any<'a>> for EmbeddedPdv<'a> {
+    type Error = Error;
+
+    fn try_from(any: &'b Any<'a>) -> Result<Self> {
         let data = any.data;
         // AUTOMATIC TAGS means all values will be tagged (IMPLICIT)
         // [0] -> identification

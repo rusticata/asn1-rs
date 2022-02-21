@@ -9,7 +9,7 @@ pub use num_bigint::{BigInt, BigUint, Sign};
 
 /// Decode an unsigned integer into a big endian byte slice with all leading
 /// zeroes removed (if positive) and extra 0xff remove (if negative)
-fn trim_slice(any: Any<'_>) -> Result<&[u8]> {
+fn trim_slice<'a>(any: &'a Any<'_>) -> Result<&'a [u8]> {
     let bytes = any.data;
 
     if bytes.is_empty() || (bytes[0] != 0x00 && bytes[0] != 0xff) {
@@ -41,7 +41,7 @@ fn trim_slice(any: Any<'_>) -> Result<&[u8]> {
 
 /// Decode an unsigned integer into a byte array of the requested size
 /// containing a big endian integer.
-fn decode_array_uint<const N: usize>(any: Any<'_>) -> Result<[u8; N]> {
+fn decode_array_uint<const N: usize>(any: &Any<'_>) -> Result<[u8; N]> {
     if is_highest_bit_set(any.data) {
         return Err(Error::IntegerNegative);
     }
@@ -61,7 +61,7 @@ fn decode_array_uint<const N: usize>(any: Any<'_>) -> Result<[u8; N]> {
 /// Decode an unsigned integer of the specified size.
 ///
 /// Returns a byte array of the requested size containing a big endian integer.
-fn decode_array_int<const N: usize>(any: Any<'_>) -> Result<[u8; N]> {
+fn decode_array_int<const N: usize>(any: &Any<'_>) -> Result<[u8; N]> {
     if any.data.len() > N {
         return Err(Error::IntegerTooLarge);
     }
@@ -88,16 +88,25 @@ macro_rules! impl_int {
             type Error = Error;
 
             fn try_from(any: Any<'a>) -> Result<Self> {
+                TryFrom::try_from(&any)
+            }
+        }
+
+        impl<'a, 'b> TryFrom<&'b Any<'a>> for $int {
+            type Error = Error;
+
+            fn try_from(any: &'b Any<'a>) -> Result<Self> {
                 any.tag().assert_eq(Self::TAG)?;
                 any.header.assert_primitive()?;
                 let result = if is_highest_bit_set(any.as_bytes()) {
-                    <$uint>::from_be_bytes(decode_array_int(any)?) as $int
+                    <$uint>::from_be_bytes(decode_array_int(&any)?) as $int
                 } else {
-                    Self::from_be_bytes(decode_array_uint(any)?)
+                    Self::from_be_bytes(decode_array_uint(&any)?)
                 };
                 Ok(result)
             }
         }
+
         impl<'a> CheckDerConstraints for $int {
             fn check_constraints(any: &Any) -> Result<()> {
                 check_der_int_constraints(any)
@@ -139,6 +148,13 @@ macro_rules! impl_uint {
             type Error = Error;
 
             fn try_from(any: Any<'a>) -> Result<Self> {
+                TryFrom::try_from(&any)
+            }
+        }
+        impl<'a, 'b> TryFrom<&'b Any<'a>> for $ty {
+            type Error = Error;
+
+            fn try_from(any: &'b Any<'a>) -> Result<Self> {
                 any.tag().assert_eq(Self::TAG)?;
                 any.header.assert_primitive()?;
                 let result = Self::from_be_bytes(decode_array_uint(any)?);
@@ -408,6 +424,14 @@ impl<'a> TryFrom<Any<'a>> for Integer<'a> {
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<Integer<'a>> {
+        TryFrom::try_from(&any)
+    }
+}
+
+impl<'a, 'b> TryFrom<&'b Any<'a>> for Integer<'a> {
+    type Error = Error;
+
+    fn try_from(any: &'b Any<'a>) -> Result<Integer<'a>> {
         any.tag().assert_eq(Self::TAG)?;
         Ok(Integer {
             data: Cow::Borrowed(any.data),
@@ -584,36 +608,36 @@ mod tests {
         let h = Header::new_simple(Tag(0));
         // no zero nor ff - nothing to remove
         let input: &[u8] = &[0x7f, 0xff, 0x00, 0x02];
-        assert_eq!(Ok(input), trim_slice(Any::new(h.clone(), input)));
+        assert_eq!(Ok(input), trim_slice(&Any::new(h.clone(), input)));
         //
         // 0x00
         //
         // empty - nothing to remove
         let input: &[u8] = &[];
-        assert_eq!(Ok(input), trim_slice(Any::new(h.clone(), input)));
+        assert_eq!(Ok(input), trim_slice(&Any::new(h.clone(), input)));
         // one zero - nothing to remove
         let input: &[u8] = &[0];
-        assert_eq!(Ok(input), trim_slice(Any::new(h.clone(), input)));
+        assert_eq!(Ok(input), trim_slice(&Any::new(h.clone(), input)));
         // all zeroes - keep only one
         let input: &[u8] = &[0, 0, 0];
-        assert_eq!(Ok(&input[2..]), trim_slice(Any::new(h.clone(), input)));
+        assert_eq!(Ok(&input[2..]), trim_slice(&Any::new(h.clone(), input)));
         // some zeroes - keep only the non-zero part
         let input: &[u8] = &[0, 0, 1];
-        assert_eq!(Ok(&input[2..]), trim_slice(Any::new(h.clone(), input)));
+        assert_eq!(Ok(&input[2..]), trim_slice(&Any::new(h.clone(), input)));
         //
         // 0xff
         //
         // one ff - nothing to remove
         let input: &[u8] = &[0xff];
-        assert_eq!(Ok(input), trim_slice(Any::new(h.clone(), input)));
+        assert_eq!(Ok(input), trim_slice(&Any::new(h.clone(), input)));
         // all ff - keep only one
         let input: &[u8] = &[0xff, 0xff, 0xff];
-        assert_eq!(Ok(&input[2..]), trim_slice(Any::new(h.clone(), input)));
+        assert_eq!(Ok(&input[2..]), trim_slice(&Any::new(h.clone(), input)));
         // some ff - keep only the non-zero part
         let input: &[u8] = &[0xff, 0xff, 1];
-        assert_eq!(Ok(&input[1..]), trim_slice(Any::new(h.clone(), input)));
+        assert_eq!(Ok(&input[1..]), trim_slice(&Any::new(h.clone(), input)));
         // some ff and a MSB 1 - keep only the non-zero part
         let input: &[u8] = &[0xff, 0xff, 0x80, 1];
-        assert_eq!(Ok(&input[2..]), trim_slice(Any::new(h.clone(), input)));
+        assert_eq!(Ok(&input[2..]), trim_slice(&Any::new(h.clone(), input)));
     }
 }

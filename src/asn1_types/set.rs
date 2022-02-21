@@ -289,6 +289,14 @@ impl<'a> TryFrom<Any<'a>> for Set<'a> {
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<Set<'a>> {
+        TryFrom::try_from(&any)
+    }
+}
+
+impl<'a, 'b> TryFrom<&'b Any<'a>> for Set<'a> {
+    type Error = Error;
+
+    fn try_from(any: &'b Any<'a>) -> Result<Set<'a>> {
         any.tag().assert_eq(Self::TAG)?;
         any.header.assert_constructed()?;
         Ok(Set {

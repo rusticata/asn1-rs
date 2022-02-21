@@ -175,6 +175,14 @@ impl<'a> TryFrom<Any<'a>> for GeneralizedTime {
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<GeneralizedTime> {
+        TryFrom::try_from(&any)
+    }
+}
+
+impl<'a, 'b> TryFrom<&'b Any<'a>> for GeneralizedTime {
+    type Error = Error;
+
+    fn try_from(any: &'b Any<'a>) -> Result<GeneralizedTime> {
         any.tag().assert_eq(Self::TAG)?;
         #[allow(clippy::trivially_copy_pass_by_ref)]
         fn is_visible(b: &u8) -> bool {

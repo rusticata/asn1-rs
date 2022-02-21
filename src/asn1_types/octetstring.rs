@@ -44,6 +44,14 @@ impl<'a> TryFrom<Any<'a>> for OctetString<'a> {
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<OctetString<'a>> {
+        TryFrom::try_from(&any)
+    }
+}
+
+impl<'a, 'b> TryFrom<&'b Any<'a>> for OctetString<'a> {
+    type Error = Error;
+
+    fn try_from(any: &'b Any<'a>) -> Result<OctetString<'a>> {
         any.tag().assert_eq(Self::TAG)?;
         Ok(OctetString {
             data: Cow::Borrowed(any.data),

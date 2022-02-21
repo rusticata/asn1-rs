@@ -96,6 +96,15 @@ macro_rules! asn1_string {
             type Error = $crate::Error;
 
             fn try_from(any: $crate::Any<'a>) -> $crate::Result<$name<'a>> {
+                use core::convert::TryFrom;
+                TryFrom::try_from(&any)
+            }
+        }
+
+        impl<'a, 'b> core::convert::TryFrom<&'b $crate::Any<'a>> for $name<'a> {
+            type Error = $crate::Error;
+
+            fn try_from(any: &'b $crate::Any<'a>) -> $crate::Result<$name<'a>> {
                 use crate::traits::Tagged;
                 use alloc::borrow::Cow;
                 any.tag().assert_eq(Self::TAG)?;

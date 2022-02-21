@@ -5,6 +5,7 @@ use crate::*;
 use alloc::borrow::Cow;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
+use core::convert::TryFrom;
 use core::iter::FromIterator;
 
 /// ASN.1 `UniversalString` type
@@ -47,10 +48,18 @@ impl From<String> for UniversalString<'_> {
     }
 }
 
-impl<'a> core::convert::TryFrom<Any<'a>> for UniversalString<'a> {
+impl<'a> TryFrom<Any<'a>> for UniversalString<'a> {
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<UniversalString<'a>> {
+        TryFrom::try_from(&any)
+    }
+}
+
+impl<'a, 'b> TryFrom<&'b Any<'a>> for UniversalString<'a> {
+    type Error = Error;
+
+    fn try_from(any: &'b Any<'a>) -> Result<UniversalString<'a>> {
         any.tag().assert_eq(Self::TAG)?;
 
         if any.data.len() % 4 != 0 {
