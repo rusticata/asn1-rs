@@ -218,6 +218,40 @@ impl<'a> Any<'a> {
     impl_any_as!(as_utf8string => Utf8String, "UTF8String");
     impl_any_as!(as_videotexstring => VideotexString, "VideotexString");
     impl_any_as!(as_visiblestring => VisibleString, "VisibleString");
+
+    /// Attempt to create an `Option<T>` from this object.
+    pub fn as_optional<'b, T>(&'b self) -> Result<Option<T>>
+    where
+        T: TryFrom<&'b Any<'a>, Error = Error>,
+        'a: 'b,
+    {
+        match TryFrom::try_from(self) {
+            Ok(t) => Ok(Some(t)),
+            Err(Error::UnexpectedTag { .. }) => Ok(None),
+            Err(e) => Err(e),
+        }
+    }
+
+    /// Attempt to create a tagged value (EXPLICIT) from this object.
+    pub fn as_tagged_explicit<T, const CLASS: u8, const TAG: u32>(
+        &self,
+    ) -> Result<TaggedValue<T, Explicit, CLASS, TAG>>
+    where
+        T: FromBer<'a>,
+    {
+        TryFrom::try_from(self)
+    }
+
+    /// Attempt to create a tagged value (IMPLICIT) from this object.
+    pub fn as_tagged_implicit<T, const CLASS: u8, const TAG: u32>(
+        &self,
+    ) -> Result<TaggedValue<T, Implicit, CLASS, TAG>>
+    where
+        T: TryFrom<Any<'a>, Error = Error>,
+        T: Tagged,
+    {
+        TryFrom::try_from(self)
+    }
 }
 
 impl<'a> FromBer<'a> for Any<'a> {

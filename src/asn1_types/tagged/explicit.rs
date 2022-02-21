@@ -21,6 +21,25 @@ where
     }
 }
 
+impl<'a, 'b, T, const CLASS: u8, const TAG: u32> TryFrom<&'b Any<'a>>
+    for TaggedValue<T, Explicit, CLASS, TAG>
+where
+    T: FromBer<'a>,
+{
+    type Error = Error;
+
+    fn try_from(any: &'b Any<'a>) -> Result<Self> {
+        any.tag().assert_eq(Tag(TAG))?;
+        any.header.assert_constructed()?;
+        if any.class() as u8 != CLASS {
+            let class = Class::try_from(CLASS).ok();
+            return Err(Error::unexpected_class(class, any.class()));
+        }
+        let (_, inner) = T::from_ber(any.data)?;
+        Ok(TaggedValue::explicit(inner))
+    }
+}
+
 impl<'a, T, const CLASS: u8, const TAG: u32> CheckDerConstraints
     for TaggedValue<T, Explicit, CLASS, TAG>
 where

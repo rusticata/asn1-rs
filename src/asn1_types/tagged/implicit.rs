@@ -11,6 +11,19 @@ where
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<Self> {
+        TryFrom::try_from(&any)
+    }
+}
+
+impl<'a, 'b, T, const CLASS: u8, const TAG: u32> TryFrom<&'b Any<'a>>
+    for TaggedValue<T, Implicit, CLASS, TAG>
+where
+    T: TryFrom<Any<'a>, Error = Error>,
+    T: Tagged,
+{
+    type Error = Error;
+
+    fn try_from(any: &'b Any<'a>) -> Result<Self> {
         any.tag().assert_eq(Tag(TAG))?;
         // XXX if input is empty, this function is not called
 
