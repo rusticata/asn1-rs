@@ -102,16 +102,14 @@ impl ToDer for Oid<'_> {
 }
 
 fn encode_relative(ids: &'_ [u64]) -> impl Iterator<Item = u8> + '_ {
-    ids.iter()
-        .map(|id| {
-            let bit_count = 64 - id.leading_zeros();
-            let octets_needed = ((bit_count + 6) / 7).max(1);
-            (0..octets_needed).map(move |i| {
-                let flag = if i == octets_needed - 1 { 0 } else { 1 << 7 };
-                ((id >> (7 * (octets_needed - 1 - i))) & 0b111_1111) as u8 | flag
-            })
+    ids.iter().flat_map(|id| {
+        let bit_count = 64 - id.leading_zeros();
+        let octets_needed = ((bit_count + 6) / 7).max(1);
+        (0..octets_needed).map(move |i| {
+            let flag = if i == octets_needed - 1 { 0 } else { 1 << 7 };
+            ((id >> (7 * (octets_needed - 1 - i))) & 0b111_1111) as u8 | flag
         })
-        .flatten()
+    })
 }
 
 impl<'a> Oid<'a> {
