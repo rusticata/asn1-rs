@@ -108,16 +108,6 @@ pub type TaggedExplicit<T, const TAG: u32> = TaggedValue<T, Explicit, CONTEXT_SP
 
 // implementations for TaggedParser
 
-impl<'a, T> TaggedParser<'a, Implicit, T> {
-    pub const fn new_implicit(class: Class, constructed: bool, tag: u32, inner: T) -> Self {
-        Self {
-            header: Header::new(class, constructed, Tag(tag), Length::Definite(0)),
-            inner,
-            tag_kind: PhantomData,
-        }
-    }
-}
-
 impl<'a, T> TaggedParser<'a, Explicit, T> {
     pub const fn new_explicit(class: Class, tag: u32, inner: T) -> Self {
         Self {

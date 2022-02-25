@@ -46,6 +46,10 @@
 //!
 //! Note: if the `bits` feature is enabled, MSRV is 1.56.0 (due to `bitvec` 1.0)
 //!
+//! # Recipes
+//!
+//! See [RECIPES.md](RECIPES.md) for more examples and recipes.
+//!
 //! ## Examples
 //!
 //! Parse 2 BER integers:

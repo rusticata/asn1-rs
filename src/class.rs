@@ -19,6 +19,15 @@ pub enum Class {
 }
 
 impl Class {
+    /// `Universal` class of tags (`0b00`)
+    pub const UNIVERSAL: u8 = 0b00;
+    /// `Application` class of tags (`0b01`)
+    pub const APPLICATION: u8 = 0b01;
+    /// `Context-Specific` class of tags (`0b10`)
+    pub const CONTEXT_SPECIFIC: u8 = 0b10;
+    /// `Private` class of tags (`0b11`)
+    pub const PRIVATE: u8 = 0b11;
+
     pub const fn assert_eq(&self, class: Class) -> Result<(), crate::error::Error> {
         if *self as u8 == class as u8 {
             Ok(())

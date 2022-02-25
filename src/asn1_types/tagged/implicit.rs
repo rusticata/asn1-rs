@@ -153,6 +153,16 @@ where
 
 // implementations for TaggedParser
 
+impl<'a, T> TaggedParser<'a, Implicit, T> {
+    pub const fn new_implicit(class: Class, constructed: bool, tag: u32, inner: T) -> Self {
+        Self {
+            header: Header::new(class, constructed, Tag(tag), Length::Definite(0)),
+            inner,
+            tag_kind: PhantomData,
+        }
+    }
+}
+
 impl<'a, T> FromDer<'a> for TaggedParser<'a, Implicit, T>
 where
     T: TryFrom<Any<'a>, Error = Error>,
