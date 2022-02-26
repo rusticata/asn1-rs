@@ -174,7 +174,7 @@ impl<I, E> FromExternalError<I, E> for Error {
 }
 
 /// Holds the result of BER/DER serialization functions
-pub type ParseResult<'a, T> = IResult<&'a [u8], T, Error>;
+pub type ParseResult<'a, T, E = Error> = IResult<&'a [u8], T, E>;
 
 /// A specialized `Result` type for all operations from this crate.
 pub type Result<T> = core::result::Result<T, Error>;

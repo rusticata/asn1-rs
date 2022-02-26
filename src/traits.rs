@@ -81,17 +81,18 @@ where
 /// // and the parsed object:
 /// let (rem, my_type) = MyType::from_ber(input).expect("parsing failed");
 /// ```
-pub trait FromBer<'a>: Sized {
+pub trait FromBer<'a, E = Error>: Sized {
     /// Attempt to parse input bytes into a BER object
-    fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self>;
+    fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self, E>;
 }
 
-impl<'a, T> FromBer<'a> for T
+impl<'a, T, E> FromBer<'a, E> for T
 where
-    T: TryFrom<Any<'a>, Error = Error>,
+    T: TryFrom<Any<'a>, Error = E>,
+    E: From<Error>,
 {
-    fn from_ber(bytes: &'a [u8]) -> ParseResult<T> {
-        let (i, any) = Any::from_ber(bytes)?;
+    fn from_ber(bytes: &'a [u8]) -> ParseResult<T, E> {
+        let (i, any) = Any::from_ber(bytes).map_err(nom::Err::convert)?;
         let result = any.try_into().map_err(nom::Err::Error)?;
         Ok((i, result))
     }
@@ -146,25 +147,27 @@ where
 /// let (rem, my_type) = MyType::from_der(input).expect("parsing failed");
 /// ```
 
-pub trait FromDer<'a>: Sized {
+pub trait FromDer<'a, E = Error>: Sized {
     /// Attempt to parse input bytes into a DER object (enforcing constraints)
-    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self>;
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, E>;
 }
 
-impl<'a, T> FromDer<'a> for T
+impl<'a, T, E> FromDer<'a, E> for T
 where
-    T: TryFrom<Any<'a>, Error = Error>,
+    T: TryFrom<Any<'a>, Error = E>,
     T: CheckDerConstraints,
+    E: From<Error>,
 {
-    fn from_der(bytes: &'a [u8]) -> ParseResult<T> {
-        let (i, any) = Any::from_der(bytes)?;
+    fn from_der(bytes: &'a [u8]) -> ParseResult<T, E> {
+        let (i, any) = Any::from_der(bytes).map_err(nom::Err::convert)?;
         // X.690 section 10.1: definite form of length encoding shall be used
         if !any.header.length.is_definite() {
-            return Err(nom::Err::Error(Error::DerConstraintFailed(
-                DerConstraint::IndefiniteLength,
-            )));
+            return Err(nom::Err::Error(
+                Error::DerConstraintFailed(DerConstraint::IndefiniteLength).into(),
+            ));
         }
-        <T as CheckDerConstraints>::check_constraints(&any).map_err(nom::Err::Error)?;
+        <T as CheckDerConstraints>::check_constraints(&any)
+            .map_err(|e| nom::Err::Error(e.into()))?;
         let result = any.try_into().map_err(nom::Err::Error)?;
         Ok((i, result))
     }
