@@ -213,13 +213,13 @@ fn print_der_any(any: Any, depth: usize, ctx: &Context) {
         }
         Tag::Set => {
             let seq = any.set().unwrap();
-            for item in seq.der_iter::<Any>() {
+            for item in seq.der_iter::<Any, asn1_rs::Error>() {
                 print_der_result_any(item, depth + 1, ctx);
             }
         }
         Tag::Sequence => {
             let seq = any.sequence().unwrap();
-            for item in seq.der_iter::<Any>() {
+            for item in seq.der_iter::<Any, asn1_rs::Error>() {
                 print_der_result_any(item, depth + 1, ctx);
             }
         }

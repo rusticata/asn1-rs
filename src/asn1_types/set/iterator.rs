@@ -1,4 +1,4 @@
-pub use crate::SequenceIterator;
+pub use crate::{Error, SequenceIterator};
 
 /// An Iterator over binary data, parsing elements of type `T`
 ///
@@ -19,4 +19,4 @@ pub use crate::SequenceIterator;
 ///     assert_eq!(i as usize, idx + 1);
 /// }
 /// ```
-pub type SetIterator<'a, T, F> = SequenceIterator<'a, T, F>;
+pub type SetIterator<'a, T, F, E = Error> = SequenceIterator<'a, T, F, E>;

@@ -177,7 +177,7 @@ impl<I, E> FromExternalError<I, E> for Error {
 pub type ParseResult<'a, T, E = Error> = IResult<&'a [u8], T, E>;
 
 /// A specialized `Result` type for all operations from this crate.
-pub type Result<T> = core::result::Result<T, Error>;
+pub type Result<T, E = Error> = core::result::Result<T, E>;
 
 /// The error type for serialization operations of the [`ToDer`](crate::ToDer) trait.
 #[cfg(feature = "std")]

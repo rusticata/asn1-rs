@@ -49,7 +49,7 @@ pub use vec::*;
 /// # Examples
 ///
 /// ```
-/// use asn1_rs::Sequence;
+/// use asn1_rs::{Error, Sequence};
 ///
 /// // build sequence
 /// let it = [2, 3, 4].iter();
@@ -59,7 +59,7 @@ pub use vec::*;
 ///
 /// // iterate objects
 /// let mut sum = 0;
-/// for item in seq.der_iter::<u32>() {
+/// for item in seq.der_iter::<u32, Error>() {
 ///     // item has type `Result<u32>`, since parsing the serialized bytes could fail
 ///     sum += item.expect("parsing list item failed");
 /// }
@@ -96,19 +96,20 @@ impl<'a> Sequence<'a> {
     /// - [`Sequence::parse`] takes a reference on the sequence data, but does not consume it,
     /// - [`Sequence::from_der_and_then`] does the parsing of the sequence and applying the function
     ///   in one step, ensuring there are only references (and dropping the temporary sequence).
-    pub fn and_then<U, F>(self, op: F) -> ParseResult<'a, U>
+    pub fn and_then<U, F, E>(self, op: F) -> ParseResult<'a, U, E>
     where
-        F: FnOnce(Cow<'a, [u8]>) -> ParseResult<U>,
+        F: FnOnce(Cow<'a, [u8]>) -> ParseResult<U, E>,
     {
         op(self.content)
     }
 
     /// Same as [`Sequence::from_der_and_then`], but using BER encoding (no constraints).
-    pub fn from_ber_and_then<U, F>(bytes: &'a [u8], op: F) -> ParseResult<'a, U>
+    pub fn from_ber_and_then<U, F, E>(bytes: &'a [u8], op: F) -> ParseResult<'a, U, E>
     where
-        F: FnOnce(&'a [u8]) -> ParseResult<U>,
+        F: FnOnce(&'a [u8]) -> ParseResult<U, E>,
+        E: From<Error>,
     {
-        let (rem, seq) = Sequence::from_ber(bytes)?;
+        let (rem, seq) = Sequence::from_ber(bytes).map_err(Err::convert)?;
         let data = match seq.content {
             Cow::Borrowed(b) => b,
             // Since 'any' is built from 'bytes', it is borrowed by construction
@@ -139,11 +140,12 @@ impl<'a> Sequence<'a> {
     ///     )
     /// }
     /// ```
-    pub fn from_der_and_then<U, F>(bytes: &'a [u8], op: F) -> ParseResult<'a, U>
+    pub fn from_der_and_then<U, F, E>(bytes: &'a [u8], op: F) -> ParseResult<'a, U, E>
     where
-        F: FnOnce(&'a [u8]) -> ParseResult<U>,
+        F: FnOnce(&'a [u8]) -> ParseResult<U, E>,
+        E: From<Error>,
     {
-        let (rem, seq) = Sequence::from_der(bytes)?;
+        let (rem, seq) = Sequence::from_der(bytes).map_err(Err::convert)?;
         let data = match seq.content {
             Cow::Borrowed(b) => b,
             // Since 'any' is built from 'bytes', it is borrowed by construction
@@ -154,9 +156,9 @@ impl<'a> Sequence<'a> {
     }
 
     /// Apply the parsing function to the sequence content (non-consuming version)
-    pub fn parse<F, T>(&'a self, mut f: F) -> ParseResult<'a, T>
+    pub fn parse<F, T, E>(&'a self, mut f: F) -> ParseResult<'a, T, E>
     where
-        F: FnMut(&'a [u8]) -> ParseResult<'a, T>,
+        F: FnMut(&'a [u8]) -> ParseResult<'a, T, E>,
     {
         let input: &[u8] = &self.content;
         f(input)
@@ -171,22 +173,23 @@ impl<'a> Sequence<'a> {
     ///
     /// This function fails if the sequence contains `Owned` data, because the parsing function
     /// takes a reference on data (which is dropped).
-    pub fn parse_into<F, T>(self, mut f: F) -> ParseResult<'a, T>
+    pub fn parse_into<F, T, E>(self, mut f: F) -> ParseResult<'a, T, E>
     where
-        F: FnMut(&'a [u8]) -> ParseResult<'a, T>,
+        F: FnMut(&'a [u8]) -> ParseResult<'a, T, E>,
+        E: From<Error>,
     {
         match self.content {
             Cow::Borrowed(b) => f(b),
-            _ => Err(nom::Err::Error(Error::LifetimeError)),
+            _ => Err(nom::Err::Error(Error::LifetimeError.into())),
         }
     }
 
     /// Return an iterator over the sequence content, attempting to decode objects as BER
     ///
     /// This method can be used when all objects from the sequence have the same type.
-    pub fn ber_iter<T>(&'a self) -> SequenceIterator<'a, T, BerParser>
+    pub fn ber_iter<T, E>(&'a self) -> SequenceIterator<'a, T, BerParser, E>
     where
-        T: FromBer<'a>,
+        T: FromBer<'a, E>,
     {
         SequenceIterator::new(&self.content)
     }
@@ -194,25 +197,27 @@ impl<'a> Sequence<'a> {
     /// Return an iterator over the sequence content, attempting to decode objects as DER
     ///
     /// This method can be used when all objects from the sequence have the same type.
-    pub fn der_iter<T>(&'a self) -> SequenceIterator<'a, T, DerParser>
+    pub fn der_iter<T, E>(&'a self) -> SequenceIterator<'a, T, DerParser, E>
     where
-        T: FromDer<'a>,
+        T: FromDer<'a, E>,
     {
         SequenceIterator::new(&self.content)
     }
 
     /// Attempt to parse the sequence as a `SEQUENCE OF` items (BER), and return the parsed items as a `Vec`.
-    pub fn ber_sequence_of<T>(&'a self) -> Result<Vec<T>>
+    pub fn ber_sequence_of<T, E>(&'a self) -> Result<Vec<T>, E>
     where
-        T: FromBer<'a>,
+        T: FromBer<'a, E>,
+        E: From<Error>,
     {
         self.ber_iter().collect()
     }
 
     /// Attempt to parse the sequence as a `SEQUENCE OF` items (DER), and return the parsed items as a `Vec`.
-    pub fn der_sequence_of<T>(&'a self) -> Result<Vec<T>>
+    pub fn der_sequence_of<T, E>(&'a self) -> Result<Vec<T>, E>
     where
-        T: FromDer<'a>,
+        T: FromDer<'a, E>,
+        E: From<Error>,
     {
         self.der_iter().collect()
     }
@@ -221,16 +226,17 @@ impl<'a> Sequence<'a> {
     /// and return the parsed items as a `Vec`.
     ///
     /// Note: if `Self` is an `Owned` object, the data will be duplicated (causing allocations) into separate objects.
-    pub fn into_ber_sequence_of<T, U>(self) -> Result<Vec<T>>
+    pub fn into_ber_sequence_of<T, U, E>(self) -> Result<Vec<T>, E>
     where
-        for<'b> T: FromBer<'b>,
+        for<'b> T: FromBer<'b, E>,
+        E: From<Error>,
         T: ToStatic<Owned = T>,
     {
         match self.content {
-            Cow::Borrowed(bytes) => SequenceIterator::<T, BerParser>::new(bytes).collect(),
+            Cow::Borrowed(bytes) => SequenceIterator::<T, BerParser, E>::new(bytes).collect(),
             Cow::Owned(data) => {
-                let v1 =
-                    SequenceIterator::<T, BerParser>::new(&data).collect::<Result<Vec<T>>>()?;
+                let v1 = SequenceIterator::<T, BerParser, E>::new(&data)
+                    .collect::<Result<Vec<T>, E>>()?;
                 let v2 = v1.iter().map(|t| t.to_static()).collect::<Vec<_>>();
                 Ok(v2)
             }
@@ -241,19 +247,31 @@ impl<'a> Sequence<'a> {
     /// and return the parsed items as a `Vec`.
     ///
     /// Note: if `Self` is an `Owned` object, the data will be duplicated (causing allocations) into separate objects.
-    pub fn into_der_sequence_of<T, U>(self) -> Result<Vec<T>>
+    pub fn into_der_sequence_of<T, U, E>(self) -> Result<Vec<T>, E>
     where
-        for<'b> T: FromDer<'b>,
+        for<'b> T: FromDer<'b, E>,
+        E: From<Error>,
         T: ToStatic<Owned = T>,
     {
         match self.content {
-            Cow::Borrowed(bytes) => SequenceIterator::<T, DerParser>::new(bytes).collect(),
+            Cow::Borrowed(bytes) => SequenceIterator::<T, DerParser, E>::new(bytes).collect(),
             Cow::Owned(data) => {
-                let v1 =
-                    SequenceIterator::<T, DerParser>::new(&data).collect::<Result<Vec<T>>>()?;
+                let v1 = SequenceIterator::<T, DerParser, E>::new(&data)
+                    .collect::<Result<Vec<T>, E>>()?;
                 let v2 = v1.iter().map(|t| t.to_static()).collect::<Vec<_>>();
                 Ok(v2)
             }
+        }
+    }
+
+    pub fn into_der_sequence_of_ref<T, E>(self) -> Result<Vec<T>, E>
+    where
+        T: FromDer<'a, E>,
+        E: From<Error>,
+    {
+        match self.content {
+            Cow::Borrowed(bytes) => SequenceIterator::<T, DerParser, E>::new(bytes).collect(),
+            Cow::Owned(_) => Err(Error::LifetimeError.into()),
         }
     }
 }

@@ -1,4 +1,4 @@
-use crate::{ASN1Parser, BerParser, DerParser, Error, FromBer, FromDer, Result};
+use crate::{ASN1Parser, BerParser, DerParser, Error, FromBer, FromDer};
 use core::marker::PhantomData;
 
 /// An Iterator over binary data, parsing elements of type `T`
@@ -21,7 +21,7 @@ use core::marker::PhantomData;
 /// }
 /// ```
 #[derive(Debug)]
-pub struct SequenceIterator<'a, T, F>
+pub struct SequenceIterator<'a, T, F, E = Error>
 where
     F: ASN1Parser,
 {
@@ -29,9 +29,10 @@ where
     has_error: bool,
     _t: PhantomData<T>,
     _f: PhantomData<F>,
+    _e: PhantomData<E>,
 }
 
-impl<'a, T, F> SequenceIterator<'a, T, F>
+impl<'a, T, F, E> SequenceIterator<'a, T, F, E>
 where
     F: ASN1Parser,
 {
@@ -41,15 +42,17 @@ where
             has_error: false,
             _t: PhantomData,
             _f: PhantomData,
+            _e: PhantomData,
         }
     }
 }
 
-impl<'a, T> Iterator for SequenceIterator<'a, T, BerParser>
+impl<'a, T, E> Iterator for SequenceIterator<'a, T, BerParser, E>
 where
-    T: FromBer<'a>,
+    T: FromBer<'a, E>,
+    E: From<Error>,
 {
-    type Item = Result<T>;
+    type Item = Result<T, E>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.has_error || self.data.is_empty() {
@@ -67,17 +70,18 @@ where
 
             Err(nom::Err::Incomplete(n)) => {
                 self.has_error = true;
-                Some(Err(Error::Incomplete(n)))
+                Some(Err(Error::Incomplete(n).into()))
             }
         }
     }
 }
 
-impl<'a, T> Iterator for SequenceIterator<'a, T, DerParser>
+impl<'a, T, E> Iterator for SequenceIterator<'a, T, DerParser, E>
 where
-    T: FromDer<'a>,
+    T: FromDer<'a, E>,
+    E: From<Error>,
 {
-    type Item = Result<T>;
+    type Item = Result<T, E>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.has_error || self.data.is_empty() {
@@ -95,7 +99,7 @@ where
 
             Err(nom::Err::Incomplete(n)) => {
                 self.has_error = true;
-                Some(Err(Error::Incomplete(n)))
+                Some(Err(Error::Incomplete(n).into()))
             }
         }
     }

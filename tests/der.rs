@@ -272,7 +272,7 @@ fn from_der_iter_sequence_incomplete() {
     let (rem, result) = Sequence::from_der(input).expect("parsing failed");
     assert_eq!(result.as_ref(), &input[2..]);
     assert_eq!(rem, &[]);
-    let mut iter = result.der_iter::<u32>();
+    let mut iter = result.der_iter::<u32, Error>();
     assert_eq!(iter.next(), Some(Ok(65537)));
     assert_eq!(iter.next(), Some(Err(Error::Incomplete(Needed::new(1)))));
     assert_eq!(iter.next(), None);
