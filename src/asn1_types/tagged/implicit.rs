@@ -143,6 +143,7 @@ where
                     header,
                     inner: t,
                     tag_kind: PhantomData,
+                    _e: PhantomData,
                 };
                 Ok((rem, tagged_value))
             }
@@ -159,6 +160,7 @@ impl<'a, T> TaggedParser<'a, Implicit, T> {
             header: Header::new(class, constructed, Tag(tag), Length::Definite(0)),
             inner,
             tag_kind: PhantomData,
+            _e: PhantomData,
         }
     }
 }
@@ -186,6 +188,7 @@ where
                     header,
                     inner: t,
                     tag_kind: PhantomData,
+                    _e: PhantomData,
                 };
                 Ok((rem, tagged_value))
             }

@@ -36,10 +36,10 @@ impl<'a> FromDer<'a> for PrincipalName {
         let (rem, seq) = Sequence::from_ber(bytes)?;
         seq.and_then(|data| {
             let input = &data;
-            let (i, t) = parse_der_tagged_explicit::<_, u32>(0)(input)?;
+            let (i, t) = parse_der_tagged_explicit::<_, u32, _>(0)(input)?;
             let name_type = t.inner;
             let name_type = NameType(name_type as i32);
-            let (_, t) = parse_der_tagged_explicit::<_, KerberosStringList>(1)(i)?;
+            let (_, t) = parse_der_tagged_explicit::<_, KerberosStringList, _>(1)(i)?;
             let name_string = t.inner.iter().map(|s| s.string()).collect();
             Ok((
                 rem,

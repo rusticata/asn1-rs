@@ -1,21 +1,22 @@
 use super::{Explicit, Implicit, TaggedParser};
 use crate::{Any, Error, FromDer, Header, ParseResult, Tag, Tagged};
 use nom::error::ParseError;
-use nom::IResult;
+use nom::{Err, IResult};
 
 // helper functions for parsing tagged objects
 
-pub fn parse_der_tagged_explicit<'a, IntoTag, T>(
+pub fn parse_der_tagged_explicit<'a, IntoTag, T, E>(
     tag: IntoTag,
-) -> impl FnMut(&'a [u8]) -> ParseResult<TaggedParser<'a, Explicit, T>>
+) -> impl FnMut(&'a [u8]) -> ParseResult<TaggedParser<'a, Explicit, T, E>, E>
 where
     IntoTag: Into<Tag>,
-    TaggedParser<'a, Explicit, T>: FromDer<'a>,
+    TaggedParser<'a, Explicit, T, E>: FromDer<'a, E>,
+    E: From<Error>,
 {
     let tag = tag.into();
     move |i| {
         let (rem, tagged) = TaggedParser::from_der(i)?;
-        tagged.assert_tag(tag)?;
+        tagged.assert_tag(tag).map_err(|e| Err::Error(e.into()))?;
         Ok((rem, tagged))
     }
 }
@@ -38,18 +39,21 @@ where
     })
 }
 
-pub fn parse_der_tagged_implicit<'a, IntoTag, T>(
+pub fn parse_der_tagged_implicit<'a, IntoTag, T, E>(
     tag: IntoTag,
-) -> impl FnMut(&'a [u8]) -> ParseResult<TaggedParser<'a, Implicit, T>>
+) -> impl FnMut(&'a [u8]) -> ParseResult<TaggedParser<'a, Implicit, T, E>, E>
 where
     IntoTag: Into<Tag>,
     // T: TryFrom<Any<'a>, Error = Error> + Tagged,
-    TaggedParser<'a, Implicit, T>: FromDer<'a>,
+    TaggedParser<'a, Implicit, T, E>: FromDer<'a, E>,
+    E: From<Error>,
 {
     let tag = tag.into();
     move |i| {
         let (rem, tagged) = TaggedParser::from_der(i)?;
-        tagged.assert_tag(tag)?;
+        tagged
+            .assert_tag(tag)
+            .map_err(|e| nom::Err::convert(e.into()))?;
         Ok((rem, tagged))
     }
 }

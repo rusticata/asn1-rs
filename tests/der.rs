@@ -477,8 +477,8 @@ fn from_der_tagged_implicit_all() {
     let _ = parser(input).expect("parsing failed");
 
     // try specifying the expected tag (correct tag)
-    let _ = parse_der_tagged_implicit::<_, Ia5String>(1)(input).expect("parsing failed");
+    let _ = parse_der_tagged_implicit::<_, Ia5String, _>(1)(input).expect("parsing failed");
     // try specifying the expected tag (incorrect tag)
-    let _ = parse_der_tagged_implicit::<_, Ia5String>(2)(input)
+    let _ = parse_der_tagged_implicit::<_, Ia5String, _>(2)(input)
         .expect_err("parsing should have failed");
 }

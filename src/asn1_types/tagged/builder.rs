@@ -1,4 +1,4 @@
-use super::{Explicit, Implicit, TaggedParser};
+use super::{Error, Explicit, Implicit, TaggedParser};
 use crate::{Class, FromBer, FromDer, ParseResult, Tag};
 use core::marker::PhantomData;
 
@@ -22,13 +22,14 @@ use core::marker::PhantomData;
 /// assert_eq!(tagged.as_ref(), &2);
 /// ```
 #[derive(Clone, Copy, Debug)]
-pub struct TaggedParserBuilder<TagKind> {
+pub struct TaggedParserBuilder<TagKind, E = Error> {
     class: Class,
     tag: Tag,
     tag_kind: PhantomData<TagKind>,
+    _e: PhantomData<E>,
 }
 
-impl<TagKind> TaggedParserBuilder<TagKind> {
+impl<TagKind, E> TaggedParserBuilder<TagKind, E> {
     /// Create a default `TaggedParserBuilder` builder
     ///
     /// `TagKind` must be specified as either [`Explicit`] or [`Implicit`]
@@ -43,6 +44,7 @@ impl<TagKind> TaggedParserBuilder<TagKind> {
             class: Class::Universal,
             tag: Tag(0),
             tag_kind: PhantomData,
+            _e: PhantomData,
         }
     }
 
@@ -57,44 +59,46 @@ impl<TagKind> TaggedParserBuilder<TagKind> {
     }
 }
 
-impl TaggedParserBuilder<Explicit> {
+impl<E> TaggedParserBuilder<Explicit, E> {
     /// Create a `TagParser` builder for `EXPLICIT` tagged values
     pub const fn explicit() -> Self {
         TaggedParserBuilder::new()
     }
 }
 
-impl TaggedParserBuilder<Implicit> {
+impl<E> TaggedParserBuilder<Implicit, E> {
     /// Create a `TagParser` builder for `IMPLICIT` tagged values
     pub const fn implicit() -> Self {
         TaggedParserBuilder::new()
     }
 }
 
-impl<TagKind> TaggedParserBuilder<TagKind> {
+impl<TagKind, E> TaggedParserBuilder<TagKind, E> {
     /// Create the BER parser from the builder parameters
     ///
     /// This method will consume the builder and return a parser (to be used as a function).
     pub fn ber_parser<'a, T>(
         self,
-    ) -> impl Fn(&'a [u8]) -> ParseResult<'a, TaggedParser<'a, TagKind, T>>
+    ) -> impl Fn(&'a [u8]) -> ParseResult<'a, TaggedParser<'a, TagKind, T, E>, E>
     where
-        TaggedParser<'a, TagKind, T>: FromBer<'a>,
+        TaggedParser<'a, TagKind, T, E>: FromBer<'a, E>,
+        E: From<Error>,
     {
-        move |bytes: &[u8]| TaggedParser::<TagKind, T>::parse_ber(self.class, self.tag, bytes)
+        move |bytes: &[u8]| TaggedParser::<TagKind, T, E>::parse_ber(self.class, self.tag, bytes)
     }
 }
 
-impl<TagKind> TaggedParserBuilder<TagKind> {
+impl<TagKind, E> TaggedParserBuilder<TagKind, E> {
     /// Create the DER parser from the builder parameters
     ///
     /// This method will consume the builder and return a parser (to be used as a function).
     pub fn der_parser<'a, T>(
         self,
-    ) -> impl Fn(&'a [u8]) -> ParseResult<'a, TaggedParser<'a, TagKind, T>>
+    ) -> impl Fn(&'a [u8]) -> ParseResult<'a, TaggedParser<'a, TagKind, T, E>, E>
     where
-        TaggedParser<'a, TagKind, T>: FromDer<'a>,
+        TaggedParser<'a, TagKind, T, E>: FromDer<'a, E>,
+        E: From<Error>,
     {
-        move |bytes: &[u8]| TaggedParser::<TagKind, T>::parse_der(self.class, self.tag, bytes)
+        move |bytes: &[u8]| TaggedParser::<TagKind, T, E>::parse_der(self.class, self.tag, bytes)
     }
 }

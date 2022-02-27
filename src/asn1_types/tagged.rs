@@ -1,4 +1,4 @@
-use crate::{Class, Tag, Tagged};
+use crate::{Class, Error, Tag, Tagged};
 use core::marker::PhantomData;
 
 mod builder;
@@ -54,13 +54,14 @@ impl TagKind for Explicit {}
 /// assert_eq!(tagged, TaggedValue::explicit(Integer::from(2)));
 /// ```
 #[derive(Debug, PartialEq)]
-pub struct TaggedValue<T, TagKind, const CLASS: u8, const TAG: u32> {
+pub struct TaggedValue<T, TagKind, const CLASS: u8, const TAG: u32, E = Error> {
     pub(crate) inner: T,
 
     tag_kind: PhantomData<TagKind>,
+    _e: PhantomData<E>,
 }
 
-impl<T, TagKind, const CLASS: u8, const TAG: u32> TaggedValue<T, TagKind, CLASS, TAG> {
+impl<T, TagKind, const CLASS: u8, const TAG: u32, E> TaggedValue<T, TagKind, CLASS, TAG, E> {
     /// Consumes the `TaggedParser`, returning the wrapped value.
     #[inline]
     pub fn into_inner(self) -> T {
@@ -68,34 +69,40 @@ impl<T, TagKind, const CLASS: u8, const TAG: u32> TaggedValue<T, TagKind, CLASS,
     }
 }
 
-impl<T, const CLASS: u8, const TAG: u32> TaggedValue<T, Explicit, CLASS, TAG> {
+impl<T, const CLASS: u8, const TAG: u32, E> TaggedValue<T, Explicit, CLASS, TAG, E> {
     /// Constructs a new `EXPLICIT TaggedParser` with the provided value
     #[inline]
     pub const fn explicit(inner: T) -> Self {
         TaggedValue {
             inner,
             tag_kind: PhantomData,
+            _e: PhantomData,
         }
     }
 }
 
-impl<T, const CLASS: u8, const TAG: u32> TaggedValue<T, Implicit, CLASS, TAG> {
+impl<T, const CLASS: u8, const TAG: u32, E> TaggedValue<T, Implicit, CLASS, TAG, E> {
     /// Constructs a new `IMPLICIT TaggedParser` with the provided value
     #[inline]
     pub const fn implicit(inner: T) -> Self {
         TaggedValue {
             inner,
             tag_kind: PhantomData,
+            _e: PhantomData,
         }
     }
 }
 
-impl<T, TagKind, const CLASS: u8, const TAG: u32> AsRef<T> for TaggedValue<T, TagKind, CLASS, TAG> {
+impl<T, TagKind, const CLASS: u8, const TAG: u32, E> AsRef<T>
+    for TaggedValue<T, TagKind, CLASS, TAG, E>
+{
     fn as_ref(&self) -> &T {
         &self.inner
     }
 }
 
-impl<T, TagKind, const CLASS: u8, const TAG: u32> Tagged for TaggedValue<T, TagKind, CLASS, TAG> {
+impl<T, TagKind, const CLASS: u8, const TAG: u32, E> Tagged
+    for TaggedValue<T, TagKind, CLASS, TAG, E>
+{
     const TAG: Tag = Tag(TAG);
 }

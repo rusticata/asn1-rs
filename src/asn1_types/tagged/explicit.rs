@@ -2,46 +2,50 @@ use crate::*;
 use core::convert::TryFrom;
 use core::marker::PhantomData;
 
-impl<'a, T, const CLASS: u8, const TAG: u32> TryFrom<Any<'a>>
-    for TaggedValue<T, Explicit, CLASS, TAG>
+impl<'a, T, const CLASS: u8, const TAG: u32, E> TryFrom<Any<'a>>
+    for TaggedValue<T, Explicit, CLASS, TAG, E>
 where
-    T: FromBer<'a>,
+    T: FromBer<'a, E>,
+    E: From<Error>,
+    E: From<Err<E>>,
 {
-    type Error = Error;
+    type Error = E;
 
-    fn try_from(any: Any<'a>) -> Result<Self> {
+    fn try_from(any: Any<'a>) -> Result<Self, E> {
         any.tag().assert_eq(Tag(TAG))?;
         any.header.assert_constructed()?;
         if any.class() as u8 != CLASS {
             let class = Class::try_from(CLASS).ok();
-            return Err(Error::unexpected_class(class, any.class()));
+            return Err(Error::unexpected_class(class, any.class()).into());
         }
         let (_, inner) = T::from_ber(any.data)?;
         Ok(TaggedValue::explicit(inner))
     }
 }
 
-impl<'a, 'b, T, const CLASS: u8, const TAG: u32> TryFrom<&'b Any<'a>>
-    for TaggedValue<T, Explicit, CLASS, TAG>
+impl<'a, 'b, T, const CLASS: u8, const TAG: u32, E> TryFrom<&'b Any<'a>>
+    for TaggedValue<T, Explicit, CLASS, TAG, E>
 where
-    T: FromBer<'a>,
+    T: FromBer<'a, E>,
+    E: From<Error>,
+    E: From<Err<E>>,
 {
-    type Error = Error;
+    type Error = E;
 
-    fn try_from(any: &'b Any<'a>) -> Result<Self> {
+    fn try_from(any: &'b Any<'a>) -> Result<Self, E> {
         any.tag().assert_eq(Tag(TAG))?;
         any.header.assert_constructed()?;
         if any.class() as u8 != CLASS {
             let class = Class::try_from(CLASS).ok();
-            return Err(Error::unexpected_class(class, any.class()));
+            return Err(Error::unexpected_class(class, any.class()).into());
         }
         let (_, inner) = T::from_ber(any.data)?;
         Ok(TaggedValue::explicit(inner))
     }
 }
 
-impl<'a, T, const CLASS: u8, const TAG: u32> CheckDerConstraints
-    for TaggedValue<T, Explicit, CLASS, TAG>
+impl<'a, T, const CLASS: u8, const TAG: u32, E> CheckDerConstraints
+    for TaggedValue<T, Explicit, CLASS, TAG, E>
 where
     T: CheckDerConstraints,
 {
@@ -54,7 +58,7 @@ where
 }
 
 #[cfg(feature = "std")]
-impl<T, const CLASS: u8, const TAG: u32> ToDer for TaggedValue<T, Explicit, CLASS, TAG>
+impl<T, const CLASS: u8, const TAG: u32, E> ToDer for TaggedValue<T, Explicit, CLASS, TAG, E>
 where
     T: ToDer,
 {
@@ -104,7 +108,8 @@ where
 /// let (_, tagged) = TaggedExplicit::<Integer, 0>::from_ber(bytes).unwrap();
 /// assert_eq!(tagged, TaggedValue::explicit(Integer::from(2)));
 /// ```
-pub type TaggedExplicit<T, const TAG: u32> = TaggedValue<T, Explicit, CONTEXT_SPECIFIC, TAG>;
+pub type TaggedExplicit<T, const TAG: u32, E = Error> =
+    TaggedValue<T, Explicit, CONTEXT_SPECIFIC, TAG, E>;
 
 // implementations for TaggedParser
 
@@ -114,6 +119,7 @@ impl<'a, T> TaggedParser<'a, Explicit, T> {
             header: Header::new(class, true, Tag(tag), Length::Definite(0)),
             inner,
             tag_kind: PhantomData,
+            _e: PhantomData,
         }
     }
 }
@@ -168,6 +174,7 @@ where
             header,
             inner,
             tag_kind: PhantomData,
+            _e: PhantomData,
         };
         Ok((rem, tagged))
     }
@@ -185,6 +192,7 @@ where
             header,
             inner,
             tag_kind: PhantomData,
+            _e: PhantomData,
         };
         Ok((rem, tagged))
     }

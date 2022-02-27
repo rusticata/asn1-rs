@@ -2,19 +2,21 @@ use crate::*;
 use core::marker::PhantomData;
 
 #[derive(Debug, PartialEq)]
-pub struct TaggedParser<'a, TagKind, T> {
+pub struct TaggedParser<'a, TagKind, T, E = Error> {
     pub header: Header<'a>,
     pub inner: T,
 
     pub(crate) tag_kind: PhantomData<TagKind>,
+    pub(crate) _e: PhantomData<E>,
 }
 
-impl<'a, TagKind, T> TaggedParser<'a, TagKind, T> {
+impl<'a, TagKind, T, E> TaggedParser<'a, TagKind, T, E> {
     pub const fn new(header: Header<'a>, inner: T) -> Self {
         TaggedParser {
             header,
             inner,
             tag_kind: PhantomData,
+            _e: PhantomData,
         }
     }
 
@@ -37,37 +39,39 @@ impl<'a, TagKind, T> TaggedParser<'a, TagKind, T> {
     }
 }
 
-impl<'a, TagKind, T> AsRef<T> for TaggedParser<'a, TagKind, T> {
+impl<'a, TagKind, T, E> AsRef<T> for TaggedParser<'a, TagKind, T, E> {
     fn as_ref(&self) -> &T {
         &self.inner
     }
 }
 
-impl<'a, TagKind, T> TaggedParser<'a, TagKind, T>
+impl<'a, TagKind, T, E> TaggedParser<'a, TagKind, T, E>
 where
-    Self: FromBer<'a>,
+    Self: FromBer<'a, E>,
+    E: From<Error>,
 {
-    pub fn parse_ber(class: Class, tag: Tag, bytes: &'a [u8]) -> ParseResult<'a, Self> {
-        let (rem, t) = TaggedParser::<TagKind, T>::from_ber(bytes)?;
-        t.assert_class(class)?;
-        t.assert_tag(tag)?;
+    pub fn parse_ber(class: Class, tag: Tag, bytes: &'a [u8]) -> ParseResult<'a, Self, E> {
+        let (rem, t) = TaggedParser::<TagKind, T, E>::from_ber(bytes)?;
+        t.assert_class(class).map_err(|e| Err::Error(e.into()))?;
+        t.assert_tag(tag).map_err(|e| Err::Error(e.into()))?;
         Ok((rem, t))
     }
 }
 
-impl<'a, TagKind, T> TaggedParser<'a, TagKind, T>
+impl<'a, TagKind, T, E> TaggedParser<'a, TagKind, T, E>
 where
-    Self: FromDer<'a>,
+    Self: FromDer<'a, E>,
+    E: From<Error>,
 {
-    pub fn parse_der(class: Class, tag: Tag, bytes: &'a [u8]) -> ParseResult<'a, Self> {
-        let (rem, t) = TaggedParser::<TagKind, T>::from_der(bytes)?;
-        t.assert_class(class)?;
-        t.assert_tag(tag)?;
+    pub fn parse_der(class: Class, tag: Tag, bytes: &'a [u8]) -> ParseResult<'a, Self, E> {
+        let (rem, t) = TaggedParser::<TagKind, T, E>::from_der(bytes)?;
+        t.assert_class(class).map_err(|e| Err::Error(e.into()))?;
+        t.assert_tag(tag).map_err(|e| Err::Error(e.into()))?;
         Ok((rem, t))
     }
 }
 
-impl<'a, TagKind, T> DynTagged for TaggedParser<'a, TagKind, T> {
+impl<'a, TagKind, T, E> DynTagged for TaggedParser<'a, TagKind, T, E> {
     fn tag(&self) -> Tag {
         self.tag()
     }
