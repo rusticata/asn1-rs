@@ -74,18 +74,9 @@ impl<T, E, TagKind, const CLASS: u8, const TAG: u32> TaggedValue<T, E, TagKind, 
     }
 
     /// Return the (outer) class of this object
-    ///
-    /// # PANIC
-    /// This method will panic if the `CLASS` parameter is invalid (>= 4)
-    pub const fn class(&self) -> Class {
-        assert!(CLASS < 4);
-        match CLASS {
-            Class::APPLICATION => Class::Application,
-            Class::CONTEXT_SPECIFIC => Class::ContextSpecific,
-            Class::PRIVATE => Class::Private,
-            Class::UNIVERSAL => Class::Universal,
-            _ => unreachable!(),
-        }
+    #[inline]
+    pub const fn class(&self) -> u8 {
+        CLASS
     }
 }
 

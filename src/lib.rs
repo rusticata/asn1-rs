@@ -48,7 +48,7 @@
 //!
 //! # Recipes
 //!
-//! See [RECIPES.md](RECIPES.md) for more examples and recipes.
+//! See [doc::recipes] for more examples and recipes.
 //!
 //! ## Examples
 //!
@@ -207,5 +207,4 @@ pub mod exports {
 }
 
 #[cfg(doc)]
-#[doc = include_str!("../RECIPES.md")]
-pub mod doc_recipes {}
+pub mod doc;
