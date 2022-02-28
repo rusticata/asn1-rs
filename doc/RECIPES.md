@@ -72,7 +72,7 @@ The type `OptTaggedExplicit` is also provided as an alias:
 ```rust
 # use asn1_rs::*;
 # let parser = |input| -> Result<(), Error> {
-let (rem, result) = OptTaggedExplicit::<u32, 0>::from_der(input)?;
+let (rem, result) = OptTaggedExplicit::<u32, Error, 0>::from_der(input)?;
 # Ok(()) };
 ```
 
@@ -146,6 +146,6 @@ The type `OptTaggedImplicit` is also provided as an alias:
 ```rust
 # use asn1_rs::*;
 # let parser = |input| -> Result<(), Error> {
-let (rem, result) = OptTaggedImplicit::<u32, 0>::from_der(input)?;
+let (rem, result) = OptTaggedImplicit::<u32, Error, 0>::from_der(input)?;
 # Ok(()) };
 ```

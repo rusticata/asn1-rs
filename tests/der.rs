@@ -397,7 +397,8 @@ fn from_der_tagged_explicit_optional() {
     assert_eq!(rem, input);
 
     // using OptTaggedExplicit
-    let (rem, result) = OptTaggedExplicit::<u32, 0>::from_der(input).expect("parsing failed");
+    let (rem, result) =
+        OptTaggedExplicit::<u32, Error, 0>::from_der(input).expect("parsing failed");
     assert!(rem.is_empty());
     assert!(result.is_some());
     let tagged = result.unwrap();
@@ -452,7 +453,8 @@ fn from_der_tagged_implicit_optional() {
     assert_eq!(rem, input);
 
     // using OptTaggedExplicit
-    let (rem, result) = OptTaggedImplicit::<&str, 1>::from_der(input).expect("parsing failed");
+    let (rem, result) =
+        OptTaggedImplicit::<&str, Error, 1>::from_der(input).expect("parsing failed");
     assert!(rem.is_empty());
     assert!(result.is_some());
     let tagged = result.unwrap();

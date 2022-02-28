@@ -173,20 +173,20 @@ impl From<u32> for OptTaggedParser {
 /// To parse a `[0] EXPLICIT INTEGER OPTIONAL` object:
 ///
 /// ```rust
-/// use asn1_rs::{FromBer, Integer, OptTaggedExplicit, TaggedValue};
+/// use asn1_rs::{Error, FromBer, Integer, OptTaggedExplicit, TaggedValue};
 ///
 /// let bytes = &[0xa0, 0x03, 0x2, 0x1, 0x2];
 ///
 /// // If tagged object is present (and has expected tag), parsing succeeds:
-/// let (_, tagged) = OptTaggedExplicit::<Integer, 0>::from_ber(bytes).unwrap();
+/// let (_, tagged) = OptTaggedExplicit::<Integer, Error, 0>::from_ber(bytes).unwrap();
 /// assert_eq!(tagged, Some(TaggedValue::explicit(Integer::from(2))));
 ///
 /// // If tagged object is not present or has different tag, parsing
 /// // also succeeds (returning None):
-/// let (_, tagged) = OptTaggedExplicit::<Integer, 0>::from_ber(&[]).unwrap();
+/// let (_, tagged) = OptTaggedExplicit::<Integer, Error, 0>::from_ber(&[]).unwrap();
 /// assert_eq!(tagged, None);
 /// ```
-pub type OptTaggedExplicit<T, const TAG: u32> = Option<TaggedExplicit<T, Error, TAG>>;
+pub type OptTaggedExplicit<T, E, const TAG: u32> = Option<TaggedExplicit<T, E, TAG>>;
 
 /// A helper object to parse `[ n ] IMPLICIT T OPTIONAL`
 ///
@@ -201,16 +201,16 @@ pub type OptTaggedExplicit<T, const TAG: u32> = Option<TaggedExplicit<T, Error, 
 /// To parse a `[0] IMPLICIT INTEGER OPTIONAL` object:
 ///
 /// ```rust
-/// use asn1_rs::{FromBer, Integer, OptTaggedImplicit, TaggedValue};
+/// use asn1_rs::{Error, FromBer, Integer, OptTaggedImplicit, TaggedValue};
 ///
 /// let bytes = &[0xa0, 0x1, 0x2];
 ///
-/// let (_, tagged) = OptTaggedImplicit::<Integer, 0>::from_ber(bytes).unwrap();
+/// let (_, tagged) = OptTaggedImplicit::<Integer, Error, 0>::from_ber(bytes).unwrap();
 /// assert_eq!(tagged, Some(TaggedValue::implicit(Integer::from(2))));
 ///
 /// // If tagged object is not present or has different tag, parsing
 /// // also succeeds (returning None):
-/// let (_, tagged) = OptTaggedImplicit::<Integer, 0>::from_ber(&[]).unwrap();
+/// let (_, tagged) = OptTaggedImplicit::<Integer, Error, 0>::from_ber(&[]).unwrap();
 /// assert_eq!(tagged, None);
 /// ```
-pub type OptTaggedImplicit<T, const TAG: u32> = Option<TaggedImplicit<T, Error, TAG>>;
+pub type OptTaggedImplicit<T, E, const TAG: u32> = Option<TaggedImplicit<T, E, TAG>>;
