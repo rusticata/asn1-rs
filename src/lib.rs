@@ -205,3 +205,6 @@ pub mod exports {
     pub use alloc::borrow;
     pub use asn1_rs_impl;
 }
+
+#[doc = include_str!("../RECIPES.md")]
+pub mod doc_recipes {}

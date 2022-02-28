@@ -67,6 +67,26 @@ impl<T, E, TagKind, const CLASS: u8, const TAG: u32> TaggedValue<T, E, TagKind, 
     pub fn into_inner(self) -> T {
         self.inner
     }
+
+    /// Return the (outer) tag of this object
+    pub const fn tag(&self) -> Tag {
+        Self::TAG
+    }
+
+    /// Return the (outer) class of this object
+    ///
+    /// # PANIC
+    /// This method will panic if the `CLASS` parameter is invalid (>= 4)
+    pub const fn class(&self) -> Class {
+        assert!(CLASS < 4);
+        match CLASS {
+            Class::APPLICATION => Class::Application,
+            Class::CONTEXT_SPECIFIC => Class::ContextSpecific,
+            Class::PRIVATE => Class::Private,
+            Class::UNIVERSAL => Class::Universal,
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl<T, E, const CLASS: u8, const TAG: u32> TaggedValue<T, E, Explicit, CLASS, TAG> {
