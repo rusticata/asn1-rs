@@ -206,5 +206,6 @@ pub mod exports {
     pub use asn1_rs_impl;
 }
 
+#[cfg(doc)]
 #[doc = include_str!("../RECIPES.md")]
 pub mod doc_recipes {}
