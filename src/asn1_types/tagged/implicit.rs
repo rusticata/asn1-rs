@@ -2,34 +2,38 @@ use crate::*;
 use core::convert::TryFrom;
 use core::marker::PhantomData;
 
-impl<'a, T, const CLASS: u8, const TAG: u32> TryFrom<Any<'a>>
-    for TaggedValue<T, Implicit, CLASS, TAG>
+impl<'a, T, E, const CLASS: u8, const TAG: u32> TryFrom<Any<'a>>
+    for TaggedValue<T, E, Implicit, CLASS, TAG>
 where
-    T: TryFrom<Any<'a>, Error = Error>,
+    T: TryFrom<Any<'a>, Error = E>,
     T: Tagged,
+    E: From<Error>,
+    E: From<Err<E>>,
 {
-    type Error = Error;
+    type Error = E;
 
-    fn try_from(any: Any<'a>) -> Result<Self> {
+    fn try_from(any: Any<'a>) -> Result<Self, E> {
         TryFrom::try_from(&any)
     }
 }
 
-impl<'a, 'b, T, const CLASS: u8, const TAG: u32> TryFrom<&'b Any<'a>>
-    for TaggedValue<T, Implicit, CLASS, TAG>
+impl<'a, 'b, E, T, const CLASS: u8, const TAG: u32> TryFrom<&'b Any<'a>>
+    for TaggedValue<T, E, Implicit, CLASS, TAG>
 where
-    T: TryFrom<Any<'a>, Error = Error>,
+    T: TryFrom<Any<'a>, Error = E>,
     T: Tagged,
+    E: From<Error>,
+    E: From<Err<E>>,
 {
-    type Error = Error;
+    type Error = E;
 
-    fn try_from(any: &'b Any<'a>) -> Result<Self> {
+    fn try_from(any: &'b Any<'a>) -> Result<Self, E> {
         any.tag().assert_eq(Tag(TAG))?;
         // XXX if input is empty, this function is not called
 
         if any.class() as u8 != CLASS {
             let class = Class::try_from(CLASS).ok();
-            return Err(Error::unexpected_class(class, any.class()));
+            return Err(Error::unexpected_class(class, any.class()).into());
         }
         let any = Any {
             header: Header {
@@ -45,8 +49,8 @@ where
     }
 }
 
-impl<'a, T, const CLASS: u8, const TAG: u32> CheckDerConstraints
-    for TaggedValue<T, Implicit, CLASS, TAG>
+impl<'a, T, E, const CLASS: u8, const TAG: u32> CheckDerConstraints
+    for TaggedValue<T, E, Implicit, CLASS, TAG>
 where
     T: CheckDerConstraints,
     T: Tagged,
@@ -61,7 +65,7 @@ where
 }
 
 #[cfg(feature = "std")]
-impl<T, const CLASS: u8, const TAG: u32> ToDer for TaggedValue<T, Implicit, CLASS, TAG>
+impl<T, E, const CLASS: u8, const TAG: u32> ToDer for TaggedValue<T, E, Implicit, CLASS, TAG>
 where
     T: ToDer,
 {
@@ -113,14 +117,14 @@ where
 /// To parse a `[0] IMPLICIT INTEGER OPTIONAL` object:
 ///
 /// ```rust
-/// use asn1_rs::{FromBer, Integer, TaggedImplicit, TaggedValue};
+/// use asn1_rs::{Error, FromBer, Integer, TaggedImplicit, TaggedValue};
 ///
 /// let bytes = &[0xa0, 0x1, 0x2];
 ///
-/// let (_, tagged) = TaggedImplicit::<Integer, 0>::from_ber(bytes).unwrap();
+/// let (_, tagged) = TaggedImplicit::<Integer, Error, 0>::from_ber(bytes).unwrap();
 /// assert_eq!(tagged, TaggedValue::implicit(Integer::from(2)));
 /// ```
-pub type TaggedImplicit<T, const TAG: u32> = TaggedValue<T, Implicit, CONTEXT_SPECIFIC, TAG>;
+pub type TaggedImplicit<T, E, const TAG: u32> = TaggedValue<T, E, Implicit, CONTEXT_SPECIFIC, TAG>;
 
 impl<'a, T> FromBer<'a> for TaggedParser<'a, Implicit, T>
 where

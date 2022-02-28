@@ -353,7 +353,7 @@ fn from_der_opt_int() {
 #[test]
 fn from_der_tagged_explicit() {
     let input = &hex!("a0 03 02 01 02");
-    let (rem, result) = TaggedExplicit::<u32, 0>::from_der(input).expect("parsing failed");
+    let (rem, result) = TaggedExplicit::<u32, Error, 0>::from_der(input).expect("parsing failed");
     assert!(rem.is_empty());
     assert_eq!(result.tag(), Tag(0));
     assert_eq!(result.as_ref(), &2);
@@ -365,7 +365,7 @@ fn from_der_tagged_explicit_with_class() {
     // Note: the strange notation (using braces) is required by the compiler to use
     // a constant instead of the numeric value.
     let (rem, result) =
-        TaggedValue::<u32, Explicit, { Class::CONTEXT_SPECIFIC }, 0>::from_der(input)
+        TaggedValue::<u32, Error, Explicit, { Class::CONTEXT_SPECIFIC }, 0>::from_der(input)
             .expect("parsing failed");
     assert!(rem.is_empty());
     assert_eq!(result.tag(), Tag(0));
@@ -384,13 +384,15 @@ fn from_der_tagged_explicit_any_tag() {
 #[test]
 fn from_der_tagged_explicit_optional() {
     let input = &hex!("a0 03 02 01 02");
-    let (rem, result) = Option::<TaggedExplicit<u32, 0>>::from_der(input).expect("parsing failed");
+    let (rem, result) =
+        Option::<TaggedExplicit<u32, Error, 0>>::from_der(input).expect("parsing failed");
     assert!(rem.is_empty());
     assert!(result.is_some());
     let tagged = result.unwrap();
     assert_eq!(tagged.tag(), Tag(0));
     assert_eq!(tagged.as_ref(), &2);
-    let (rem, result) = Option::<TaggedExplicit<u32, 1>>::from_der(input).expect("parsing failed");
+    let (rem, result) =
+        Option::<TaggedExplicit<u32, Error, 1>>::from_der(input).expect("parsing failed");
     assert!(result.is_none());
     assert_eq!(rem, input);
 
@@ -406,7 +408,7 @@ fn from_der_tagged_explicit_optional() {
 #[test]
 fn from_der_tagged_implicit() {
     let input = &hex!("81 04 70 61 73 73");
-    let (rem, result) = TaggedImplicit::<&str, 1>::from_der(input).expect("parsing failed");
+    let (rem, result) = TaggedImplicit::<&str, Error, 1>::from_der(input).expect("parsing failed");
     assert!(rem.is_empty());
     assert_eq!(result.tag(), Tag(1));
     assert_eq!(result.as_ref(), &"pass");
@@ -418,7 +420,7 @@ fn from_der_tagged_implicit_with_class() {
     // Note: the strange notation (using braces) is required by the compiler to use
     // a constant instead of the numeric value.
     let (rem, result) =
-        TaggedValue::<&str, Implicit, { Class::CONTEXT_SPECIFIC }, 1>::from_der(input)
+        TaggedValue::<&str, Error, Implicit, { Class::CONTEXT_SPECIFIC }, 1>::from_der(input)
             .expect("parsing failed");
     assert!(rem.is_empty());
     assert_eq!(result.tag(), Tag(1));
@@ -437,13 +439,15 @@ fn from_der_tagged_implicit_any_tag() {
 #[test]
 fn from_der_tagged_implicit_optional() {
     let input = &hex!("81 04 70 61 73 73");
-    let (rem, result) = Option::<TaggedImplicit<&str, 1>>::from_der(input).expect("parsing failed");
+    let (rem, result) =
+        Option::<TaggedImplicit<&str, Error, 1>>::from_der(input).expect("parsing failed");
     assert!(rem.is_empty());
     assert!(result.is_some());
     let tagged = result.unwrap();
     assert_eq!(tagged.tag(), Tag(1));
     assert_eq!(tagged.as_ref(), &"pass");
-    let (rem, result) = Option::<TaggedImplicit<&str, 0>>::from_der(input).expect("parsing failed");
+    let (rem, result) =
+        Option::<TaggedImplicit<&str, Error, 0>>::from_der(input).expect("parsing failed");
     assert!(result.is_none());
     assert_eq!(rem, input);
 

@@ -235,7 +235,7 @@ impl<'a> Any<'a> {
     /// Attempt to create a tagged value (EXPLICIT) from this object.
     pub fn as_tagged_explicit<T, const CLASS: u8, const TAG: u32>(
         &self,
-    ) -> Result<TaggedValue<T, Explicit, CLASS, TAG>>
+    ) -> Result<TaggedValue<T, Error, Explicit, CLASS, TAG>>
     where
         T: FromBer<'a>,
     {
@@ -245,7 +245,7 @@ impl<'a> Any<'a> {
     /// Attempt to create a tagged value (IMPLICIT) from this object.
     pub fn as_tagged_implicit<T, const CLASS: u8, const TAG: u32>(
         &self,
-    ) -> Result<TaggedValue<T, Implicit, CLASS, TAG>>
+    ) -> Result<TaggedValue<T, Error, Implicit, CLASS, TAG>>
     where
         T: TryFrom<Any<'a>, Error = Error>,
         T: Tagged,

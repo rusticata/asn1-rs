@@ -2,8 +2,8 @@ use crate::*;
 use core::convert::TryFrom;
 use core::marker::PhantomData;
 
-impl<'a, T, const CLASS: u8, const TAG: u32, E> TryFrom<Any<'a>>
-    for TaggedValue<T, Explicit, CLASS, TAG, E>
+impl<'a, T, E, const CLASS: u8, const TAG: u32> TryFrom<Any<'a>>
+    for TaggedValue<T, E, Explicit, CLASS, TAG>
 where
     T: FromBer<'a, E>,
     E: From<Error>,
@@ -23,8 +23,8 @@ where
     }
 }
 
-impl<'a, 'b, T, const CLASS: u8, const TAG: u32, E> TryFrom<&'b Any<'a>>
-    for TaggedValue<T, Explicit, CLASS, TAG, E>
+impl<'a, 'b, T, E, const CLASS: u8, const TAG: u32> TryFrom<&'b Any<'a>>
+    for TaggedValue<T, E, Explicit, CLASS, TAG>
 where
     T: FromBer<'a, E>,
     E: From<Error>,
@@ -44,8 +44,8 @@ where
     }
 }
 
-impl<'a, T, const CLASS: u8, const TAG: u32, E> CheckDerConstraints
-    for TaggedValue<T, Explicit, CLASS, TAG, E>
+impl<'a, T, E, const CLASS: u8, const TAG: u32> CheckDerConstraints
+    for TaggedValue<T, E, Explicit, CLASS, TAG>
 where
     T: CheckDerConstraints,
 {
@@ -58,7 +58,7 @@ where
 }
 
 #[cfg(feature = "std")]
-impl<T, const CLASS: u8, const TAG: u32, E> ToDer for TaggedValue<T, Explicit, CLASS, TAG, E>
+impl<T, E, const CLASS: u8, const TAG: u32> ToDer for TaggedValue<T, E, Explicit, CLASS, TAG>
 where
     T: ToDer,
 {
@@ -100,16 +100,15 @@ where
 /// To parse a `[0] EXPLICIT INTEGER` object:
 ///
 /// ```rust
-/// use asn1_rs::{FromBer, Integer, TaggedExplicit, TaggedValue};
+/// use asn1_rs::{Error, FromBer, Integer, TaggedExplicit, TaggedValue};
 ///
 /// let bytes = &[0xa0, 0x03, 0x2, 0x1, 0x2];
 ///
 /// // If tagged object is present (and has expected tag), parsing succeeds:
-/// let (_, tagged) = TaggedExplicit::<Integer, 0>::from_ber(bytes).unwrap();
+/// let (_, tagged) = TaggedExplicit::<Integer, Error, 0>::from_ber(bytes).unwrap();
 /// assert_eq!(tagged, TaggedValue::explicit(Integer::from(2)));
 /// ```
-pub type TaggedExplicit<T, const TAG: u32, E = Error> =
-    TaggedValue<T, Explicit, CONTEXT_SPECIFIC, TAG, E>;
+pub type TaggedExplicit<T, E, const TAG: u32> = TaggedValue<T, E, Explicit, CONTEXT_SPECIFIC, TAG>;
 
 // implementations for TaggedParser
 

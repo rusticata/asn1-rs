@@ -186,7 +186,7 @@ impl From<u32> for OptTaggedParser {
 /// let (_, tagged) = OptTaggedExplicit::<Integer, 0>::from_ber(&[]).unwrap();
 /// assert_eq!(tagged, None);
 /// ```
-pub type OptTaggedExplicit<T, const TAG: u32> = Option<TaggedExplicit<T, TAG>>;
+pub type OptTaggedExplicit<T, const TAG: u32> = Option<TaggedExplicit<T, Error, TAG>>;
 
 /// A helper object to parse `[ n ] IMPLICIT T OPTIONAL`
 ///
@@ -213,4 +213,4 @@ pub type OptTaggedExplicit<T, const TAG: u32> = Option<TaggedExplicit<T, TAG>>;
 /// let (_, tagged) = OptTaggedImplicit::<Integer, 0>::from_ber(&[]).unwrap();
 /// assert_eq!(tagged, None);
 /// ```
-pub type OptTaggedImplicit<T, const TAG: u32> = Option<TaggedImplicit<T, TAG>>;
+pub type OptTaggedImplicit<T, const TAG: u32> = Option<TaggedImplicit<T, Error, TAG>>;

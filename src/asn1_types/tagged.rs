@@ -45,23 +45,23 @@ impl TagKind for Explicit {}
 /// To parse a `[APPLICATION 0] EXPLICIT INTEGER` object:
 ///
 /// ```rust
-/// use asn1_rs::{Explicit, FromBer, Integer, TaggedValue};
+/// use asn1_rs::{Error, Explicit, FromBer, Integer, TaggedValue};
 ///
 /// let bytes = &[0x60, 0x03, 0x2, 0x1, 0x2];
 ///
 /// // If tagged object is present (and has expected tag), parsing succeeds:
-/// let (_, tagged) = TaggedValue::<Integer, Explicit, 0b01, 0>::from_ber(bytes).unwrap();
+/// let (_, tagged) = TaggedValue::<Integer, Error, Explicit, 0b01, 0>::from_ber(bytes).unwrap();
 /// assert_eq!(tagged, TaggedValue::explicit(Integer::from(2)));
 /// ```
 #[derive(Debug, PartialEq)]
-pub struct TaggedValue<T, TagKind, const CLASS: u8, const TAG: u32, E = Error> {
+pub struct TaggedValue<T, E, TagKind, const CLASS: u8, const TAG: u32> {
     pub(crate) inner: T,
 
     tag_kind: PhantomData<TagKind>,
     _e: PhantomData<E>,
 }
 
-impl<T, TagKind, const CLASS: u8, const TAG: u32, E> TaggedValue<T, TagKind, CLASS, TAG, E> {
+impl<T, E, TagKind, const CLASS: u8, const TAG: u32> TaggedValue<T, E, TagKind, CLASS, TAG> {
     /// Consumes the `TaggedParser`, returning the wrapped value.
     #[inline]
     pub fn into_inner(self) -> T {
@@ -69,7 +69,7 @@ impl<T, TagKind, const CLASS: u8, const TAG: u32, E> TaggedValue<T, TagKind, CLA
     }
 }
 
-impl<T, const CLASS: u8, const TAG: u32, E> TaggedValue<T, Explicit, CLASS, TAG, E> {
+impl<T, E, const CLASS: u8, const TAG: u32> TaggedValue<T, E, Explicit, CLASS, TAG> {
     /// Constructs a new `EXPLICIT TaggedParser` with the provided value
     #[inline]
     pub const fn explicit(inner: T) -> Self {
@@ -81,7 +81,7 @@ impl<T, const CLASS: u8, const TAG: u32, E> TaggedValue<T, Explicit, CLASS, TAG,
     }
 }
 
-impl<T, const CLASS: u8, const TAG: u32, E> TaggedValue<T, Implicit, CLASS, TAG, E> {
+impl<T, E, const CLASS: u8, const TAG: u32> TaggedValue<T, E, Implicit, CLASS, TAG> {
     /// Constructs a new `IMPLICIT TaggedParser` with the provided value
     #[inline]
     pub const fn implicit(inner: T) -> Self {
@@ -93,16 +93,16 @@ impl<T, const CLASS: u8, const TAG: u32, E> TaggedValue<T, Implicit, CLASS, TAG,
     }
 }
 
-impl<T, TagKind, const CLASS: u8, const TAG: u32, E> AsRef<T>
-    for TaggedValue<T, TagKind, CLASS, TAG, E>
+impl<T, E, TagKind, const CLASS: u8, const TAG: u32> AsRef<T>
+    for TaggedValue<T, E, TagKind, CLASS, TAG>
 {
     fn as_ref(&self) -> &T {
         &self.inner
     }
 }
 
-impl<T, TagKind, const CLASS: u8, const TAG: u32, E> Tagged
-    for TaggedValue<T, TagKind, CLASS, TAG, E>
+impl<T, E, TagKind, const CLASS: u8, const TAG: u32> Tagged
+    for TaggedValue<T, E, TagKind, CLASS, TAG>
 {
     const TAG: Tag = Tag(TAG);
 }
