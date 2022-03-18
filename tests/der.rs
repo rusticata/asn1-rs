@@ -310,6 +310,28 @@ fn from_der_utctime() {
     let _ = result;
 }
 
+#[cfg(feature = "datetime")]
+#[test]
+fn utctime_adjusted_datetime() {
+    use time::macros::datetime;
+
+    let input = &hex!("17 0D 30 32 31 32 31 33 31 34 32 39 32 33 5A FF");
+    let (_, result) = UtcTime::from_der(input).expect("parsing failed");
+
+    assert_eq!(
+        result.utc_adjusted_datetime(),
+        Ok(datetime! {2002-12-13 14:29:23 UTC})
+    );
+
+    let input = &hex!("17 0D 35 30 31 32 31 33 31 34 32 39 32 33 5A FF");
+    let (_, result) = UtcTime::from_der(input).expect("parsing failed");
+
+    assert_eq!(
+        result.utc_adjusted_datetime(),
+        Ok(datetime! {1950-12-13 14:29:23 UTC})
+    );
+}
+
 #[test]
 fn from_der_utf8string() {
     let input = &hex!("0c 0a 53 6f 6d 65 2d 53 74 61 74 65");

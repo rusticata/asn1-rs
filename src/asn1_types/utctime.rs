@@ -104,6 +104,24 @@ impl UtcTime {
         self.0.to_datetime()
     }
 
+    /// Return an adjusted ISO 8601 combined date and time with time zone.
+    /// According to Universal time definition in X.680 we add 2000 years
+    /// from 0 to 49 year and 1900 otherwise.
+    #[cfg(feature = "datetime")]
+    #[cfg_attr(docsrs, doc(cfg(feature = "datetime")))]
+    #[inline]
+    pub fn utc_adjusted_datetime(&self) -> Result<OffsetDateTime> {
+        self.0.to_datetime().and_then(|dt| {
+            let year = dt.year();
+            // We follow the Universal time definition in X.680 for interpreting
+            // the adjusted year
+            let year = if year >= 50 { year + 1900 } else { year + 2000 };
+            time::Date::from_calendar_date(year, dt.month(), dt.day())
+                .map(|d| dt.replace_date(d))
+                .map_err(|_e| Self::TAG.invalid_value("Invalid adjusted date"))
+        })
+    }
+
     /// Returns the number of non-leap seconds since the midnight on January 1, 1970.
     #[cfg(feature = "datetime")]
     #[cfg_attr(docsrs, doc(cfg(feature = "datetime")))]
