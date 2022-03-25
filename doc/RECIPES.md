@@ -1,6 +1,91 @@
 # Documentation: BER/DER parsing recipes
 
-## `SEQUENCE`
+## Builtin types
+
+Most builtin types can be parsed by calling the `from_der` or `from_der` functions (see `FromBer` and `FromDer` traits for documentation).
+
+For ex:
+
+```rust
+# use asn1_rs::*;
+# let parser = |input| -> Result<(), Error> {
+let (rem, result) = <u32>::from_der(input)?;
+# Ok(()) };
+```
+
+Note: this crates makes extensive use of types annotation and turbofish operator, for example `<Type>::from_der()` or `TaggedExplicit::<u32, Error, 0>::from_der()`.
+
+See table B-3 in <https://doc.rust-lang.org/book/appendix-02-operators.html> for reference on syntax.
+
+## `SEQUENCE` and `SET`
+
+The `SEQUENCE` and `SET` types are handled very similarly, so recipes will be given for `SEQUENCE`, but can be adapted to `SET` by replacing words.
+
+### Parsing `SEQUENCE`
+
+Usually, the sequence envelope does not need to be stored, so it just needs to be parsed to get the sequence content and parse it.
+The methods [`from_ber_and_then`](crate::Sequence::from_ber_and_then()) and [`from_der_and_then`](crate::Sequence::from_der_and_then()) provide helpers for that:
+
+```rust
+# use asn1_rs::*;
+# let parser = |input| -> Result<(), Error> {
+let (rem, result) = Sequence::from_ber_and_then(input, |i| {
+    // first item is INTEGER
+    let (rem, a) = u32::from_der(input)?;
+    // second item is OCTET STRING
+    let (rem, b) = <&[u8]>::from_der(input)?;
+    Ok((rem, (a, b)))
+})?;
+// result has type (u32, &[u8])
+assert_eq!(result.0, 0);
+assert_eq!(result.1, b"\x00\x01");
+# Ok(()) };
+```
+
+### Automatically deriving sequence parsers
+
+The [`BerSequence`](crate::BerSequence) and [`DerSequence`](crate::DerSequence)
+custom derive provide attributes to automatically derive a parser for a sequence.
+
+For ex:
+
+```rust
+# use asn1_rs::*;
+#[derive(DerSequence)]
+pub struct S {
+    a: u32,
+    b: u16,
+    c: u16,
+}
+
+# let parser = |input| -> Result<(), Error> {
+let (rem, result) = S::from_der(input)?;
+# Ok(()) };
+```
+
+This will work for any field type that implements [`FromBer`](crate::FromBer) or [`FromDer`](crate::FromDer), respectively.
+
+### Parsing `SEQUENCE OF`
+
+`SEQUENCE OF T` can be parsed using either type `SequenceOf<T>` or `Vec<T>`:
+
+```rust
+# use asn1_rs::*;
+# let parser = |input| -> Result<(), Error> {
+let (rem, result) = SequenceOf::<u32>::from_der(input)?;
+# Ok(()) };
+```
+
+or
+
+```rust
+# use asn1_rs::*;
+# let parser = |input| -> Result<(), Error> {
+let (rem, result) = <Vec<u32>>::from_der(input)?;
+# Ok(()) };
+```
+
+`SET OF T` can be parsed using either `SetOf<T>`, `BTreeSet<T>` or `HashSet<T>`.
 
 ## `EXPLICIT` tagged values
 
