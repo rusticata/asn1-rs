@@ -326,9 +326,13 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Sequence<'a> {
 
 impl<'a> CheckDerConstraints for Sequence<'a> {
     fn check_constraints(_any: &Any) -> Result<()> {
+        // TODO: iterate on ANY objects and check constraints? -> this will not be exhaustive
+        // test, for ex INTEGER encoding will not be checked
         Ok(())
     }
 }
+
+impl<'a> DerAutoDerive for Sequence<'a> {}
 
 impl<'a> Tagged for Sequence<'a> {
     const TAG: Tag = Tag::Sequence;

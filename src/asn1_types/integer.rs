@@ -113,6 +113,8 @@ macro_rules! impl_int {
             }
         }
 
+        impl DerAutoDerive for $int {}
+
         impl Tagged for $int {
             const TAG: Tag = Tag::Integer;
         }
@@ -166,6 +168,8 @@ macro_rules! impl_uint {
                 check_der_int_constraints(any)
             }
         }
+
+        impl DerAutoDerive for $ty {}
 
         impl Tagged for $ty {
             const TAG: Tag = Tag::Integer;
@@ -462,6 +466,8 @@ fn check_der_int_constraints(any: &Any) -> Result<()> {
         _ => Ok(()),
     }
 }
+
+impl DerAutoDerive for Integer<'_> {}
 
 impl<'a> Tagged for Integer<'a> {
     const TAG: Tag = Tag::Integer;

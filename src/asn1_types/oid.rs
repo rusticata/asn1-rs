@@ -64,6 +64,8 @@ impl<'a> CheckDerConstraints for Oid<'a> {
     }
 }
 
+impl DerAutoDerive for Oid<'_> {}
+
 impl<'a> Tagged for Oid<'a> {
     const TAG: Tag = Tag::Oid;
 }

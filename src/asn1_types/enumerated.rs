@@ -46,6 +46,8 @@ impl CheckDerConstraints for Enumerated {
     }
 }
 
+impl DerAutoDerive for Enumerated {}
+
 impl Tagged for Enumerated {
     const TAG: Tag = Tag::Enumerated;
 }

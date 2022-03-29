@@ -28,6 +28,8 @@ impl<'a> CheckDerConstraints for String {
     }
 }
 
+impl DerAutoDerive for String {}
+
 impl Tagged for String {
     const TAG: Tag = Tag::Utf8String;
 }

@@ -37,6 +37,8 @@ impl CheckDerConstraints for Null {
     }
 }
 
+impl DerAutoDerive for Null {}
+
 impl<'a> Tagged for Null {
     const TAG: Tag = Tag::Null;
 }
@@ -74,6 +76,8 @@ impl<'a> CheckDerConstraints for () {
         Ok(())
     }
 }
+
+impl DerAutoDerive for () {}
 
 impl<'a> Tagged for () {
     const TAG: Tag = Tag::Null;

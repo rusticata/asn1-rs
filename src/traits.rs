@@ -101,17 +101,19 @@ where
 /// Base trait for DER object parsers
 ///
 /// Library authors should usually not directly implement this trait, but should prefer implementing the
-/// `TryFrom<Any>` + `CheckDerConstraint` traits,
+/// [`TryFrom<Any>`] + [`CheckDerConstraints`] traits,
 /// which offers greater flexibility and provides an equivalent `FromDer` implementation for free
 /// (in fact, it provides both [`FromBer`] and `FromDer`).
 ///
-/// Note: if you already implemented `TryFrom<Any>` to get the [`FromBer`] implementation, then you only
-/// have to add a `CheckDerConstraint` implementation.
+/// Note: if you already implemented [`TryFrom<Any>`] and [`CheckDerConstraints`],
+/// you can get a free [`FromDer`] implementation by implementing the
+/// [`DerAutoDerive`] trait. This is not automatic, so it is also possible to manually
+/// implement [`FromDer`] if preferred.
 ///
 /// # Examples
 ///
 /// ```
-/// use asn1_rs::{Any, CheckDerConstraints, Result, Tag};
+/// use asn1_rs::{Any, CheckDerConstraints, DerAutoDerive, Result, Tag};
 /// use std::convert::TryFrom;
 ///
 /// // The type to be decoded
@@ -136,6 +138,8 @@ where
 ///     }
 /// }
 ///
+/// impl DerAutoDerive for MyType {}
+///
 /// // The above code provides a `FromDer` implementation for free.
 ///
 /// // Example of parsing code:
@@ -146,16 +150,34 @@ where
 /// // and the parsed object:
 /// let (rem, my_type) = MyType::from_der(input).expect("parsing failed");
 /// ```
-
 pub trait FromDer<'a, E = Error>: Sized {
     /// Attempt to parse input bytes into a DER object (enforcing constraints)
     fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, E>;
 }
 
+/// Trait to automatically derive `FromDer`
+///
+/// This trait is only a marker to control if a DER parser should be automatically derived. It is
+/// empty.
+///
+/// This trait is used in combination with others:
+/// after implementing [`TryFrom<Any>`] and [`CheckDerConstraints`] for a type,
+/// a free [`FromDer`] implementation is provided by implementing the
+/// [`DerAutoDerive`] trait. This is the most common case.
+///
+/// However, this is not automatic so it is also possible to manually
+/// implement [`FromDer`] if preferred.
+/// Manual implementation is generally only needed for generic containers (for ex. `Vec<T>`),
+/// because the default implementation adds a constraint on `T` to implement also `TryFrom<Any>`
+/// and `CheckDerConstraints`. This is problematic when `T` only provides `FromDer`, and can be
+/// solved by providing a manual implementation of [`FromDer`].
+pub trait DerAutoDerive {}
+
 impl<'a, T, E> FromDer<'a, E> for T
 where
     T: TryFrom<Any<'a>, Error = E>,
     T: CheckDerConstraints,
+    T: DerAutoDerive,
     E: From<Error>,
 {
     fn from_der(bytes: &'a [u8]) -> ParseResult<T, E> {

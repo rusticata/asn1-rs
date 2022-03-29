@@ -125,6 +125,12 @@ where
     }
 }
 
+impl<T> DerAutoDerive for SequenceOf<T> {}
+
+impl<T> Tagged for SequenceOf<T> {
+    const TAG: Tag = Tag::Sequence;
+}
+
 #[cfg(feature = "std")]
 impl<T> ToDer for SequenceOf<T>
 where

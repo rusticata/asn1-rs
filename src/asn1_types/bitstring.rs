@@ -94,6 +94,8 @@ impl<'a> CheckDerConstraints for BitString<'a> {
     }
 }
 
+impl DerAutoDerive for BitString<'_> {}
+
 impl<'a> Tagged for BitString<'a> {
     const TAG: Tag = Tag::BitString;
 }

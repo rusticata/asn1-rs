@@ -31,6 +31,8 @@ impl<'a> CheckDerConstraints for &'a str {
     }
 }
 
+impl DerAutoDerive for &'_ str {}
+
 impl<'a> Tagged for &'a str {
     const TAG: Tag = Tag::Utf8String;
 }

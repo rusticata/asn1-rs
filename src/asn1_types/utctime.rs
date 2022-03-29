@@ -183,6 +183,8 @@ impl CheckDerConstraints for UtcTime {
     }
 }
 
+impl DerAutoDerive for UtcTime {}
+
 impl Tagged for UtcTime {
     const TAG: Tag = Tag::UtcTime;
 }

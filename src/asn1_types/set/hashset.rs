@@ -17,9 +17,7 @@ where
 
     fn try_from(any: Any<'a>) -> Result<Self> {
         any.tag().assert_eq(Self::TAG)?;
-        if !any.header.is_constructed() {
-            return Err(Error::ConstructExpected);
-        }
+        any.header.assert_constructed()?;
         let items = SetIterator::<T, BerParser>::new(any.data).collect::<Result<HashSet<T>>>()?;
         Ok(items)
     }
@@ -37,6 +35,28 @@ where
             T::check_constraints(&item)?;
         }
         Ok(())
+    }
+}
+
+/// manual impl of FromDer, so we do not need to require TryFrom<Any> + CheckDerConstraints
+impl<'a, T, E> FromDer<'a, E> for HashSet<T>
+where
+    T: FromDer<'a, E>,
+    T: Hash + Eq,
+    E: From<Error>,
+{
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, E> {
+        let (rem, any) = Any::from_der(bytes).map_err(Err::convert)?;
+        any.tag()
+            .assert_eq(Self::TAG)
+            .map_err(|e| nom::Err::Error(e.into()))?;
+        any.header
+            .assert_constructed()
+            .map_err(|e| nom::Err::Error(e.into()))?;
+        let items = SetIterator::<T, DerParser, E>::new(any.data)
+            .collect::<Result<HashSet<T>, E>>()
+            .map_err(nom::Err::Error)?;
+        Ok((rem, items))
     }
 }
 

@@ -78,6 +78,8 @@ impl<'a> CheckDerConstraints for BmpString<'a> {
     }
 }
 
+impl DerAutoDerive for BmpString<'_> {}
+
 impl<'a> Tagged for BmpString<'a> {
     const TAG: Tag = Tag::BmpString;
 }

@@ -1,26 +1,93 @@
 use crate::*;
 use alloc::vec::Vec;
+use core::convert::TryFrom;
 
-impl<T> Tagged for SequenceOf<T> {
-    const TAG: Tag = Tag::Sequence;
+// // XXX this compiles but requires bound TryFrom :/
+// impl<'a, 'b, T> TryFrom<&'b Any<'a>> for Vec<T>
+// where
+//     T: TryFrom<&'b Any<'a>>,
+//     for<'e> <T as TryFrom<&'b Any<'a>>>::Error: From<Error>,
+//     T: FromBer<'a, <T as TryFrom<&'b Any<'a>>>::Error>,
+//     //     T: FromBer<'a, E>,
+//     //     E: From<Error>,
+// {
+//     type Error = <T as TryFrom<&'b Any<'a>>>::Error;
+
+//     fn try_from(any: &'b Any<'a>) -> Result<Vec<T>, Self::Error> {
+//         any.tag().assert_eq(Self::TAG)?;
+//         any.header.assert_constructed()?;
+//         let v = SequenceIterator::<T, BerParser, Self::Error>::new(any.data)
+//             .collect::<Result<Vec<T>, Self::Error>>()?;
+//         Ok(v)
+//     }
+// }
+
+// // XXX this compiles but requires bound TryFrom :/
+// impl<'a, 'b, T> TryFrom<&'b Any<'a>> for Vec<T>
+// where
+//     T: TryFrom<&'b Any<'a>>,
+//     <T as TryFrom<&'b Any<'a>>>::Error: From<Error>,
+//     T: FromBer<'a, <T as TryFrom<&'b Any<'a>>>::Error>,
+//     //     T: FromBer<'a, E>,
+//     //     E: From<Error>,
+// {
+//     type Error = <T as TryFrom<&'b Any<'a>>>::Error;
+
+//     fn try_from(any: &'b Any<'a>) -> Result<Vec<T>, Self::Error> {
+//         any.tag().assert_eq(Self::TAG)?;
+//         any.header.assert_constructed()?;
+//         let v = SequenceIterator::<T, BerParser, Self::Error>::new(any.data)
+//             .collect::<Result<Vec<T>, Self::Error>>()?;
+//         Ok(v)
+//     }
+// }
+
+impl<'a, T> TryFrom<Any<'a>> for Vec<T>
+where
+    T: FromBer<'a>,
+{
+    type Error = Error;
+
+    fn try_from(any: Any<'a>) -> Result<Self> {
+        any.tag().assert_eq(Self::TAG)?;
+        any.header.assert_constructed()?;
+        let items = SetIterator::<T, BerParser>::new(any.data).collect::<Result<Vec<T>>>()?;
+        Ok(items)
+    }
+}
+
+impl<T> CheckDerConstraints for Vec<T>
+where
+    T: CheckDerConstraints,
+{
+    fn check_constraints(any: &Any) -> Result<()> {
+        any.tag().assert_eq(Self::TAG)?;
+        any.header.assert_constructed()?;
+        for item in SequenceIterator::<Any, DerParser>::new(any.data) {
+            let item = item?;
+            <T as CheckDerConstraints>::check_constraints(&item)?;
+        }
+        Ok(())
+    }
 }
 
 impl<T> Tagged for Vec<T> {
     const TAG: Tag = Tag::Sequence;
 }
 
-impl<'a, T> FromBer<'a> for Vec<T>
-where
-    T: FromBer<'a>,
-{
-    fn from_ber(bytes: &'a [u8]) -> ParseResult<Self> {
-        let (rem, any) = Any::from_ber(bytes)?;
-        any.header.assert_tag(Self::TAG)?;
-        let v = SequenceIterator::<T, BerParser>::new(any.data).collect::<Result<Vec<T>>>()?;
-        Ok((rem, v))
-    }
-}
+// impl<'a, T> FromBer<'a> for Vec<T>
+// where
+//     T: FromBer<'a>,
+// {
+//     fn from_ber(bytes: &'a [u8]) -> ParseResult<Self> {
+//         let (rem, any) = Any::from_ber(bytes)?;
+//         any.header.assert_tag(Self::TAG)?;
+//         let v = SequenceIterator::<T, BerParser>::new(any.data).collect::<Result<Vec<T>>>()?;
+//         Ok((rem, v))
+//     }
+// }
 
+/// manual impl of FromDer, so we do not need to require TryFrom<Any> + CheckDerConstraints
 impl<'a, T> FromDer<'a> for Vec<T>
 where
     T: FromDer<'a>,

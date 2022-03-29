@@ -321,6 +321,8 @@ impl<'a> CheckDerConstraints for Set<'a> {
     }
 }
 
+impl<'a> DerAutoDerive for Set<'a> {}
+
 impl<'a> Tagged for Set<'a> {
     const TAG: Tag = Tag::Set;
 }

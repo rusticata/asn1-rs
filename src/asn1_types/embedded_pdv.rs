@@ -118,3 +118,5 @@ impl CheckDerConstraints for EmbeddedPdv<'_> {
         Ok(())
     }
 }
+
+impl DerAutoDerive for EmbeddedPdv<'_> {}

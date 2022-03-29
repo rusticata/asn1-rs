@@ -280,6 +280,8 @@ impl CheckDerConstraints for Any<'_> {
     }
 }
 
+impl DerAutoDerive for Any<'_> {}
+
 impl DynTagged for Any<'_> {
     fn tag(&self) -> Tag {
         self.tag()

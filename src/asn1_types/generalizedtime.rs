@@ -242,6 +242,8 @@ impl<'a> CheckDerConstraints for GeneralizedTime {
     }
 }
 
+impl DerAutoDerive for GeneralizedTime {}
+
 impl<'a> Tagged for GeneralizedTime {
     const TAG: Tag = Tag::GeneralizedTime;
 }

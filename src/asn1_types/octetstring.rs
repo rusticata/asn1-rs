@@ -67,6 +67,8 @@ impl<'a> CheckDerConstraints for OctetString<'a> {
     }
 }
 
+impl DerAutoDerive for OctetString<'_> {}
+
 impl<'a> Tagged for OctetString<'a> {
     const TAG: Tag = Tag::OctetString;
 }
@@ -120,6 +122,8 @@ impl<'a> CheckDerConstraints for &'a [u8] {
         Ok(())
     }
 }
+
+impl DerAutoDerive for &'_ [u8] {}
 
 impl<'a> Tagged for &'a [u8] {
     const TAG: Tag = Tag::OctetString;

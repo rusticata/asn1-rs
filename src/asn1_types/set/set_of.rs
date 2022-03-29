@@ -125,6 +125,8 @@ where
     }
 }
 
+impl<T> DerAutoDerive for SetOf<T> {}
+
 impl<T> Tagged for SetOf<T> {
     const TAG: Tag = Tag::Set;
 }

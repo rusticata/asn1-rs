@@ -1,4 +1,4 @@
-use crate::{Class, Error, Tag, Tagged};
+use crate::{Class, DerAutoDerive, Error, Tag, Tagged};
 use core::marker::PhantomData;
 
 mod builder;
@@ -116,4 +116,9 @@ impl<T, E, TagKind, const CLASS: u8, const TAG: u32> Tagged
     for TaggedValue<T, E, TagKind, CLASS, TAG>
 {
     const TAG: Tag = Tag(TAG);
+}
+
+impl<'a, T, E, TagKind, const CLASS: u8, const TAG: u32> DerAutoDerive
+    for TaggedValue<T, E, TagKind, CLASS, TAG>
+{
 }

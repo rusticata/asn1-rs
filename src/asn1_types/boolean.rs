@@ -65,6 +65,8 @@ impl<'a> CheckDerConstraints for Boolean {
     }
 }
 
+impl DerAutoDerive for Boolean {}
+
 impl<'a> Tagged for Boolean {
     const TAG: Tag = Tag::Boolean;
 }

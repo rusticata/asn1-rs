@@ -281,6 +281,8 @@ impl<'a> CheckDerConstraints for Real {
     }
 }
 
+impl DerAutoDerive for Real {}
+
 impl Tagged for Real {
     const TAG: Tag = Tag::RealType;
 }

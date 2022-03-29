@@ -97,6 +97,8 @@ impl<'a> CheckDerConstraints for UniversalString<'a> {
     }
 }
 
+impl DerAutoDerive for UniversalString<'_> {}
+
 impl<'a> Tagged for UniversalString<'a> {
     const TAG: Tag = Tag::UniversalString;
 }

@@ -123,6 +123,8 @@ macro_rules! asn1_string {
             }
         }
 
+        impl $crate::DerAutoDerive for $name<'_> {}
+
         impl<'a> $crate::Tagged for $name<'a> {
             const TAG: $crate::Tag = $crate::Tag::$name;
         }
