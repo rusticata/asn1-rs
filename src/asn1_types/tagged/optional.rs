@@ -36,12 +36,12 @@ use crate::*;
 /// To parse a `[0] IMPLICIT INTEGER OPTIONAL` object:
 ///
 /// ```rust
-/// use asn1_rs::{Integer, OptTaggedParser};
+/// use asn1_rs::{Error, Integer, OptTaggedParser};
 ///
 /// let bytes = &[0xa0, 0x1, 0x2];
 ///
 /// let (_, tagged) = OptTaggedParser::from(0)
-///                     .parse_der(bytes, |_, data| Ok((&[], Integer::new(data))))
+///                     .parse_der::<_, Error, _>(bytes, |_, data| Ok((&[], Integer::new(data))))
 ///                     .unwrap();
 ///
 /// assert_eq!(tagged, Some(Integer::from(2)));
@@ -84,19 +84,22 @@ impl OptTaggedParser {
     ///
     /// assert_eq!(tagged, Some(Integer::from(2)));
     /// ```
-    pub fn parse_ber<'a, T, F>(&self, bytes: &'a [u8], f: F) -> ParseResult<'a, Option<T>>
+    pub fn parse_ber<'a, T, E, F>(&self, bytes: &'a [u8], f: F) -> ParseResult<'a, Option<T>, E>
     where
-        F: Fn(Header, &'a [u8]) -> ParseResult<'a, T>,
+        F: Fn(Header, &'a [u8]) -> ParseResult<'a, T, E>,
+        E: From<Error>,
     {
         if bytes.is_empty() {
             return Ok((bytes, None));
         }
-        let (rem, any) = Any::from_ber(bytes)?;
+        let (rem, any) = Any::from_ber(bytes).map_err(Err::convert)?;
         if any.tag() != self.tag {
             return Ok((bytes, None));
         }
         if any.class() != self.class {
-            return Err(Error::unexpected_class(Some(self.class), any.class()).into());
+            return Err(Err::Error(
+                Error::unexpected_class(Some(self.class), any.class()).into(),
+            ));
         }
         let Any { header, data } = any;
         let (_, res) = f(header, data)?;
@@ -124,19 +127,22 @@ impl OptTaggedParser {
     ///
     /// assert_eq!(tagged, Some(Integer::from(2)));
     /// ```
-    pub fn parse_der<'a, T, F>(&self, bytes: &'a [u8], f: F) -> ParseResult<'a, Option<T>>
+    pub fn parse_der<'a, T, E, F>(&self, bytes: &'a [u8], f: F) -> ParseResult<'a, Option<T>, E>
     where
-        F: Fn(Header, &'a [u8]) -> ParseResult<'a, T>,
+        F: Fn(Header, &'a [u8]) -> ParseResult<'a, T, E>,
+        E: From<Error>,
     {
         if bytes.is_empty() {
             return Ok((bytes, None));
         }
-        let (rem, any) = Any::from_der(bytes)?;
+        let (rem, any) = Any::from_der(bytes).map_err(Err::convert)?;
         if any.tag() != self.tag {
             return Ok((bytes, None));
         }
         if any.class() != self.class {
-            return Err(Error::unexpected_class(Some(self.class), any.class()).into());
+            return Err(Err::Error(
+                Error::unexpected_class(Some(self.class), any.class()).into(),
+            ));
         }
         let Any { header, data } = any;
         let (_, res) = f(header, data)?;

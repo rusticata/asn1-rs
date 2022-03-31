@@ -47,7 +47,7 @@ where
 /// Base trait for BER object parsers
 ///
 /// Library authors should usually not directly implement this trait, but should prefer implementing the
-/// `TryFrom<Any>` trait,
+/// [`TryFrom<Any>`] trait,
 /// which offers greater flexibility and provides an equivalent `FromBer` implementation for free.
 ///
 /// # Examples
@@ -311,41 +311,41 @@ where
 /// # Examples
 ///
 /// ```
-/// use asn1_rs::{AsTaggedExplicit, Class};
+/// use asn1_rs::{AsTaggedExplicit, Class, Error, TaggedParser};
 ///
 /// // create a `[1] EXPLICIT INTEGER` value
-/// let tagged = 4u32.explicit(Class::ContextSpecific, 1);
+/// let tagged: TaggedParser<_, _, Error> = 4u32.explicit(Class::ContextSpecific, 1);
 /// ```
-pub trait AsTaggedExplicit<'a>: Sized {
-    fn explicit(self, class: Class, tag: u32) -> TaggedParser<'a, Explicit, Self> {
+pub trait AsTaggedExplicit<'a, E = Error>: Sized {
+    fn explicit(self, class: Class, tag: u32) -> TaggedParser<'a, Explicit, Self, E> {
         TaggedParser::new_explicit(class, tag, self)
     }
 }
 
-impl<'a, T> AsTaggedExplicit<'a> for T where T: Sized + 'a {}
+impl<'a, T, E> AsTaggedExplicit<'a, E> for T where T: Sized + 'a {}
 
 /// Helper trait for creating tagged IMPLICIT values
 ///
 /// # Examples
 ///
 /// ```
-/// use asn1_rs::{AsTaggedImplicit, Class};
+/// use asn1_rs::{AsTaggedImplicit, Class, Error, TaggedParser};
 ///
 /// // create a `[1] IMPLICIT INTEGER` value, not constructed
-/// let tagged = 4u32.implicit(Class::ContextSpecific, false, 1);
+/// let tagged: TaggedParser<_, _, Error> = 4u32.implicit(Class::ContextSpecific, false, 1);
 /// ```
-pub trait AsTaggedImplicit<'a>: Sized {
+pub trait AsTaggedImplicit<'a, E = Error>: Sized {
     fn implicit(
         self,
         class: Class,
         constructed: bool,
         tag: u32,
-    ) -> TaggedParser<'a, Implicit, Self> {
+    ) -> TaggedParser<'a, Implicit, Self, E> {
         TaggedParser::new_implicit(class, constructed, tag, self)
     }
 }
 
-impl<'a, T> AsTaggedImplicit<'a> for T where T: Sized + 'a {}
+impl<'a, T, E> AsTaggedImplicit<'a, E> for T where T: Sized + 'a {}
 
 pub trait ToStatic {
     type Owned: 'static;

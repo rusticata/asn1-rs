@@ -1,5 +1,10 @@
 use crate::*;
 
+// note: we cannot implement `TryFrom<Any<'a>> with generic errors for Option<T>`,
+// because this conflicts with generic `T` implementation in
+// `src/traits.rs`, since `T` always satisfies `T: Into<Option<T>>`
+//
+// for the same reason, we cannot use a generic error type here
 impl<'a, T> FromBer<'a> for Option<T>
 where
     T: FromBer<'a>,

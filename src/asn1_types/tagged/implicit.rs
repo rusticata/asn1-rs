@@ -8,7 +8,6 @@ where
     T: TryFrom<Any<'a>, Error = E>,
     T: Tagged,
     E: From<Error>,
-    E: From<Err<E>>,
 {
     type Error = E;
 
@@ -23,7 +22,6 @@ where
     T: TryFrom<Any<'a>, Error = E>,
     T: Tagged,
     E: From<Error>,
-    E: From<Err<E>>,
 {
     type Error = E;
 
@@ -126,13 +124,14 @@ where
 /// ```
 pub type TaggedImplicit<T, E, const TAG: u32> = TaggedValue<T, E, Implicit, CONTEXT_SPECIFIC, TAG>;
 
-impl<'a, T> FromBer<'a> for TaggedParser<'a, Implicit, T>
+impl<'a, T, E> FromBer<'a, E> for TaggedParser<'a, Implicit, T, E>
 where
-    T: TryFrom<Any<'a>, Error = Error>,
+    T: TryFrom<Any<'a>, Error = E>,
     T: Tagged,
+    E: From<Error>,
 {
-    fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self> {
-        let (rem, any) = Any::from_ber(bytes)?;
+    fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self, E> {
+        let (rem, any) = Any::from_ber(bytes).map_err(Err::convert)?;
         let Any { header, data } = any;
         let any = Any {
             header: Header {
@@ -151,14 +150,14 @@ where
                 };
                 Ok((rem, tagged_value))
             }
-            Err(e) => Err(e.into()),
+            Err(e) => Err(nom::Err::Error(e)),
         }
     }
 }
 
 // implementations for TaggedParser
 
-impl<'a, T> TaggedParser<'a, Implicit, T> {
+impl<'a, T, E> TaggedParser<'a, Implicit, T, E> {
     pub const fn new_implicit(class: Class, constructed: bool, tag: u32, inner: T) -> Self {
         Self {
             header: Header::new(class, constructed, Tag(tag), Length::Definite(0)),
@@ -169,14 +168,15 @@ impl<'a, T> TaggedParser<'a, Implicit, T> {
     }
 }
 
-impl<'a, T> FromDer<'a> for TaggedParser<'a, Implicit, T>
+impl<'a, T, E> FromDer<'a, E> for TaggedParser<'a, Implicit, T, E>
 where
-    T: TryFrom<Any<'a>, Error = Error>,
+    T: TryFrom<Any<'a>, Error = E>,
     T: CheckDerConstraints,
     T: Tagged,
+    E: From<Error>,
 {
-    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
-        let (rem, any) = Any::from_der(bytes)?;
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, E> {
+        let (rem, any) = Any::from_der(bytes).map_err(Err::convert)?;
         let Any { header, data } = any;
         let any = Any {
             header: Header {
@@ -185,7 +185,7 @@ where
             },
             data,
         };
-        T::check_constraints(&any)?;
+        T::check_constraints(&any).map_err(|e| nom::Err::Error(e.into()))?;
         match T::try_from(any) {
             Ok(t) => {
                 let tagged_value = TaggedParser {
@@ -196,7 +196,7 @@ where
                 };
                 Ok((rem, tagged_value))
             }
-            Err(e) => Err(e.into()),
+            Err(e) => Err(nom::Err::Error(e)),
         }
     }
 }

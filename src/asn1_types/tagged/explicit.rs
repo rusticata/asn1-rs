@@ -7,7 +7,6 @@ impl<'a, T, E, const CLASS: u8, const TAG: u32> TryFrom<Any<'a>>
 where
     T: FromBer<'a, E>,
     E: From<Error>,
-    E: From<Err<E>>,
 {
     type Error = E;
 
@@ -18,7 +17,11 @@ where
             let class = Class::try_from(CLASS).ok();
             return Err(Error::unexpected_class(class, any.class()).into());
         }
-        let (_, inner) = T::from_ber(any.data)?;
+        let (_, inner) = match T::from_ber(any.data) {
+            Ok((rem, res)) => (rem, res),
+            Err(Err::Error(e)) | Err(Err::Failure(e)) => return Err(e),
+            Err(Err::Incomplete(n)) => return Err(Error::Incomplete(n).into()),
+        };
         Ok(TaggedValue::explicit(inner))
     }
 }
@@ -28,7 +31,6 @@ impl<'a, 'b, T, E, const CLASS: u8, const TAG: u32> TryFrom<&'b Any<'a>>
 where
     T: FromBer<'a, E>,
     E: From<Error>,
-    E: From<Err<E>>,
 {
     type Error = E;
 
@@ -39,7 +41,11 @@ where
             let class = Class::try_from(CLASS).ok();
             return Err(Error::unexpected_class(class, any.class()).into());
         }
-        let (_, inner) = T::from_ber(any.data)?;
+        let (_, inner) = match T::from_ber(any.data) {
+            Ok((rem, res)) => (rem, res),
+            Err(Err::Error(e)) | Err(Err::Failure(e)) => return Err(e),
+            Err(Err::Incomplete(n)) => return Err(Error::Incomplete(n).into()),
+        };
         Ok(TaggedValue::explicit(inner))
     }
 }
@@ -112,7 +118,7 @@ pub type TaggedExplicit<T, E, const TAG: u32> = TaggedValue<T, E, Explicit, CONT
 
 // implementations for TaggedParser
 
-impl<'a, T> TaggedParser<'a, Explicit, T> {
+impl<'a, T, E> TaggedParser<'a, Explicit, T, E> {
     pub const fn new_explicit(class: Class, tag: u32, inner: T) -> Self {
         Self {
             header: Header::new(class, true, Tag(tag), Length::Definite(0)),
@@ -123,20 +129,23 @@ impl<'a, T> TaggedParser<'a, Explicit, T> {
     }
 }
 
-impl<'a, T> TaggedParser<'a, Explicit, T> {
+impl<'a, T, E> TaggedParser<'a, Explicit, T, E> {
     pub fn from_ber_and_then<F>(
         class: Class,
         tag: u32,
         bytes: &'a [u8],
         op: F,
-    ) -> ParseResult<'a, T>
+    ) -> ParseResult<'a, T, E>
     where
-        F: FnOnce(&'a [u8]) -> ParseResult<T>,
+        F: FnOnce(&'a [u8]) -> ParseResult<T, E>,
+        E: From<Error>,
     {
-        let (rem, any) = Any::from_ber(bytes)?;
-        any.tag().assert_eq(Tag(tag))?;
+        let (rem, any) = Any::from_ber(bytes).map_err(Err::convert)?;
+        any.tag()
+            .assert_eq(Tag(tag))
+            .map_err(|e| nom::Err::Error(e.into()))?;
         if any.class() != class {
-            return Err(any.tag().invalid_value("Invalid class").into());
+            return Err(Err::Error(any.tag().invalid_value("Invalid class").into()));
         }
         let (_, res) = op(any.data)?;
         Ok((rem, res))
@@ -147,26 +156,30 @@ impl<'a, T> TaggedParser<'a, Explicit, T> {
         tag: u32,
         bytes: &'a [u8],
         op: F,
-    ) -> ParseResult<'a, T>
+    ) -> ParseResult<'a, T, E>
     where
-        F: FnOnce(&'a [u8]) -> ParseResult<T>,
+        F: FnOnce(&'a [u8]) -> ParseResult<T, E>,
+        E: From<Error>,
     {
-        let (rem, any) = Any::from_der(bytes)?;
-        any.tag().assert_eq(Tag(tag))?;
+        let (rem, any) = Any::from_der(bytes).map_err(Err::convert)?;
+        any.tag()
+            .assert_eq(Tag(tag))
+            .map_err(|e| nom::Err::Error(e.into()))?;
         if any.class() != class {
-            return Err(any.tag().invalid_value("Invalid class").into());
+            return Err(Err::Error(any.tag().invalid_value("Invalid class").into()));
         }
         let (_, res) = op(any.data)?;
         Ok((rem, res))
     }
 }
 
-impl<'a, T> FromBer<'a> for TaggedParser<'a, Explicit, T>
+impl<'a, T, E> FromBer<'a, E> for TaggedParser<'a, Explicit, T, E>
 where
-    T: FromBer<'a>,
+    T: FromBer<'a, E>,
+    E: From<Error>,
 {
-    fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self> {
-        let (rem, any) = Any::from_ber(bytes)?;
+    fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self, E> {
+        let (rem, any) = Any::from_ber(bytes).map_err(Err::convert)?;
         let header = any.header;
         let (_, inner) = T::from_ber(any.data)?;
         let tagged = TaggedParser {
@@ -179,12 +192,13 @@ where
     }
 }
 
-impl<'a, T> FromDer<'a> for TaggedParser<'a, Explicit, T>
+impl<'a, T, E> FromDer<'a, E> for TaggedParser<'a, Explicit, T, E>
 where
-    T: FromDer<'a>,
+    T: FromDer<'a, E>,
+    E: From<Error>,
 {
-    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
-        let (rem, any) = Any::from_der(bytes)?;
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, E> {
+        let (rem, any) = Any::from_der(bytes).map_err(Err::convert)?;
         let header = any.header;
         let (_, inner) = T::from_der(any.data)?;
         let tagged = TaggedParser {
