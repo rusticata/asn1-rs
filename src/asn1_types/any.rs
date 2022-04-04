@@ -92,6 +92,19 @@ impl<'a> Any<'a> {
     {
         T::from_der(self.data)
     }
+
+    /// Get the content following a BER header
+    #[inline]
+    pub fn parse_ber_content<'i>(i: &'i [u8], header: &'_ Header) -> ParseResult<'i, &'i [u8]> {
+        header.parse_ber_content(i)
+    }
+
+    /// Get the content following a DER header
+    #[inline]
+    pub fn parse_der_content<'i>(i: &'i [u8], header: &'_ Header) -> ParseResult<'i, &'i [u8]> {
+        header.assert_definite()?;
+        ber_get_object_content(i, header, 8)
+    }
 }
 
 macro_rules! impl_any_into {

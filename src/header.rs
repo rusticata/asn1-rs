@@ -173,6 +173,31 @@ impl<'a> Header<'a> {
     pub const fn is_private(&self) -> bool {
         self.class as u8 == Class::Private as u8
     }
+
+    /// Return error if object length is definite
+    #[inline]
+    pub const fn assert_definite(&self) -> Result<()> {
+        if !self.length.is_definite() {
+            Ok(())
+        } else {
+            Err(Error::DerConstraintFailed(DerConstraint::IndefiniteLength))
+        }
+    }
+
+    /// Get the content following a BER header
+    #[inline]
+    pub fn parse_ber_content<'i>(&'_ self, i: &'i [u8]) -> ParseResult<'i, &'i [u8]> {
+        // defaults to maximum depth 8
+        // depth is used only if BER, and length is indefinite
+        ber_get_object_content(i, self, 8)
+    }
+
+    /// Get the content following a DER header
+    #[inline]
+    pub fn parse_der_content<'i>(&'_ self, i: &'i [u8]) -> ParseResult<'i, &'i [u8]> {
+        self.assert_definite()?;
+        ber_get_object_content(i, self, 8)
+    }
 }
 
 impl From<Tag> for Header<'_> {
