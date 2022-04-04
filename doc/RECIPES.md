@@ -65,6 +65,8 @@ let (rem, result) = S::from_der(input)?;
 
 This will work for any field type that implements [`FromBer`](crate::FromBer) or [`FromDer`](crate::FromDer), respectively.
 
+See [`derive`](mod@derive) documentation for more examples and documentation.
+
 ### Parsing `SEQUENCE OF`
 
 `SEQUENCE OF T` can be parsed using either type `SequenceOf<T>` or `Vec<T>`:

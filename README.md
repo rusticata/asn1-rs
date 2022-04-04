@@ -50,7 +50,7 @@ Note: if the `bits` feature is enabled, MSRV is 1.56.0 (due to `bitvec` 1.0)
 
 # Recipes
 
-See [doc::recipes] for more examples and recipes.
+See [doc::recipes] and [doc::derive] for more examples and recipes.
 
 ## Examples
 

@@ -17,6 +17,8 @@ include = [
   "README.md",
   ".gitignore",
   "Cargo.toml",
+  "doc/*.md",
+  "examples/*.rs",
   "src/*.rs",
   "src/asn1_types/*.rs",
   "src/asn1_types/real/*.rs",

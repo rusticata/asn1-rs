@@ -10,6 +10,8 @@
 ///
 /// Parsers will be automatically derived from struct fields. Every field type must implement the [`FromBer`](super::FromBer) trait.
 ///
+/// See [`derive`](crate::doc::derive) documentation for more examples and documentation.
+///
 /// ## Examples
 ///
 /// To parse the following ASN.1 structure:
@@ -58,11 +60,14 @@ pub use asn1_rs_derive::BerSequence;
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`TryFrom<Any>`](super::Any), also providing [`FromBer`](super::FromBer)
 ///   - [`Tagged`](super::Tagged)
+///   - [`CheckDerConstraints`](super::CheckDerConstraints)
 ///   - [`FromDer`](super::FromDer)
 ///
 /// `DerSequence` implies `BerSequence`, and will conflict with this custom derive.
 ///
 /// Parsers will be automatically derived from struct fields. Every field type must implement the [`FromDer`](super::FromDer) trait.
+///
+/// See [`derive`](crate::doc::derive) documentation for more examples and documentation.
 ///
 /// ## Examples
 ///

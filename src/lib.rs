@@ -48,7 +48,7 @@
 //!
 //! # Recipes
 //!
-//! See [doc::recipes] for more examples and recipes.
+//! See [doc::recipes] and [doc::derive] for more examples and recipes.
 //!
 //! ## Examples
 //!
