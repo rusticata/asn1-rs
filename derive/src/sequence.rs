@@ -69,15 +69,12 @@ pub fn derive_der_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
 }
 
 pub struct Container {
-    pub field_names: Vec<Ident>,
     pub fields: Vec<FieldInfo>,
     pub where_predicates: Vec<WherePredicate>,
 }
 
 impl Container {
     pub fn from_datastruct(ds: &DataStruct, ast: &DeriveInput) -> Self {
-        let field_names: Vec<_> = ds.fields.iter().map(|f| f.ident.clone().unwrap()).collect();
-
         let fields = ds.fields.iter().map(FieldInfo::from).collect();
 
         // get lifetimes from generics
@@ -91,15 +88,14 @@ impl Container {
         };
 
         Container {
-            field_names,
             fields,
             where_predicates,
         }
     }
 
     pub fn gen_tryfrom(&self) -> TokenStream {
-        let field_names = &self.field_names;
-        let parse_content = derive_ber_sequence_content(&field_names, Asn1Type::Ber);
+        let field_names = &self.fields.iter().map(|f| &f.name).collect::<Vec<_>>();
+        let parse_content = derive_ber_sequence_content(&self.fields, Asn1Type::Ber);
         let lifetime = Lifetime::new("'ber", Span::call_site());
         let wh = &self.where_predicates;
         // note: `gen impl` in synstructure takes care of appending extra where clauses if any, and removing
@@ -167,8 +163,8 @@ impl Container {
     pub fn gen_fromder(&self) -> TokenStream {
         let lifetime = Lifetime::new("'ber", Span::call_site());
         let wh = &self.where_predicates;
-        let field_names = &self.field_names;
-        let parse_content = derive_ber_sequence_content(&field_names, Asn1Type::Der);
+        let field_names = &self.fields.iter().map(|f| &f.name).collect::<Vec<_>>();
+        let parse_content = derive_ber_sequence_content(&self.fields, Asn1Type::Der);
         // note: `gen impl` in synstructure takes care of appending extra where clauses if any, and removing
         // the `where` statement if there are none.
         quote! {
@@ -204,14 +200,15 @@ impl From<&Field> for FieldInfo {
     }
 }
 
-fn derive_ber_sequence_content(field_names: &[Ident], asn1_type: Asn1Type) -> TokenStream {
+fn derive_ber_sequence_content(fields: &[FieldInfo], asn1_type: Asn1Type) -> TokenStream {
     let from = match asn1_type {
         Asn1Type::Ber => quote! {FromBer::from_ber},
         Asn1Type::Der => quote! {FromDer::from_der},
     };
-    let field_parsers: Vec<_> = field_names
+    let field_parsers: Vec<_> = fields
         .iter()
-        .map(|name| {
+        .map(|f| {
+            let name = &f.name;
             quote! {
                 let (i, #name) = #from(i)?;
             }
