@@ -1,0 +1,15 @@
+error: proc-macro derive panicked
+ --> tests/compile-fail/der_sequence_tag_errors.rs:5:32
+  |
+5 |     #[derive(Debug, PartialEq, DerSequence)]
+  |                                ^^^^^^^^^^^
+  |
+  = help: message: tag cannot be set twice!
+
+error: proc-macro derive panicked
+  --> tests/compile-fail/der_sequence_tag_errors.rs:14:32
+   |
+14 |     #[derive(Debug, PartialEq, DerSequence)]
+   |                                ^^^^^^^^^^^
+   |
+   = help: message: tag cannot be set twice!

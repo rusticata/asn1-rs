@@ -1,7 +1,8 @@
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::{Literal, Span, TokenStream};
 use quote::quote;
 use syn::{
-    parse_quote, Data, DataStruct, DeriveInput, Field, Ident, Lifetime, Type, WherePredicate,
+    parse_quote, Data, DataStruct, DeriveInput, Field, Ident, Lifetime, LitInt, Type,
+    WherePredicate,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -186,36 +187,114 @@ impl Container {
     }
 }
 
+#[derive(Debug)]
 pub struct FieldInfo {
     pub name: Ident,
     pub type_: Type,
+    pub optional: bool,
+    pub tag: Option<(Asn1TagKind, u16)>,
 }
 
 impl From<&Field> for FieldInfo {
     fn from(field: &Field) -> Self {
+        // parse attributes and keep supported ones
+        let mut optional = false;
+        let mut tag = None;
+        for attr in &field.attrs {
+            let ident = match attr.path.get_ident() {
+                Some(ident) => ident.to_string(),
+                None => continue,
+            };
+            match ident.as_str() {
+                "optional" => optional = true,
+                "tag_explicit" => {
+                    if tag.is_some() {
+                        panic!("tag cannot be set twice!");
+                    }
+                    let lit: LitInt = attr.parse_args().unwrap();
+                    let value = lit.base10_parse::<u16>().unwrap();
+                    tag = Some((Asn1TagKind::Explicit, value));
+                }
+                "tag_implicit" => {
+                    if tag.is_some() {
+                        panic!("tag cannot be set twice!");
+                    }
+                    let lit: LitInt = attr.parse_args().unwrap();
+                    let value = lit.base10_parse::<u16>().unwrap();
+                    tag = Some((Asn1TagKind::Implicit, value));
+                }
+                // ignore unknown attributes
+                _ => (),
+            }
+        }
         FieldInfo {
             name: field.ident.clone().unwrap(),
             type_: field.ty.clone(),
+            optional,
+            tag,
         }
     }
 }
 
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum Asn1TagKind {
+    Explicit,
+    Implicit,
+}
+
 fn derive_ber_sequence_content(fields: &[FieldInfo], asn1_type: Asn1Type) -> TokenStream {
-    let from = match asn1_type {
-        Asn1Type::Ber => quote! {FromBer::from_ber},
-        Asn1Type::Der => quote! {FromDer::from_der},
-    };
     let field_parsers: Vec<_> = fields
         .iter()
-        .map(|f| {
-            let name = &f.name;
-            quote! {
-                let (i, #name) = #from(i)?;
-            }
-        })
+        .map(|f| get_field_parser(f, asn1_type))
         .collect();
 
     quote! {
         #(#field_parsers)*
+    }
+}
+
+fn get_field_parser(f: &FieldInfo, asn1_type: Asn1Type) -> TokenStream {
+    let from = match asn1_type {
+        Asn1Type::Ber => quote! {FromBer::from_ber},
+        Asn1Type::Der => quote! {FromDer::from_der},
+    };
+    let name = &f.name;
+    if let Some((tag_kind, n)) = f.tag {
+        let tagged = match tag_kind {
+            Asn1TagKind::Explicit => quote! { TaggedExplicit },
+            Asn1TagKind::Implicit => quote! { TaggedImplicit },
+        };
+        let tag = Literal::u16_unsuffixed(n);
+        // test if tagged + optional
+        if f.optional {
+            return quote! {
+                let (i, #name) = {
+                    if i.is_empty() {
+                        (i, None)
+                    } else {
+                        let (_, header): (_, asn1_rs::Header) = #from(i)?;
+                        if header.tag().0 == #tag {
+                            let (i, t): (_, asn1_rs::#tagged::<_, _, #tag>) = #from(i)?;
+                            (i, Some(t.into_inner()))
+                        } else {
+                            (i, None)
+                        }
+                    }
+                };
+            };
+        } else {
+            // tagged, but not OPTIONAL
+            return quote! {
+                let (i, #name) = {
+                    let (i, t): (_, asn1_rs::#tagged::<_, _, #tag>) = #from(i)?;
+                    (i, t.into_inner())
+                };
+            };
+        }
+    } else {
+        // neither tagged nor optional
+        quote! {
+            let (i, #name) = #from(i)?;
+        }
     }
 }
