@@ -1,6 +1,8 @@
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
-use syn::{parse_quote, Data, DataStruct, DeriveInput, Ident, Lifetime, WherePredicate};
+use syn::{
+    parse_quote, Data, DataStruct, DeriveInput, Field, Ident, Lifetime, Type, WherePredicate,
+};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum Asn1Type {
@@ -50,14 +52,14 @@ pub fn derive_der_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
 
     let impl_tryfrom = container.gen_tryfrom();
     let impl_tagged = container.gen_tagged();
-    // let impl_checkconstraints = container.gen_checkconstraints();
+    let impl_checkconstraints = container.gen_checkconstraints();
     let impl_fromder = container.gen_fromder();
     let ts = s.gen_impl(quote! {
         extern crate asn1_rs;
 
         #impl_tryfrom
         #impl_tagged
-        //#impl_checkconstraints
+        #impl_checkconstraints
         #impl_fromder
     });
     if debug_derive {
@@ -67,14 +69,16 @@ pub fn derive_der_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
 }
 
 pub struct Container {
-    field_names: Vec<Ident>,
-    where_predicates: Vec<WherePredicate>,
+    pub field_names: Vec<Ident>,
+    pub fields: Vec<FieldInfo>,
+    pub where_predicates: Vec<WherePredicate>,
 }
 
 impl Container {
     pub fn from_datastruct(ds: &DataStruct, ast: &DeriveInput) -> Self {
         let field_names: Vec<_> = ds.fields.iter().map(|f| f.ident.clone().unwrap()).collect();
-        // dbg!(s);
+
+        let fields = ds.fields.iter().map(FieldInfo::from).collect();
 
         // get lifetimes from generics
         let lfts: Vec<_> = ast.generics.lifetimes().collect();
@@ -88,6 +92,7 @@ impl Container {
 
         Container {
             field_names,
+            fields,
             where_predicates,
         }
     }
@@ -129,12 +134,30 @@ impl Container {
         }
     }
 
-    #[allow(dead_code)]
     pub fn gen_checkconstraints(&self) -> TokenStream {
+        let lifetime = Lifetime::new("'ber", Span::call_site());
+        let wh = &self.where_predicates;
+        // let parse_content = derive_ber_sequence_content(&field_names, Asn1Type::Der);
+        let check_fields: Vec<_> = self
+            .fields
+            .iter()
+            .map(|field| {
+                let ty = &field.type_;
+                quote! {
+                    let (rem, any) = Any::from_der(rem)?;
+                    <#ty as CheckDerConstraints>::check_constraints(&any)?;
+                }
+            })
+            .collect();
+        // note: `gen impl` in synstructure takes care of appending extra where clauses if any, and removing
+        // the `where` statement if there are none.
         quote! {
-            gen impl<'ber> asn1_rs::CheckDerConstraints for @Self {
-                fn check_constraints(any: &Any) -> Result<()> {
+            use asn1_rs::{CheckDerConstraints, Tagged};
+            gen impl<#lifetime> CheckDerConstraints for @Self where #(#wh)+* {
+                fn check_constraints(any: &Any) -> asn1_rs::Result<()> {
                     any.tag().assert_eq(Self::TAG)?;
+                    let rem = &any.data;
+                    #(#check_fields)*
                     Ok(())
                 }
             }
@@ -149,7 +172,7 @@ impl Container {
         // note: `gen impl` in synstructure takes care of appending extra where clauses if any, and removing
         // the `where` statement if there are none.
         quote! {
-            use asn1_rs::{FromDer, Tagged};
+            use asn1_rs::FromDer;
 
             gen impl<#lifetime> asn1_rs::FromDer<#lifetime> for @Self where #(#wh)+* {
                 fn from_der(bytes: &#lifetime [u8]) -> asn1_rs::ParseResult<#lifetime, Self> {
@@ -163,6 +186,20 @@ impl Container {
                     Ok((rem,Self{#(#field_names),*}))
                 }
             }
+        }
+    }
+}
+
+pub struct FieldInfo {
+    pub name: Ident,
+    pub type_: Type,
+}
+
+impl From<&Field> for FieldInfo {
+    fn from(field: &Field) -> Self {
+        FieldInfo {
+            name: field.ident.clone().unwrap(),
+            type_: field.ty.clone(),
         }
     }
 }
