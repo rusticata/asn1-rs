@@ -39,18 +39,23 @@ impl TagKind for Explicit {}
 /// # Notes
 ///
 /// `CLASS` must be between 0 and 4. See [`Class`] for possible values for the `CLASS` parameter.
+/// Constants from this class can be used, but they must be wrapped in braces due to
+/// [Rust syntax for generics](https://doc.rust-lang.org/reference/items/generics.html)
+/// (see example below).
 ///
 /// # Examples
 ///
 /// To parse a `[APPLICATION 0] EXPLICIT INTEGER` object:
 ///
 /// ```rust
-/// use asn1_rs::{Error, Explicit, FromBer, Integer, TaggedValue};
+/// use asn1_rs::{Class, Error, Explicit, FromBer, Integer, TaggedValue};
 ///
 /// let bytes = &[0x60, 0x03, 0x2, 0x1, 0x2];
 ///
 /// // If tagged object is present (and has expected tag), parsing succeeds:
-/// let (_, tagged) = TaggedValue::<Integer, Error, Explicit, 0b01, 0>::from_ber(bytes).unwrap();
+/// let (_, tagged) =
+///     TaggedValue::<Integer, Error, Explicit, {Class::APPLICATION}, 0>::from_ber(bytes)
+///         .unwrap();
 /// assert_eq!(tagged, TaggedValue::explicit(Integer::from(2)));
 /// ```
 #[derive(Debug, PartialEq)]
