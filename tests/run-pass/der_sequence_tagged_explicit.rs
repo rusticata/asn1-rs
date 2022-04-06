@@ -68,7 +68,49 @@ fn test_tag_explicit_optional() {
     assert_eq!(t1, T1 { a: None });
 }
 
+fn test_tag_explicit_application() {
+    use asn1_rs::*;
+    use hex_literal::hex;
+
+    #[derive(Debug, PartialEq, DerSequence)]
+    // #[debug_derive]
+    pub struct T6 {
+        #[tag_explicit(APPLICATION 0)]
+        a: u16,
+    }
+
+    let input0 = &hex!("3005 6003020103");
+    let (rem, t6) = T6::from_der(input0).expect("parsing failed");
+    assert!(rem.is_empty());
+    assert_eq!(t6, T6 { a: 3 });
+
+    let input1 = &hex!("3005 6103020103");
+    T6::from_der(input1).expect_err("parsing tag 1 should fail");
+}
+
+fn test_tag_explicit_private() {
+    use asn1_rs::*;
+    use hex_literal::hex;
+
+    #[derive(Debug, PartialEq, DerSequence)]
+    // #[debug_derive]
+    pub struct T6 {
+        #[tag_explicit(PRIVATE 0)]
+        a: u16,
+    }
+
+    let input0 = &hex!("3005 e003020103");
+    let (rem, t6) = T6::from_der(input0).expect("parsing failed");
+    assert!(rem.is_empty());
+    assert_eq!(t6, T6 { a: 3 });
+
+    let input1 = &hex!("3005 e103020103");
+    T6::from_der(input1).expect_err("parsing tag 1 should fail");
+}
+
 fn main() {
     test_tag_explicit();
     test_tag_explicit_optional();
+    test_tag_explicit_application();
+    test_tag_explicit_private();
 }

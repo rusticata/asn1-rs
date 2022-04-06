@@ -1,14 +1,50 @@
 use proc_macro2::{Literal, Span, TokenStream};
-use quote::quote;
+use quote::{quote, ToTokens};
 use syn::{
-    parse_quote, Data, DataStruct, DeriveInput, Field, Ident, Lifetime, LitInt, Type,
-    WherePredicate,
+    parse::ParseStream, parse_quote, Data, DataStruct, DeriveInput, Field, Ident, Lifetime, LitInt,
+    Type, WherePredicate,
 };
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum Asn1Type {
     Ber,
     Der,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum Asn1TagKind {
+    Explicit,
+    Implicit,
+}
+
+impl ToTokens for Asn1TagKind {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let s = match self {
+            Asn1TagKind::Explicit => quote! { asn1_rs::Explicit },
+            Asn1TagKind::Implicit => quote! { asn1_rs::Implicit },
+        };
+        s.to_tokens(tokens)
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum Asn1TagClass {
+    Universal,
+    Application,
+    ContextSpecific,
+    Private,
+}
+
+impl ToTokens for Asn1TagClass {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        let s = match self {
+            Asn1TagClass::Application => quote! { asn1_rs::Class::APPLICATION },
+            Asn1TagClass::ContextSpecific => quote! { asn1_rs::Class::CONTEXT_SPECIFIC },
+            Asn1TagClass::Private => quote! { asn1_rs::Class::PRIVATE },
+            Asn1TagClass::Universal => quote! { asn1_rs::Class::UNIVERSAL },
+        };
+        s.to_tokens(tokens)
+    }
 }
 
 pub fn derive_ber_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
@@ -192,7 +228,7 @@ pub struct FieldInfo {
     pub name: Ident,
     pub type_: Type,
     pub optional: bool,
-    pub tag: Option<(Asn1TagKind, u16)>,
+    pub tag: Option<(Asn1TagKind, Asn1TagClass, u16)>,
 }
 
 impl From<&Field> for FieldInfo {
@@ -211,17 +247,15 @@ impl From<&Field> for FieldInfo {
                     if tag.is_some() {
                         panic!("tag cannot be set twice!");
                     }
-                    let lit: LitInt = attr.parse_args().unwrap();
-                    let value = lit.base10_parse::<u16>().unwrap();
-                    tag = Some((Asn1TagKind::Explicit, value));
+                    let (class, value) = attr.parse_args_with(parse_tag_args).unwrap();
+                    tag = Some((Asn1TagKind::Explicit, class, value));
                 }
                 "tag_implicit" => {
                     if tag.is_some() {
                         panic!("tag cannot be set twice!");
                     }
-                    let lit: LitInt = attr.parse_args().unwrap();
-                    let value = lit.base10_parse::<u16>().unwrap();
-                    tag = Some((Asn1TagKind::Implicit, value));
+                    let (class, value) = attr.parse_args_with(parse_tag_args).unwrap();
+                    tag = Some((Asn1TagKind::Implicit, class, value));
                 }
                 // ignore unknown attributes
                 _ => (),
@@ -236,10 +270,25 @@ impl From<&Field> for FieldInfo {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum Asn1TagKind {
-    Explicit,
-    Implicit,
+fn parse_tag_args(stream: ParseStream) -> Result<(Asn1TagClass, u16), syn::Error> {
+    let tag_class: Option<Ident> = stream.parse()?;
+    let tag_class = if let Some(ident) = tag_class {
+        let s = ident.to_string().to_uppercase();
+        match s.as_str() {
+            "UNIVERSAL" => Asn1TagClass::Universal,
+            "CONTEXT-SPECIFIC" => Asn1TagClass::ContextSpecific,
+            "APPLICATION" => Asn1TagClass::Application,
+            "PRIVATE" => Asn1TagClass::Private,
+            _ => {
+                return Err(syn::Error::new(stream.span(), "Invalid tag class"));
+            }
+        }
+    } else {
+        Asn1TagClass::ContextSpecific
+    };
+    let lit: LitInt = stream.parse()?;
+    let value = lit.base10_parse::<u16>()?;
+    Ok((tag_class, value))
 }
 
 fn derive_ber_sequence_content(fields: &[FieldInfo], asn1_type: Asn1Type) -> TokenStream {
@@ -259,11 +308,7 @@ fn get_field_parser(f: &FieldInfo, asn1_type: Asn1Type) -> TokenStream {
         Asn1Type::Der => quote! {FromDer::from_der},
     };
     let name = &f.name;
-    if let Some((tag_kind, n)) = f.tag {
-        let tagged = match tag_kind {
-            Asn1TagKind::Explicit => quote! { TaggedExplicit },
-            Asn1TagKind::Implicit => quote! { TaggedImplicit },
-        };
+    if let Some((tag_kind, class, n)) = f.tag {
         let tag = Literal::u16_unsuffixed(n);
         // test if tagged + optional
         if f.optional {
@@ -274,7 +319,7 @@ fn get_field_parser(f: &FieldInfo, asn1_type: Asn1Type) -> TokenStream {
                     } else {
                         let (_, header): (_, asn1_rs::Header) = #from(i)?;
                         if header.tag().0 == #tag {
-                            let (i, t): (_, asn1_rs::#tagged::<_, _, #tag>) = #from(i)?;
+                            let (i, t): (_, asn1_rs::TaggedValue::<_, _, #tag_kind, {#class}, #tag>) = #from(i)?;
                             (i, Some(t.into_inner()))
                         } else {
                             (i, None)
@@ -286,7 +331,7 @@ fn get_field_parser(f: &FieldInfo, asn1_type: Asn1Type) -> TokenStream {
             // tagged, but not OPTIONAL
             return quote! {
                 let (i, #name) = {
-                    let (i, t): (_, asn1_rs::#tagged::<_, _, #tag>) = #from(i)?;
+                    let (i, t): (_, asn1_rs::TaggedValue::<_, _, #tag_kind, {#class}, #tag>) = #from(i)?;
                     (i, t.into_inner())
                 };
             };

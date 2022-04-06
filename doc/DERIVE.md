@@ -90,7 +90,8 @@ let (rem, result) = S::from_ber(input)?;
 
 This method handles transparently the encapsulation and the read of the tagged value.
 
-*Note: custom attributes do not (yet) support other kind of tags (like `APPLICATION`).*
+*Note: tags are context-specific by default. To specify other kind of tags (like `APPLICATION`) add the tag class before the value in the `tag_explicit` attribute.*
+For ex: `tag_explicit(APPLICATION 0)` or `tag_explicit(PRIVATE 2)`.
 
 ### Tagged optional values
 

@@ -68,7 +68,49 @@ fn test_tag_implicit_optional() {
     assert_eq!(t1, T1 { a: None });
 }
 
+fn test_tag_implicit_application() {
+    use asn1_rs::*;
+    use hex_literal::hex;
+
+    #[derive(Debug, PartialEq, DerSequence)]
+    // #[debug_derive]
+    pub struct T0 {
+        #[tag_implicit(APPLICATION 0)]
+        a: u16,
+    }
+
+    let input0 = &hex!("3003 400103");
+    let (rem, t0) = T0::from_der(input0).expect("parsing failed");
+    assert!(rem.is_empty());
+    assert_eq!(t0, T0 { a: 3 });
+
+    let input1 = &hex!("3003 410103");
+    T0::from_der(input1).expect_err("parsing tag 1 should fail");
+}
+
+fn test_tag_implicit_private() {
+    use asn1_rs::*;
+    use hex_literal::hex;
+
+    #[derive(Debug, PartialEq, DerSequence)]
+    // #[debug_derive]
+    pub struct T0 {
+        #[tag_implicit(PRIVATE 0)]
+        a: u16,
+    }
+
+    let input0 = &hex!("3003 c00103");
+    let (rem, t0) = T0::from_der(input0).expect("parsing failed");
+    assert!(rem.is_empty());
+    assert_eq!(t0, T0 { a: 3 });
+
+    let input1 = &hex!("3003 c10103");
+    T0::from_der(input1).expect_err("parsing tag 1 should fail");
+}
+
 fn main() {
     test_tag_implicit();
     test_tag_implicit_optional();
+    test_tag_implicit_application();
+    test_tag_implicit_private();
 }
