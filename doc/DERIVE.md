@@ -18,9 +18,15 @@ pub struct S {
 }
 
 # let parser = |input| -> Result<(), Error> {
-let (rem, result) = S::from_ber(input)?;
+let (rest, result) = S::from_ber(input)?;
 # Ok(()) };
 ```
+
+After parsing b, any bytes that were leftover and not used to fill val will be returned in `rest`.
+
+When parsing a `SEQUENCE` into a struct, any trailing elements of the `SEQUENCE` that do
+not have matching fields in val will not be included in `rest`, as these are considered
+valid elements of the `SEQUENCE` and not trailing data.
 
 ### `DER`
 
