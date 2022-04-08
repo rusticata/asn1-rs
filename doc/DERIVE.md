@@ -182,9 +182,80 @@ struct S {
 }
 ```
 
+# Advanced
+
+## Custom errors
+
+Derived parsers can use the `error` attribute to specify the error type of the parser.
+
+The custom error type must implement `From<Error>`, so the derived parsers will transparently convert errors using the [`Into`] trait.
+
+
+Example:
+```rust
+# use asn1_rs::*;
+#
+#[derive(Debug, PartialEq)]
+pub enum MyError {
+    NotYetImplemented,
+}
+
+impl From<asn1_rs::Error> for MyError {
+    fn from(_: asn1_rs::Error) -> Self {
+        MyError::NotYetImplemented
+    }
+}
+
+#[derive(DerSequence)]
+#[error(MyError)]
+pub struct T2 {
+    pub a: u32,
+}
+```
+
+## Mapping errors
+
+Sometimes, it is necessary to map the returned error to another type, for example when a subparser returns a different error type than the parser's, and the [`Into`] trait cannot be implemented. This is often used in combination with the `error` attribute, but can also be used alone.
+
+The `map_err` attribute can be used to specify a function or closure to map errors. The function signature is `fn (e1: E1) -> E2`.
+
+Example:
+```rust
+# use asn1_rs::*;
+#
+#[derive(Debug, PartialEq)]
+pub enum MyError {
+    NotYetImplemented,
+}
+
+impl From<asn1_rs::Error> for MyError {
+    fn from(_: asn1_rs::Error) -> Self {
+        MyError::NotYetImplemented
+    }
+}
+
+#[derive(DerSequence)]
+#[error(MyError)]
+pub struct T2 {
+    pub a: u32,
+}
+
+// subparser returns an error of type MyError,
+// which is mapped to `Error`
+#[derive(DerSequence)]
+pub struct T4 {
+    #[map_err(|_| Error::BerTypeError)]
+    pub a: T2,
+}
+```
+
+*Note*: when deriving BER and DER parsers, errors paths are different (`TryFrom` returns the error type, while [`FromDer`] returns a [`ParseResult`]). Some code will be inserted by the `map_err` attribute to handle this transparently and keep the same function signature.
+
 [`FromBer`]: crate::FromBer
+[`FromDer`]: crate::FromDer
 [`BerSequence`]: crate::BerSequence
 [`DerSequence`]: crate::DerSequence
+[`ParseResult`]: crate::ParseResult
 [`TaggedExplicit`]: crate::TaggedExplicit
 [`TaggedImplicit`]: crate::TaggedImplicit
 [`TaggedValue`]: crate::TaggedValue
