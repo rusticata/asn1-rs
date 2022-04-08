@@ -137,6 +137,10 @@
 //! If the parsing succeeds, but the integer cannot fit into the expected type, the method will return
 //! an `IntegerTooLarge` error.
 //!
+//! ## Changes
+//!
+//! See `CHANGELOG.md`.
+//!
 //! # References
 //!
 //! - [[X.680]] Abstract Syntax Notation One (ASN.1): Specification of basic notation.

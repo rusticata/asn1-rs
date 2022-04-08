@@ -13,6 +13,7 @@ edition = "2018"
 rust-version = "1.53"
 
 include = [
+  "CHANGELOG.md",
   "LICENSE-*",
   "README.md",
   ".gitignore",
