@@ -182,6 +182,40 @@ struct S {
 }
 ```
 
+## BER/DER Set parsers
+
+Parsing BER/DER `SET` objects is very similar to `SEQUENCE`. Use the [`BerSet`] and [`DerSet`] custom derive attributes on the structure, and everything else is exactly the same as for sequences (see above for documentation).
+
+Example:
+```rust
+# use asn1_rs::*;
+use std::collections::BTreeSet;
+
+// `Ord` is needed because we will parse as a `BTreeSet` later
+#[derive(Debug, DerSet, PartialEq, Eq, PartialOrd, Ord)]
+pub struct S2 {
+    a: u16,
+}
+
+// test with EXPLICIT Vec
+#[derive(Debug, PartialEq, DerSet)]
+pub struct S {
+    // a INTEGER
+    a: u32,
+    // b INTEGER
+    b: u16,
+    // c [0] EXPLICIT SET OF S2
+    c: TaggedExplicit<BTreeSet<S2>, Error, 0>,
+}
+
+# let parser = |input| -> Result<(), Error> {
+let (rem, result) = S::from_ber(input)?;
+
+// Get a reference on c (type is &BTreeSet<S2>)
+let ref_c = result.c.as_ref();
+# Ok(()) };
+```
+
 # Advanced
 
 ## Custom errors
@@ -255,6 +289,8 @@ pub struct T4 {
 [`FromDer`]: crate::FromDer
 [`BerSequence`]: crate::BerSequence
 [`DerSequence`]: crate::DerSequence
+[`BerSet`]: crate::BerSet
+[`DerSet`]: crate::DerSet
 [`ParseResult`]: crate::ParseResult
 [`TaggedExplicit`]: crate::TaggedExplicit
 [`TaggedImplicit`]: crate::TaggedImplicit

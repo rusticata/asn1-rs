@@ -3,11 +3,11 @@ use proc_macro2::Span;
 use quote::quote;
 use syn::{Data, Ident};
 
-pub fn derive_ber_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
+pub fn derive_ber_set(s: synstructure::Structure) -> proc_macro2::TokenStream {
     let ast = s.ast();
 
     let container = match &ast.data {
-        Data::Struct(ds) => Container::from_datastruct(ds, ast, ContainerType::Sequence),
+        Data::Struct(ds) => Container::from_datastruct(ds, ast, ContainerType::Set),
         _ => panic!("Unsupported type, cannot derive"),
     };
 
@@ -30,11 +30,11 @@ pub fn derive_ber_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
     ts
 }
 
-pub fn derive_der_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
+pub fn derive_der_set(s: synstructure::Structure) -> proc_macro2::TokenStream {
     let ast = s.ast();
 
     let container = match &ast.data {
-        Data::Struct(ds) => Container::from_datastruct(ds, ast, ContainerType::Sequence),
+        Data::Struct(ds) => Container::from_datastruct(ds, ast, ContainerType::Set),
         _ => panic!("Unsupported type, cannot derive"),
     };
 
