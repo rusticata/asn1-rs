@@ -8,6 +8,11 @@
 
 ### Thanks
 
+## 0.4.1
+
+Minor fix:
+- add missing file in distribution (fix docs.rs build)
+
 ## 0.4.0
 
 asn1-rs:
