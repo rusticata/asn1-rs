@@ -177,7 +177,7 @@ impl<'a> Header<'a> {
     /// Return error if object length is definite
     #[inline]
     pub const fn assert_definite(&self) -> Result<()> {
-        if !self.length.is_definite() {
+        if self.length.is_definite() {
             Ok(())
         } else {
             Err(Error::DerConstraintFailed(DerConstraint::IndefiniteLength))
