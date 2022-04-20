@@ -57,7 +57,7 @@ impl ops::Add<Length> for Length {
         match self {
             Length::Indefinite => self,
             Length::Definite(lhs) => match rhs {
-                Length::Indefinite => self,
+                Length::Indefinite => rhs,
                 Length::Definite(rhs) => Length::Definite(lhs + rhs),
             },
         }
