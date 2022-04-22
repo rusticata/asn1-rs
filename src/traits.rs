@@ -181,13 +181,8 @@ where
     E: From<Error>,
 {
     fn from_der(bytes: &'a [u8]) -> ParseResult<T, E> {
+        // Note: Any::from_der checks than length is definite
         let (i, any) = Any::from_der(bytes).map_err(nom::Err::convert)?;
-        // X.690 section 10.1: definite form of length encoding shall be used
-        if !any.header.length.is_definite() {
-            return Err(nom::Err::Error(
-                Error::DerConstraintFailed(DerConstraint::IndefiniteLength).into(),
-            ));
-        }
         <T as CheckDerConstraints>::check_constraints(&any)
             .map_err(|e| nom::Err::Error(e.into()))?;
         let result = any.try_into().map_err(nom::Err::Error)?;
