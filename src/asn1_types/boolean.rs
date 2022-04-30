@@ -123,6 +123,8 @@ impl<'a> CheckDerConstraints for bool {
     }
 }
 
+impl DerAutoDerive for bool {}
+
 impl<'a> Tagged for bool {
     const TAG: Tag = Tag::Boolean;
 }
