@@ -1,4 +1,4 @@
-use crate::{Any, CheckDerConstraints, Error, Real, Result, Tag, Tagged};
+use crate::{Any, CheckDerConstraints, DerAutoDerive, Error, Real, Result, Tag, Tagged};
 use core::convert::{TryFrom, TryInto};
 
 impl<'a> TryFrom<Any<'a>> for f32 {
@@ -19,6 +19,8 @@ impl<'a> CheckDerConstraints for f32 {
         Ok(())
     }
 }
+
+impl DerAutoDerive for f32 {}
 
 impl Tagged for f32 {
     const TAG: Tag = Tag::RealType;
