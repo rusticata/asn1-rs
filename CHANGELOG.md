@@ -8,6 +8,19 @@
 
 ### Thanks
 
+## 0.4.2
+
+Bugfix release:
+- Remove explicit output lifetime in traits
+- Fix wrong encoding `BmpString` when using `ToDer`
+- Fix parsing of some EmbeddedPdv subtypes
+- Fix encoded length for Enumerated
+- Add missing `DerAutoDerive` impl for bool
+- Add missing `DerAutoDerive` impl for f32/f64
+- Remove redundant check, `Any::from_der` checks than length is definite
+- Length: fix potential bug when adding Length + Indefinite
+- Fix inverted logic in `Header::assert_definite()`
+
 ## 0.4.1
 
 Minor fix:
