@@ -86,6 +86,7 @@ fn from_der_bool() {
     let (rem, result) = Boolean::from_der(input).expect("parsing failed");
     assert!(rem.is_empty());
     assert_eq!(result, Boolean::TRUE);
+    assert!(result.bool());
     //
     let input = &hex!("01 01 7f");
     let res = Boolean::from_der(input);
@@ -95,6 +96,23 @@ fn from_der_bool() {
             DerConstraint::InvalidBoolean
         )))
     );
+    // bool type
+    let input = &hex!("01 01 00");
+    let (rem, result) = <bool>::from_der(input).expect("parsing failed");
+    assert!(rem.is_empty());
+    assert_eq!(result, false);
+}
+
+#[test]
+fn from_der_embedded_pdv() {
+    let input = &hex!("2b 0d a0 07 81 05 2a 03 04 05 06 82 02 aa a0");
+    let (rem, result) = EmbeddedPdv::from_der(input).expect("parsing failed");
+    assert_eq!(rem, &[]);
+    assert_eq!(
+        result.identification,
+        PdvIdentification::Syntax(Oid::from(&[1, 2, 3, 4, 5, 6]).unwrap())
+    );
+    assert_eq!(result.data_value, &[0xaa, 0xa0]);
 }
 
 #[test]
@@ -136,7 +154,7 @@ fn from_der_generalizedtime() {
         let datetime = datetime! {1985-11-06 21:06:27.3 UTC};
         assert_eq!(result.utc_datetime(), Ok(datetime));
     }
-    let _ = result;
+    let _ = result.to_string();
     // local time with fractional seconds, and with local time 5 hours retarded in relation to coordinated universal time.
     // (should fail: no 'Z' at end)
     let input = b"\x18\x1519851106210627.3-0500";
@@ -156,6 +174,8 @@ fn from_der_indefinite_length() {
             DerConstraint::IndefiniteLength
         )))
     );
+    let bytes: &[u8] = &hex!("02 80 01 00 00");
+    assert!(Integer::from_der(bytes).is_err());
 }
 
 #[test]
@@ -179,9 +199,19 @@ fn from_der_null() {
 
 #[test]
 fn from_der_octetstring() {
+    // coverage
+    use std::borrow::Cow;
+    let s = OctetString::new(b"1234");
+    assert_eq!(s.as_cow().len(), 4);
+    assert_eq!(s.into_cow(), Cow::Borrowed(b"1234"));
+    //
     let input = &hex!("04 05 41 41 41 41 41");
     let (rem, result) = OctetString::from_der(input).expect("parsing failed");
     assert_eq!(result.as_ref(), b"AAAAA");
+    assert_eq!(rem, &[]);
+    //
+    let (rem, result) = <&[u8]>::from_der(input).expect("parsing failed");
+    assert_eq!(result, b"AAAAA");
     assert_eq!(rem, &[]);
 }
 
@@ -214,6 +244,26 @@ fn from_der_optional() {
     let expected = (Some(Enumerated::new(1)), 65537);
     assert_eq!(result, expected);
     assert_eq!(rem, &[]);
+}
+
+#[test]
+fn from_der_real_f32() {
+    const EPSILON: f32 = 0.00001;
+    // binary, base = 2
+    let input = &hex!("09 03 80 ff 01 ff ff");
+    let (rem, result) = <f32>::from_der(input).expect("parsing failed");
+    assert!((result - 0.5).abs() < EPSILON);
+    assert_eq!(rem, &[0xff, 0xff]);
+}
+
+#[test]
+fn from_der_real_f64() {
+    const EPSILON: f64 = 0.00001;
+    // binary, base = 2
+    let input = &hex!("09 03 80 ff 01 ff ff");
+    let (rem, result) = <f64>::from_der(input).expect("parsing failed");
+    assert!((result - 0.5).abs() < EPSILON);
+    assert_eq!(rem, &[0xff, 0xff]);
 }
 
 #[test]
@@ -284,6 +334,10 @@ fn from_der_set() {
     let (rem, result) = Set::from_der(input).expect("parsing failed");
     assert_eq!(result.as_ref(), &input[2..]);
     assert_eq!(rem, &[]);
+    //
+    let (_, i) = Set::from_der_and_then(input, |content| Integer::from_der(content))
+        .expect("parsing failed");
+    assert_eq!(i.as_u32(), Ok(0x10001));
 }
 
 #[test]
@@ -293,6 +347,28 @@ fn from_der_set_btreeset() {
     assert!(result.contains(&65537));
     assert_eq!(result.len(), 1);
     assert_eq!(rem, &[]);
+}
+
+#[test]
+fn from_der_set_of_vec() {
+    let input = &hex!("31 05 02 03 01 00 01");
+    let (rem, result) = <Set>::from_der(input).expect("parsing failed");
+    let v = result.der_set_of::<u32, _>().expect("ber_set_of failed");
+    assert_eq!(rem, &[]);
+    assert_eq!(&v, &[65537]);
+}
+
+#[test]
+fn from_der_iter_set() {
+    let input = &hex!("31 0a 02 03 01 00 01 02 03 01 00 01");
+    let (rem, result) = Set::from_der(input).expect("parsing failed");
+    assert_eq!(result.as_ref(), &input[2..]);
+    assert_eq!(rem, &[]);
+    let v = result
+        .der_iter()
+        .collect::<Result<Vec<u32>>>()
+        .expect("could not iterate set");
+    assert_eq!(&v, &[65537, 65537]);
 }
 
 #[test]
@@ -307,7 +383,31 @@ fn from_der_utctime() {
 
         assert_eq!(result.utc_datetime(), Ok(datetime));
     }
-    let _ = result;
+    let _ = result.to_string();
+    //
+    let input = &hex!("17 11 30 32 31 32 31 33 31 34 32 39 32 33 2b 30 33 30 30 FF");
+    let (rem, result) = UtcTime::from_der(input).expect("parsing failed");
+    assert_eq!(rem, &[0xff]);
+    #[cfg(feature = "datetime")]
+    {
+        use time::macros::datetime;
+        let datetime = datetime! {2-12-13 14:29:23 +03:00};
+
+        assert_eq!(result.utc_datetime(), Ok(datetime));
+    }
+    let _ = result.to_string();
+    //
+    let input = &hex!("17 11 30 32 31 32 31 33 31 34 32 39 32 33 2d 30 33 30 30 FF");
+    let (rem, result) = UtcTime::from_der(input).expect("parsing failed");
+    assert_eq!(rem, &[0xff]);
+    #[cfg(feature = "datetime")]
+    {
+        use time::macros::datetime;
+        let datetime = datetime! {2-12-13 14:29:23 -03:00};
+
+        assert_eq!(result.utc_datetime(), Ok(datetime));
+    }
+    let _ = result.to_string();
 }
 
 #[cfg(feature = "datetime")]
@@ -330,6 +430,7 @@ fn utctime_adjusted_datetime() {
         result.utc_adjusted_datetime(),
         Ok(datetime! {1950-12-13 14:29:23 UTC})
     );
+    let _ = result.to_string();
 }
 
 #[test]
@@ -426,6 +527,13 @@ fn from_der_tagged_explicit_optional() {
     let tagged = result.unwrap();
     assert_eq!(tagged.tag(), Tag(0));
     assert_eq!(tagged.as_ref(), &2);
+
+    // using OptTaggedParser
+    let (rem, result) = OptTaggedParser::from(0)
+        .parse_der(input, |_, data| Integer::from_der(data))
+        .expect("parsing failed");
+    assert!(rem.is_empty());
+    assert_eq!(result, Some(Integer::from(2)));
 }
 
 #[test]
@@ -509,4 +617,26 @@ fn from_der_tagged_implicit_all() {
     // try specifying the expected tag (incorrect tag)
     let _ = parse_der_tagged_implicit::<_, Ia5String, _>(2)(input)
         .expect_err("parsing should have failed");
+}
+
+/// Generic tests on methods, and coverage tests
+#[test]
+fn from_der_tagged_optional_cov() {
+    let p =
+        |input| OptTaggedParser::from(1).parse_der::<_, Error, _>(input, |_, data| Ok((data, ())));
+    // empty input
+    let input = &[];
+    let (_, r) = p(input).expect("parsing failed");
+    assert!(r.is_none());
+    // wrong tag
+    let input = &hex!("a0 03 02 01 02");
+    let (_, r) = p(input).expect("parsing failed");
+    assert!(r.is_none());
+    // wrong class
+    let input = &hex!("e1 03 02 01 02");
+    let r = p(input);
+    assert!(r.is_err());
+
+    let p = OptTaggedParser::from(Tag(1));
+    let _ = format!("{:?}", p);
 }

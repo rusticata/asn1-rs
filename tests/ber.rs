@@ -54,6 +54,56 @@ fn from_ber_embedded_pdv() {
 }
 
 #[test]
+fn embedded_pdv_variants() {
+    // identification: syntaxes
+    let input = &hex!("2b 11 a0 0c a0 0a 80 02  2a 03 81 04 2a 03 04 05   82 01 00");
+    let (rem, res) = EmbeddedPdv::from_ber(input).expect("parsing EMBEDDED PDV failed");
+    assert!(rem.is_empty());
+    assert!(matches!(
+        res.identification,
+        PdvIdentification::Syntaxes { .. }
+    ));
+    // identification: syntax
+    let input = &hex!("2b 09 a0 04 81 02 2a 03  82 01 00");
+    let (rem, res) = EmbeddedPdv::from_ber(input).expect("parsing EMBEDDED PDV failed");
+    assert!(rem.is_empty());
+    assert!(matches!(res.identification, PdvIdentification::Syntax(_)));
+    // identification: presentation-context-id
+    let input = &hex!("2b 08 a0 03 82 01 02 82  01 00");
+    let (rem, res) = EmbeddedPdv::from_ber(input).expect("parsing EMBEDDED PDV failed");
+    assert!(rem.is_empty());
+    assert!(matches!(
+        res.identification,
+        PdvIdentification::PresentationContextId(_)
+    ));
+    // identification: context-negotiation
+    let input = &hex!("2b 10 a0 0b a3 09 80 01  2a 81 04 2a 03 04 05 82   01 00");
+    let (rem, res) = EmbeddedPdv::from_ber(input).expect("parsing EMBEDDED PDV failed");
+    assert!(rem.is_empty());
+    assert!(matches!(
+        res.identification,
+        PdvIdentification::ContextNegotiation { .. }
+    ));
+    // identification: transfer-syntax
+    let input = &hex!("2b 0b a0 06 84 04 2a 03  04 05 82 01 00");
+    let (rem, res) = EmbeddedPdv::from_ber(input).expect("parsing EMBEDDED PDV failed");
+    assert!(rem.is_empty());
+    assert!(matches!(
+        res.identification,
+        PdvIdentification::TransferSyntax(_)
+    ));
+    // identification: fixed
+    let input = &hex!("2b 07 a0 02 85 00 82 01  00");
+    let (rem, res) = EmbeddedPdv::from_ber(input).expect("parsing EMBEDDED PDV failed");
+    assert!(rem.is_empty());
+    assert!(matches!(res.identification, PdvIdentification::Fixed));
+    // identification: invalid
+    let input = &hex!("2b 07 a0 02 86 00 82 01  00");
+    let e = EmbeddedPdv::from_ber(input).expect_err("parsing should fail");
+    assert!(matches!(e, Err::Error(Error::InvalidValue { .. })));
+}
+
+#[test]
 fn from_ber_endofcontent() {
     let input = &hex!("00 00");
     let (rem, _result) = EndOfContent::from_ber(input).expect("parsing failed");
@@ -212,6 +262,26 @@ fn from_ber_real_binary() {
 }
 
 #[test]
+fn from_ber_real_f32() {
+    const EPSILON: f32 = 0.00001;
+    // binary, base = 2
+    let input = &hex!("09 03 80 ff 01 ff ff");
+    let (rem, result) = <f32>::from_ber(input).expect("parsing failed");
+    assert!((result - 0.5).abs() < EPSILON);
+    assert_eq!(rem, &[0xff, 0xff]);
+}
+
+#[test]
+fn from_ber_real_f64() {
+    const EPSILON: f64 = 0.00001;
+    // binary, base = 2
+    let input = &hex!("09 03 80 ff 01 ff ff");
+    let (rem, result) = <f64>::from_ber(input).expect("parsing failed");
+    assert!((result - 0.5).abs() < EPSILON);
+    assert_eq!(rem, &[0xff, 0xff]);
+}
+
+#[test]
 fn from_ber_real_special() {
     // 0
     let input = &hex!("09 00 ff ff");
@@ -256,6 +326,10 @@ fn from_ber_sequence() {
     let (rem, result) = Sequence::from_ber(input).expect("parsing failed");
     assert_eq!(result.as_ref(), &input[2..]);
     assert_eq!(rem, &[]);
+    //
+    let (_, i) = Sequence::from_ber_and_then(input, |content| Integer::from_ber(content))
+        .expect("parsing failed");
+    assert_eq!(i.as_u32(), Ok(0x10001));
 }
 
 #[test]
@@ -267,15 +341,60 @@ fn from_ber_sequence_vec() {
 }
 
 #[test]
+fn from_ber_sequence_of_vec() {
+    let input = &hex!("30 05 02 03 01 00 01");
+    let (rem, result) = <Sequence>::from_ber(input).expect("parsing failed");
+    let v = result
+        .ber_sequence_of::<u32, _>()
+        .expect("ber_sequence_of failed");
+    assert_eq!(rem, &[]);
+    assert_eq!(&v, &[65537]);
+}
+
+#[test]
 fn from_ber_iter_sequence() {
     let input = &hex!("30 0a 02 03 01 00 01 02 03 01 00 01");
     let (rem, result) = Sequence::from_ber(input).expect("parsing failed");
     assert_eq!(result.as_ref(), &input[2..]);
     assert_eq!(rem, &[]);
     let v = result
-        .der_iter()
+        .ber_iter()
         .collect::<Result<Vec<u32>>>()
         .expect("could not iterate sequence");
+    assert_eq!(&v, &[65537, 65537]);
+}
+
+#[test]
+fn from_ber_set() {
+    let input = &hex!("31 05 02 03 01 00 01");
+    let (rem, result) = Set::from_ber(input).expect("parsing failed");
+    assert_eq!(result.as_ref(), &input[2..]);
+    assert_eq!(rem, &[]);
+    //
+    let (_, i) = Set::from_ber_and_then(input, |content| Integer::from_ber(content))
+        .expect("parsing failed");
+    assert_eq!(i.as_u32(), Ok(0x10001));
+}
+
+#[test]
+fn from_ber_set_of_vec() {
+    let input = &hex!("31 05 02 03 01 00 01");
+    let (rem, result) = <Set>::from_ber(input).expect("parsing failed");
+    let v = result.ber_set_of::<u32, _>().expect("ber_set_of failed");
+    assert_eq!(rem, &[]);
+    assert_eq!(&v, &[65537]);
+}
+
+#[test]
+fn from_ber_iter_set() {
+    let input = &hex!("31 0a 02 03 01 00 01 02 03 01 00 01");
+    let (rem, result) = Set::from_ber(input).expect("parsing failed");
+    assert_eq!(result.as_ref(), &input[2..]);
+    assert_eq!(rem, &[]);
+    let v = result
+        .ber_iter()
+        .collect::<Result<Vec<u32>>>()
+        .expect("could not iterate set");
     assert_eq!(&v, &[65537, 65537]);
 }
 
@@ -327,6 +446,69 @@ fn from_ber_iter_sequence_incomplete() {
     assert_eq!(iter.next(), Some(Ok(65537)));
     assert_eq!(iter.next(), Some(Err(Error::Incomplete(Needed::new(1)))));
     assert_eq!(iter.next(), None);
+}
+
+#[test]
+fn from_ber_set_of() {
+    let input = &hex!("31 05 02 03 01 00 01");
+    let (rem, result) = SetOf::<u32>::from_ber(input).expect("parsing failed");
+    assert_eq!(result.as_ref(), &[0x10001]);
+    assert_eq!(rem, &[]);
+    // not constructed
+    let input = &hex!("11 05 02 03 01 00 01");
+    let err = SetOf::<u32>::from_ber(input).expect_err("should have failed");
+    assert_eq!(err, Err::Error(Error::ConstructExpected));
+}
+
+#[test]
+fn from_ber_tagged_explicit_optional() {
+    let input = &hex!("a0 03 02 01 02");
+    let (rem, result) =
+        Option::<TaggedExplicit<u32, Error, 0>>::from_ber(input).expect("parsing failed");
+    assert!(rem.is_empty());
+    assert!(result.is_some());
+    let tagged = result.unwrap();
+    assert_eq!(tagged.tag(), Tag(0));
+    assert_eq!(tagged.as_ref(), &2);
+    let (rem, result) =
+        Option::<TaggedExplicit<u32, Error, 1>>::from_ber(input).expect("parsing failed");
+    assert!(result.is_none());
+    assert_eq!(rem, input);
+
+    // using OptTaggedExplicit
+    let (rem, result) =
+        OptTaggedExplicit::<u32, Error, 0>::from_ber(input).expect("parsing failed");
+    assert!(rem.is_empty());
+    assert!(result.is_some());
+    let tagged = result.unwrap();
+    assert_eq!(tagged.tag(), Tag(0));
+    assert_eq!(tagged.as_ref(), &2);
+
+    // using OptTaggedParser
+    let (rem, result) = OptTaggedParser::from(0)
+        .parse_ber(input, |_, data| Integer::from_ber(data))
+        .expect("parsing failed");
+    assert!(rem.is_empty());
+    assert_eq!(result, Some(Integer::from(2)));
+}
+
+/// Generic tests on methods, and coverage tests
+#[test]
+fn from_ber_tagged_optional_cov() {
+    let p =
+        |input| OptTaggedParser::from(1).parse_ber::<_, Error, _>(input, |_, data| Ok((data, ())));
+    // empty input
+    let input = &[];
+    let (_, r) = p(input).expect("parsing failed");
+    assert!(r.is_none());
+    // wrong tag
+    let input = &hex!("a0 03 02 01 02");
+    let (_, r) = p(input).expect("parsing failed");
+    assert!(r.is_none());
+    // wrong class
+    let input = &hex!("e1 03 02 01 02");
+    let r = p(input);
+    assert!(r.is_err());
 }
 
 #[test]

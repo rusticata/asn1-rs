@@ -20,7 +20,7 @@ pub enum DerConstraint {
     IndefiniteLength,
     /// Object must not be constructed
     Constructed,
-    /// Object must be constructed,
+    /// Object must be constructed
     NotConstructed,
     /// DateTime object is missing timezone
     MissingTimeZone,

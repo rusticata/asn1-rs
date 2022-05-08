@@ -90,3 +90,36 @@ where
         Ok(sz)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+    use core::convert::TryFrom;
+    use hex_literal::hex;
+    use std::collections::HashSet;
+
+    #[test]
+    fn ber_hashset() {
+        let input = &hex! {"31 06 02 01 00 02 01 01"};
+        let (_, any) = Any::from_ber(input).expect("parsing hashset failed");
+        <HashSet<u32>>::check_constraints(&any).unwrap();
+
+        let h = <HashSet<u32>>::try_from(any).unwrap();
+
+        assert_eq!(h.len(), 2);
+    }
+
+    #[test]
+    fn der_hashset() {
+        let input = &hex! {"31 06 02 01 00 02 01 01"};
+        let r: IResult<_, _, Error> = HashSet::<u32>::from_der(input);
+        let (_, h) = r.expect("parsing hashset failed");
+
+        assert_eq!(h.len(), 2);
+
+        assert_eq!(h.to_der_len(), Ok(8));
+        let v = h.to_der_vec().expect("could not serialize");
+        let (_, h2) = SetOf::<u32>::from_der(&v).unwrap();
+        assert!(h.iter().eq(h2.iter()));
+    }
+}

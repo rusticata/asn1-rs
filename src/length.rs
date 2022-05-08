@@ -140,3 +140,41 @@ impl ToDer for Length {
         Ok(0)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+
+    /// Generic and coverage tests
+    #[test]
+    fn methods_length() {
+        let l = Length::from(2);
+        assert_eq!(l.definite(), Ok(2));
+        assert!(l.assert_definite().is_ok());
+
+        let l = Length::Indefinite;
+        assert!(l.definite().is_err());
+        assert!(l.assert_definite().is_err());
+
+        let l = Length::from(2);
+        assert_eq!(l + 2, Length::from(4));
+        assert_eq!(l + Length::Indefinite, Length::Indefinite);
+
+        let l = Length::Indefinite;
+        assert_eq!(l + 2, Length::Indefinite);
+
+        let l = Length::from(2);
+        assert_eq!(l + Length::from(2), Length::from(4));
+
+        let l = Length::Indefinite;
+        assert_eq!(l + Length::from(2), Length::Indefinite);
+
+        let mut l = Length::from(2);
+        l += 2;
+        assert_eq!(l.definite(), Ok(4));
+
+        let mut l = Length::Indefinite;
+        l += 2;
+        assert_eq!(l, Length::Indefinite);
+    }
+}

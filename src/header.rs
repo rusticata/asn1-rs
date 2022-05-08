@@ -437,3 +437,54 @@ impl<'a> PartialEq<Header<'a>> for Header<'a> {
 }
 
 impl Eq for Header<'_> {}
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+    use hex_literal::hex;
+
+    /// Generic tests on methods, and coverage tests
+    #[test]
+    fn methods_header() {
+        // Getters
+        let input = &hex! {"02 01 00"};
+        let (rem, header) = Header::from_ber(input).expect("parsing header failed");
+        assert_eq!(header.class(), Class::Universal);
+        assert_eq!(header.tag(), Tag::Integer);
+        assert!(header.assert_primitive().is_ok());
+        assert!(header.assert_constructed().is_err());
+        assert!(header.is_universal());
+        assert!(!header.is_application());
+        assert!(!header.is_private());
+        assert_eq!(rem, &input[2..]);
+
+        // test PartialEq
+        let hdr2 = Header::new_simple(Tag::Integer);
+        assert_eq!(header, hdr2);
+
+        // builder methods
+        let hdr3 = hdr2
+            .with_class(Class::ContextSpecific)
+            .with_constructed(true)
+            .with_length(Length::Definite(1));
+        assert!(hdr3.constructed());
+        assert!(hdr3.is_constructed());
+        assert!(hdr3.assert_constructed().is_ok());
+        assert!(hdr3.is_contextspecific());
+        let xx = hdr3.to_der_vec().expect("serialize failed");
+        assert_eq!(&xx, &[0xa2, 0x01]);
+
+        // indefinite length
+        let hdr4 = hdr3.with_length(Length::Indefinite);
+        assert!(hdr4.assert_definite().is_err());
+        let xx = hdr4.to_der_vec().expect("serialize failed");
+        assert_eq!(&xx, &[0xa2, 0x80]);
+
+        // parse_*_content
+        let hdr = Header::new_simple(Tag(2)).with_length(Length::Definite(1));
+        let (_, r) = hdr.parse_ber_content(&input[2..]).unwrap();
+        assert_eq!(r, &input[2..]);
+        let (_, r) = hdr.parse_der_content(&input[2..]).unwrap();
+        assert_eq!(r, &input[2..]);
+    }
+}

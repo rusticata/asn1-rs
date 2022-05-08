@@ -66,3 +66,29 @@ impl TryFrom<u8> for Class {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn methods_class() {
+        let c = Class::Universal;
+        assert!(c.assert_eq(Class::Universal).is_ok());
+        assert!(c.assert_eq(Class::Private).is_err());
+
+        assert_eq!(Class::Universal.to_string().as_str(), "UNIVERSAL");
+        assert_eq!(Class::Application.to_string().as_str(), "APPLICATION");
+        assert_eq!(
+            Class::ContextSpecific.to_string().as_str(),
+            "CONTEXT-SPECIFIC"
+        );
+        assert_eq!(Class::Private.to_string().as_str(), "PRIVATE");
+
+        assert!(Class::try_from(0b00).is_ok());
+        assert!(Class::try_from(0b01).is_ok());
+        assert!(Class::try_from(0b10).is_ok());
+        assert!(Class::try_from(0b11).is_ok());
+        assert!(Class::try_from(4).is_err());
+    }
+}

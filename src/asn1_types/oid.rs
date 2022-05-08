@@ -463,7 +463,8 @@ macro_rules! oid {
 
 #[cfg(test)]
 mod tests {
-    use crate::Oid;
+    use crate::{FromDer, Oid, ToDer};
+    use hex_literal::hex;
 
     #[test]
     fn declare_oid() {
@@ -489,5 +490,15 @@ mod tests {
         assert_eq!(oid, oid!(1.2.840.113549.1.1.1));
         let oid = Oid::from(&[1, 2, 840, 113_549, 1, 1, 1]).unwrap();
         assert!(compare_oid(&oid));
+    }
+
+    #[test]
+    fn oid_to_der() {
+        let oid = super::oid!(1.2.840 .113549 .1);
+        assert_eq!(oid.to_der_len(), Ok(9));
+        let v = oid.to_der_vec().expect("could not serialize");
+        assert_eq!(&v, &hex! {"06 07 2a 86 48 86 f7 0d 01"});
+        let (_, oid2) = Oid::from_der(&v).expect("could not re-parse");
+        assert_eq!(&oid, &oid2);
     }
 }

@@ -344,3 +344,38 @@ impl ToDer for Any<'_> {
         Ok(sz)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+    use hex_literal::hex;
+
+    #[test]
+    fn methods_any() {
+        let header = Header::new_simple(Tag::Integer);
+        let any = Any::new(header, &[])
+            .with_class(Class::ContextSpecific)
+            .with_tag(Tag(0));
+        assert_eq!(any.as_bytes(), &[]);
+
+        let input = &hex! {"80 03 02 01 01"};
+        let (_, any) = Any::from_ber(input).expect("parsing failed");
+
+        let (_, r) = any.parse_ber::<Integer>().expect("parse_ber failed");
+        assert_eq!(r.as_u32(), Ok(1));
+        let (_, r) = any.parse_der::<Integer>().expect("parse_der failed");
+        assert_eq!(r.as_u32(), Ok(1));
+
+        let header = &any.header;
+        let (_, content) = Any::parse_ber_content(&input[2..], header).unwrap();
+        assert_eq!(content.len(), 3);
+        let (_, content) = Any::parse_der_content(&input[2..], header).unwrap();
+        assert_eq!(content.len(), 3);
+
+        let (_, any) = Any::from_der(&input[2..]).unwrap();
+        Any::check_constraints(&any).unwrap();
+        assert_eq!(<Any as DynTagged>::tag(&any), any.tag());
+        let int = any.integer().unwrap();
+        assert_eq!(int.as_u16(), Ok(1));
+    }
+}

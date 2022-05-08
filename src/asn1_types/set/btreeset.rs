@@ -89,3 +89,36 @@ where
         Ok(sz)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+    use core::convert::TryFrom;
+    use hex_literal::hex;
+    use std::collections::BTreeSet;
+
+    #[test]
+    fn ber_btreeset() {
+        let input = &hex! {"31 06 02 01 00 02 01 01"};
+        let (_, any) = Any::from_ber(input).expect("parsing hashset failed");
+        <BTreeSet<u32>>::check_constraints(&any).unwrap();
+
+        let h = <BTreeSet<u32>>::try_from(any).unwrap();
+
+        assert_eq!(h.len(), 2);
+    }
+
+    #[test]
+    fn der_btreeset() {
+        let input = &hex! {"31 06 02 01 00 02 01 01"};
+        let r: IResult<_, _, Error> = BTreeSet::<u32>::from_der(input);
+        let (_, h) = r.expect("parsing hashset failed");
+
+        assert_eq!(h.len(), 2);
+
+        assert_eq!(h.to_der_len(), Ok(8));
+        let v = h.to_der_vec().expect("could not serialize");
+        let (_, h2) = SetOf::<u32>::from_der(&v).unwrap();
+        assert!(h.iter().eq(h2.iter()));
+    }
+}
