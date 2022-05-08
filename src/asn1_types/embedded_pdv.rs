@@ -1,7 +1,7 @@
 use crate::*;
 use core::convert::TryFrom;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct EmbeddedPdv<'a> {
     pub identification: PdvIdentification<'a>,
     pub data_value_descriptor: Option<ObjectDescriptor<'a>>,
@@ -48,6 +48,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for EmbeddedPdv<'a> {
                 //     abstract OBJECT IDENTIFIER,
                 //     transfer OBJECT IDENTIFIER
                 // },
+                // AUTOMATIC tags -> implicit! Hopefully, Oid does not check tag value!
                 let (rem, s_abstract) = Oid::from_ber(inner.data)?;
                 let (_, s_transfer) = Oid::from_ber(rem)?;
                 PdvIdentification::Syntaxes {
@@ -70,7 +71,9 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for EmbeddedPdv<'a> {
                 //     presentation-context-id INTEGER,
                 //     transfer-syntax OBJECT IDENTIFIER
                 // },
-                let (rem, presentation_context_id) = Integer::from_ber(inner.data)?;
+                // AUTOMATIC tags -> implicit!
+                let (rem, any) = Any::from_ber(inner.data)?;
+                let presentation_context_id = Integer::new(any.data);
                 let (_, presentation_syntax) = Oid::from_ber(rem)?;
                 PdvIdentification::ContextNegotiation {
                     presentation_context_id,
