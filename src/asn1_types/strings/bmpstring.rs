@@ -102,7 +102,8 @@ impl<'a> TestValidCharset for BmpString<'a> {
 #[cfg(feature = "std")]
 impl ToDer for BmpString<'_> {
     fn to_der_len(&self) -> Result<usize> {
-        let sz = self.data.as_bytes().len();
+        // compute the UTF-16 length
+        let sz = self.data.encode_utf16().count() * 2;
         if sz < 127 {
             // 1 (class+tag) + 1 (length) + len
             Ok(2 + sz)
@@ -114,16 +115,18 @@ impl ToDer for BmpString<'_> {
     }
 
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let header = Header::new(
-            Class::Universal,
-            false,
-            Self::TAG,
-            Length::Definite(self.data.as_bytes().len()),
-        );
+        // compute the UTF-16 length
+        let l = self.data.encode_utf16().count() * 2;
+        let header = Header::new(Class::Universal, false, Self::TAG, Length::Definite(l));
         header.write_der_header(writer).map_err(Into::into)
     }
 
     fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        writer.write(self.data.as_bytes()).map_err(Into::into)
+        let mut v = Vec::new();
+        for u in self.data.encode_utf16() {
+            v.push((u >> 8) as u8);
+            v.push((u & 0xff) as u8);
+        }
+        writer.write(&v).map_err(Into::into)
     }
 }
