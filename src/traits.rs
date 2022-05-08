@@ -83,7 +83,7 @@ where
 /// ```
 pub trait FromBer<'a, E = Error>: Sized {
     /// Attempt to parse input bytes into a BER object
-    fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self, E>;
+    fn from_ber(bytes: &'a [u8]) -> ParseResult<Self, E>;
 }
 
 impl<'a, T, E> FromBer<'a, E> for T
@@ -152,7 +152,7 @@ where
 /// ```
 pub trait FromDer<'a, E = Error>: Sized {
     /// Attempt to parse input bytes into a DER object (enforcing constraints)
-    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, E>;
+    fn from_der(bytes: &'a [u8]) -> ParseResult<Self, E>;
 }
 
 /// Trait to automatically derive `FromDer`
