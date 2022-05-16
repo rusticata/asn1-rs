@@ -1,19 +1,23 @@
 use crate::{Class, DerAutoDerive, Error, Tag, Tagged};
 use core::marker::PhantomData;
 
+mod application;
 mod builder;
 mod explicit;
 mod helpers;
 mod implicit;
 mod optional;
 mod parser;
+mod private;
 
+pub use application::*;
 pub use builder::*;
 pub use explicit::*;
 pub use helpers::*;
 pub use implicit::*;
 pub use optional::*;
 pub use parser::*;
+pub use private::*;
 
 pub(crate) const CONTEXT_SPECIFIC: u8 = Class::ContextSpecific as u8;
 
