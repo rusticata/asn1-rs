@@ -97,7 +97,7 @@ impl Container {
             .attrs
             .iter()
             .find(|attr| attr.path.is_ident(&Ident::new("error", Span::call_site())))
-            .map(|attr| attr.clone());
+            .cloned();
 
         Container {
             container_type,

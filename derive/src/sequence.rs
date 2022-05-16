@@ -25,7 +25,7 @@ pub fn derive_ber_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
         #impl_tagged
     });
     if debug_derive {
-        eprintln!("{}", ts.to_string());
+        eprintln!("{}", ts);
     }
     ts
 }
@@ -55,7 +55,7 @@ pub fn derive_der_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
         #impl_fromder
     });
     if debug_derive {
-        eprintln!("{}", ts.to_string());
+        eprintln!("{}", ts);
     }
     ts
 }

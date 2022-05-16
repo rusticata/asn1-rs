@@ -25,7 +25,7 @@ pub fn derive_ber_set(s: synstructure::Structure) -> proc_macro2::TokenStream {
         #impl_tagged
     });
     if debug_derive {
-        eprintln!("{}", ts.to_string());
+        eprintln!("{}", ts);
     }
     ts
 }
@@ -55,7 +55,7 @@ pub fn derive_der_set(s: synstructure::Structure) -> proc_macro2::TokenStream {
         #impl_fromder
     });
     if debug_derive {
-        eprintln!("{}", ts.to_string());
+        eprintln!("{}", ts);
     }
     ts
 }
