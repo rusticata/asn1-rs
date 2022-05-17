@@ -2,8 +2,8 @@ use crate::{Class, Explicit, Implicit, TaggedValue};
 
 /// A helper object to parse `[APPLICATION n] EXPLICIT T`
 ///
-/// A helper object implementing [`FromBer`] and [`FromDer`], to parse application-tagged
-/// values.
+/// A helper object implementing [`FromBer`](crate::FromBer) and [`FromDer`](crate::FromDer), to
+/// parse explicit application-tagged values.
 ///
 /// # Examples
 ///
@@ -23,12 +23,12 @@ pub type ApplicationExplicit<T, E, const TAG: u32> =
 
 /// A helper object to parse `[APPLICATION n] IMPLICIT T`
 ///
-/// A helper object implementing [`FromBer`] and [`FromDer`], to parse tagged
-/// optional values.
+/// A helper object implementing [`FromBer`](crate::FromBer) and [`FromDer`](crate::FromDer), to
+/// parse explicit application-tagged values.
 ///
 /// # Examples
 ///
-/// To parse a `[APPLICATION 0] IMPLICIT INTEGER OPTIONAL` object:
+/// To parse a `[APPLICATION 0] IMPLICIT INTEGER` object:
 ///
 /// ```rust
 /// use asn1_rs::{ApplicationImplicit, Error, FromBer, Integer, TaggedValue};

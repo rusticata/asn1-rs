@@ -2,8 +2,8 @@ use crate::{Class, Explicit, Implicit, TaggedValue};
 
 /// A helper object to parse `[PRIVATE n] EXPLICIT T`
 ///
-/// A helper object implementing [`FromBer`] and [`FromDer`], to parse application-tagged
-/// values.
+/// A helper object implementing [`FromBer`](crate::FromBer) and [`FromDer`](crate::FromDer), to
+/// parse explicit private-tagged values.
 ///
 /// # Examples
 ///
@@ -23,12 +23,12 @@ pub type PrivateExplicit<T, E, const TAG: u32> =
 
 /// A helper object to parse `[PRIVATE n] IMPLICIT T`
 ///
-/// A helper object implementing [`FromBer`] and [`FromDer`], to parse tagged
-/// optional values.
+/// A helper object implementing [`FromBer`](crate::FromBer) and [`FromDer`](crate::FromDer), to
+/// parse implicit private-tagged values.
 ///
 /// # Examples
 ///
-/// To parse a `[PRIVATE 0] IMPLICIT INTEGER OPTIONAL` object:
+/// To parse a `[PRIVATE 0] IMPLICIT INTEGER` object:
 ///
 /// ```rust
 /// use asn1_rs::{Error, FromBer, Integer, PrivateImplicit, TaggedValue};
