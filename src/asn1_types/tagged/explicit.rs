@@ -129,50 +129,6 @@ impl<'a, T, E> TaggedParser<'a, Explicit, T, E> {
     }
 }
 
-impl<'a, T, E> TaggedParser<'a, Explicit, T, E> {
-    pub fn from_ber_and_then<F>(
-        class: Class,
-        tag: u32,
-        bytes: &'a [u8],
-        op: F,
-    ) -> ParseResult<'a, T, E>
-    where
-        F: FnOnce(&'a [u8]) -> ParseResult<T, E>,
-        E: From<Error>,
-    {
-        let (rem, any) = Any::from_ber(bytes).map_err(Err::convert)?;
-        any.tag()
-            .assert_eq(Tag(tag))
-            .map_err(|e| nom::Err::Error(e.into()))?;
-        if any.class() != class {
-            return Err(Err::Error(any.tag().invalid_value("Invalid class").into()));
-        }
-        let (_, res) = op(any.data)?;
-        Ok((rem, res))
-    }
-
-    pub fn from_der_and_then<F>(
-        class: Class,
-        tag: u32,
-        bytes: &'a [u8],
-        op: F,
-    ) -> ParseResult<'a, T, E>
-    where
-        F: FnOnce(&'a [u8]) -> ParseResult<T, E>,
-        E: From<Error>,
-    {
-        let (rem, any) = Any::from_der(bytes).map_err(Err::convert)?;
-        any.tag()
-            .assert_eq(Tag(tag))
-            .map_err(|e| nom::Err::Error(e.into()))?;
-        if any.class() != class {
-            return Err(Err::Error(any.tag().invalid_value("Invalid class").into()));
-        }
-        let (_, res) = op(any.data)?;
-        Ok((rem, res))
-    }
-}
-
 impl<'a, T, E> FromBer<'a, E> for TaggedParser<'a, Explicit, T, E>
 where
     T: FromBer<'a, E>,

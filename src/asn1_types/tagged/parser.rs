@@ -37,6 +37,58 @@ impl<'a, TagKind, T, E> TaggedParser<'a, TagKind, T, E> {
     pub const fn tag(&self) -> Tag {
         self.header.tag
     }
+
+    /// Parse a BER tagged value and apply the provided parsing function to content
+    ///
+    /// After parsing, the sequence object and header are discarded.
+    ///
+    /// Note: there is not difference between explicit or implicit tags.
+    pub fn from_ber_and_then<F>(
+        class: Class,
+        tag: u32,
+        bytes: &'a [u8],
+        op: F,
+    ) -> ParseResult<'a, T, E>
+    where
+        F: FnOnce(&'a [u8]) -> ParseResult<T, E>,
+        E: From<Error>,
+    {
+        let (rem, any) = Any::from_ber(bytes).map_err(Err::convert)?;
+        any.tag()
+            .assert_eq(Tag(tag))
+            .map_err(|e| nom::Err::Error(e.into()))?;
+        any.class()
+            .assert_eq(class)
+            .map_err(|e| nom::Err::Error(e.into()))?;
+        let (_, res) = op(any.data)?;
+        Ok((rem, res))
+    }
+
+    /// Parse a DER tagged value and apply the provided parsing function to content
+    ///
+    /// After parsing, the sequence object and header are discarded.
+    ///
+    /// Note: there is not difference between explicit or implicit tags.
+    pub fn from_der_and_then<F>(
+        class: Class,
+        tag: u32,
+        bytes: &'a [u8],
+        op: F,
+    ) -> ParseResult<'a, T, E>
+    where
+        F: FnOnce(&'a [u8]) -> ParseResult<T, E>,
+        E: From<Error>,
+    {
+        let (rem, any) = Any::from_der(bytes).map_err(Err::convert)?;
+        any.tag()
+            .assert_eq(Tag(tag))
+            .map_err(|e| nom::Err::Error(e.into()))?;
+        any.class()
+            .assert_eq(class)
+            .map_err(|e| nom::Err::Error(e.into()))?;
+        let (_, res) = op(any.data)?;
+        Ok((rem, res))
+    }
 }
 
 impl<'a, TagKind, T, E> AsRef<T> for TaggedParser<'a, TagKind, T, E> {
