@@ -100,7 +100,7 @@ fn from_der_bool() {
     let input = &hex!("01 01 00");
     let (rem, result) = <bool>::from_der(input).expect("parsing failed");
     assert!(rem.is_empty());
-    assert_eq!(result, false);
+    assert!(!result);
 }
 
 #[test]
@@ -335,8 +335,7 @@ fn from_der_set() {
     assert_eq!(result.as_ref(), &input[2..]);
     assert_eq!(rem, &[]);
     //
-    let (_, i) = Set::from_der_and_then(input, |content| Integer::from_der(content))
-        .expect("parsing failed");
+    let (_, i) = Set::from_der_and_then(input, Integer::from_der).expect("parsing failed");
     assert_eq!(i.as_u32(), Ok(0x10001));
 }
 

@@ -327,8 +327,7 @@ fn from_ber_sequence() {
     assert_eq!(result.as_ref(), &input[2..]);
     assert_eq!(rem, &[]);
     //
-    let (_, i) = Sequence::from_ber_and_then(input, |content| Integer::from_ber(content))
-        .expect("parsing failed");
+    let (_, i) = Sequence::from_ber_and_then(input, Integer::from_ber).expect("parsing failed");
     assert_eq!(i.as_u32(), Ok(0x10001));
 }
 
@@ -371,8 +370,7 @@ fn from_ber_set() {
     assert_eq!(result.as_ref(), &input[2..]);
     assert_eq!(rem, &[]);
     //
-    let (_, i) = Set::from_ber_and_then(input, |content| Integer::from_ber(content))
-        .expect("parsing failed");
+    let (_, i) = Set::from_ber_and_then(input, Integer::from_ber).expect("parsing failed");
     assert_eq!(i.as_u32(), Ok(0x10001));
 }
 
