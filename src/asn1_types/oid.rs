@@ -297,6 +297,11 @@ impl<'a> Oid<'a> {
         let asn1 = Cow::Borrowed(any.data);
         Ok((rem, Oid::new_relative(asn1)))
     }
+
+    /// Returns true if `needle` is a prefix of the OID.
+    pub fn starts_with(&self, needle: &Oid) -> bool {
+        self.asn1.len() >= needle.asn1.len() && self.asn1.starts_with(needle.as_bytes())
+    }
 }
 
 trait Repr: Num + Shl<usize, Output = Self> + From<u8> {}
@@ -468,12 +473,12 @@ mod tests {
 
     #[test]
     fn declare_oid() {
-        let oid = super::oid!(1.2.840 .113549 .1);
+        let oid = super::oid! {1.2.840.113549.1};
         assert_eq!(oid.to_string(), "1.2.840.113549.1");
     }
 
-    const OID_RSA_ENCRYPTION: &[u8] = &oid!(raw 1.2.840.113549.1.1.1);
-    const OID_EC_PUBLIC_KEY: &[u8] = &oid!(raw 1.2.840.10045.2.1);
+    const OID_RSA_ENCRYPTION: &[u8] = &oid! {raw 1.2.840.113549.1.1.1};
+    const OID_EC_PUBLIC_KEY: &[u8] = &oid! {raw 1.2.840.10045.2.1};
     #[allow(clippy::match_like_matches_macro)]
     fn compare_oid(oid: &Oid) -> bool {
         match oid.as_bytes() {
@@ -483,22 +488,30 @@ mod tests {
         }
     }
 
-    #[rustfmt::skip::macros(oid)]
     #[test]
     fn test_compare_oid() {
         let oid = Oid::from(&[1, 2, 840, 113_549, 1, 1, 1]).unwrap();
-        assert_eq!(oid, oid!(1.2.840.113549.1.1.1));
+        assert_eq!(oid, oid! {1.2.840.113549.1.1.1});
         let oid = Oid::from(&[1, 2, 840, 113_549, 1, 1, 1]).unwrap();
         assert!(compare_oid(&oid));
     }
 
     #[test]
     fn oid_to_der() {
-        let oid = super::oid!(1.2.840 .113549 .1);
+        let oid = super::oid! {1.2.840.113549.1};
         assert_eq!(oid.to_der_len(), Ok(9));
         let v = oid.to_der_vec().expect("could not serialize");
         assert_eq!(&v, &hex! {"06 07 2a 86 48 86 f7 0d 01"});
         let (_, oid2) = Oid::from_der(&v).expect("could not re-parse");
         assert_eq!(&oid, &oid2);
+    }
+
+    #[test]
+    fn oid_starts_with() {
+        const OID_RSA_ENCRYPTION: Oid = oid! {1.2.840.113549.1.1.1};
+        const OID_EC_PUBLIC_KEY: Oid = oid! {1.2.840.10045.2.1};
+        let oid = super::oid! {1.2.840.113549.1};
+        assert!(OID_RSA_ENCRYPTION.starts_with(&oid));
+        assert!(!OID_EC_PUBLIC_KEY.starts_with(&oid));
     }
 }
