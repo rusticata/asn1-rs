@@ -8,6 +8,27 @@
 
 ### Thanks
 
+## 0.5.0
+
+This release adds some new methods and custom derive attributes.
+It also adds a lot of tests to improve code coverage.
+
+asn1-rs:
+
+- Add helper types for Application/Private tagged values
+- TaggedParser: remove constraints `from_ber_and_then` (and `_der`)
+- Oid: add method `starts_with`
+- Fix documentation of application and private tagged helpers
+- Fix clippy warnings
+
+derive:
+
+- Add custom derive BerAlias and DerAlias
+
+coverage:
+
+- Add many tests to improve coverage
+
 ## 0.4.2
 
 Bugfix release:
