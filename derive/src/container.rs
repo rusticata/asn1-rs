@@ -2,11 +2,12 @@ use proc_macro2::{Literal, Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::{
     parse::ParseStream, parse_quote, spanned::Spanned, Attribute, DataStruct, DeriveInput, Field,
-    Ident, Lifetime, LitInt, Meta, Type, WherePredicate,
+    Fields, Ident, Lifetime, LitInt, Meta, Type, WherePredicate,
 };
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ContainerType {
+    Alias,
     Sequence,
     Set,
 }
@@ -14,6 +15,7 @@ pub enum ContainerType {
 impl ToTokens for ContainerType {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let s = match self {
+            ContainerType::Alias => quote! {},
             ContainerType::Sequence => quote! { asn1_rs::Tag::Sequence },
             ContainerType::Set => quote! { asn1_rs::Tag::Set },
         };
@@ -76,8 +78,15 @@ impl Container {
         ast: &DeriveInput,
         container_type: ContainerType,
     ) -> Self {
-        if let syn::Fields::Unnamed(_) = ds.fields {
-            panic!("Unit struct not supported");
+        match (container_type, &ds.fields) {
+            (ContainerType::Alias, Fields::Unnamed(f)) => {
+                if f.unnamed.len() != 1 {
+                    panic!("Alias: only tuple fields with one element are supported");
+                }
+            }
+            (ContainerType::Alias, _) => panic!("BER/DER alias must be used with tuple strucs"),
+            (_, Fields::Unnamed(_)) => panic!("BER/DER sequence cannot be used on tuple structs"),
+            _ => (),
         }
 
         let fields = ds.fields.iter().map(FieldInfo::from).collect();
@@ -118,6 +127,26 @@ impl Container {
         } else {
             quote! { asn1_rs::Error }
         };
+
+        let fn_content = if self.container_type == ContainerType::Alias {
+            quote! {
+                let res = TryFrom::try_from(any)?;
+                Ok(Self(res))
+            }
+        } else {
+            quote! {
+                use asn1_rs::nom::*;
+                any.tag().assert_eq(Self::TAG)?;
+
+                // no need to parse sequence, we already have content
+                let i = any.data;
+                //
+                #parse_content
+                //
+                let _ = i; // XXX check if empty?
+                Ok(Self{#(#field_names),*})
+            }
+        };
         // note: `gen impl` in synstructure takes care of appending extra where clauses if any, and removing
         // the `where` statement if there are none.
         quote! {
@@ -128,26 +157,24 @@ impl Container {
                 type Error = #error;
 
                 fn try_from(any: Any<#lifetime>) -> asn1_rs::Result<Self, #error> {
-                    use asn1_rs::nom::*;
-                    any.tag().assert_eq(Self::TAG)?;
-
-                    // no need to parse sequence, we already have content
-                    let i = any.data;
-                    //
-                    #parse_content
-                    //
-                    let _ = i; // XXX check if empty?
-                    Ok(Self{#(#field_names),*})
+                    #fn_content
                 }
             }
         }
     }
 
     pub fn gen_tagged(&self) -> TokenStream {
-        let container_type = self.container_type;
+        let tag = if self.container_type == ContainerType::Alias {
+            // find type of sub-item
+            let ty = &self.fields[0].type_;
+            quote! { <#ty as asn1_rs::Tagged>::TAG }
+        } else {
+            let container_type = self.container_type;
+            quote! { #container_type }
+        };
         quote! {
             gen impl<'ber> asn1_rs::Tagged for @Self {
-                const TAG: asn1_rs::Tag = #container_type;
+                const TAG: asn1_rs::Tag = #tag;
             }
         }
     }
@@ -156,27 +183,40 @@ impl Container {
         let lifetime = Lifetime::new("'ber", Span::call_site());
         let wh = &self.where_predicates;
         // let parse_content = derive_ber_sequence_content(&field_names, Asn1Type::Der);
-        let check_fields: Vec<_> = self
-            .fields
-            .iter()
-            .map(|field| {
-                let ty = &field.type_;
-                quote! {
-                    let (rem, any) = Any::from_der(rem)?;
-                    <#ty as CheckDerConstraints>::check_constraints(&any)?;
-                }
-            })
-            .collect();
+
+        let fn_content = if self.container_type == ContainerType::Alias {
+            let ty = &self.fields[0].type_;
+            quote! {
+                any.tag().assert_eq(Self::TAG)?;
+                <#ty>::check_constraints(any)
+            }
+        } else {
+            let check_fields: Vec<_> = self
+                .fields
+                .iter()
+                .map(|field| {
+                    let ty = &field.type_;
+                    quote! {
+                        let (rem, any) = Any::from_der(rem)?;
+                        <#ty as CheckDerConstraints>::check_constraints(&any)?;
+                    }
+                })
+                .collect();
+            quote! {
+                any.tag().assert_eq(Self::TAG)?;
+                let rem = &any.data;
+                #(#check_fields)*
+                Ok(())
+            }
+        };
+
         // note: `gen impl` in synstructure takes care of appending extra where clauses if any, and removing
         // the `where` statement if there are none.
         quote! {
             use asn1_rs::{CheckDerConstraints, Tagged};
             gen impl<#lifetime> CheckDerConstraints for @Self where #(#wh)+* {
                 fn check_constraints(any: &Any) -> asn1_rs::Result<()> {
-                    any.tag().assert_eq(Self::TAG)?;
-                    let rem = &any.data;
-                    #(#check_fields)*
-                    Ok(())
+                    #fn_content
                 }
             }
         }
@@ -193,6 +233,26 @@ impl Container {
         } else {
             quote! { asn1_rs::Error }
         };
+
+        let fn_content = if self.container_type == ContainerType::Alias {
+            quote! {
+                let (rem, any) = asn1_rs::Any::from_der(bytes).map_err(asn1_rs::nom::Err::convert)?;
+                any.header.assert_tag(Self::TAG).map_err(|e| asn1_rs::nom::Err::Error(e.into()))?;
+                let res = TryFrom::try_from(any)?;
+                Ok((rem,Self(res)))
+            }
+        } else {
+            quote! {
+                let (rem, any) = asn1_rs::Any::from_der(bytes).map_err(asn1_rs::nom::Err::convert)?;
+                any.header.assert_tag(Self::TAG).map_err(|e| asn1_rs::nom::Err::Error(e.into()))?;
+                let i = any.data;
+                //
+                #parse_content
+                //
+                // let _ = i; // XXX check if empty?
+                Ok((rem,Self{#(#field_names),*}))
+            }
+        };
         // note: `gen impl` in synstructure takes care of appending extra where clauses if any, and removing
         // the `where` statement if there are none.
         quote! {
@@ -200,14 +260,7 @@ impl Container {
 
             gen impl<#lifetime> asn1_rs::FromDer<#lifetime, #error> for @Self where #(#wh)+* {
                 fn from_der(bytes: &#lifetime [u8]) -> asn1_rs::ParseResult<#lifetime, Self, #error> {
-                    let (rem, any) = asn1_rs::Any::from_der(bytes).map_err(asn1_rs::nom::Err::convert)?;
-                    any.header.assert_tag(Self::TAG).map_err(|e| asn1_rs::nom::Err::Error(e.into()))?;
-                    let i = any.data;
-                    //
-                    #parse_content
-                    //
-                    // let _ = i; // XXX check if empty?
-                    Ok((rem,Self{#(#field_names),*}))
+                    #fn_content
                 }
             }
         }
@@ -229,6 +282,10 @@ impl From<&Field> for FieldInfo {
         let mut optional = false;
         let mut tag = None;
         let mut map_err = None;
+        let name = field
+            .ident
+            .as_ref()
+            .map_or_else(|| Ident::new("_", Span::call_site()), |s| s.clone());
         for attr in &field.attrs {
             let ident = match attr.path.get_ident() {
                 Some(ident) => ident.to_string(),
@@ -259,7 +316,7 @@ impl From<&Field> for FieldInfo {
             }
         }
         FieldInfo {
-            name: field.ident.clone().unwrap(),
+            name,
             type_: field.ty.clone(),
             optional,
             tag,

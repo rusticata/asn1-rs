@@ -1,8 +1,27 @@
+mod alias;
 mod container;
 mod sequence;
 mod set;
+use alias::*;
 use sequence::*;
 use set::*;
+
+synstructure::decl_derive!([BerAlias, attributes(
+    debug_derive,
+    optional,
+    tag_explicit,
+    tag_implicit,
+    error,
+    map_err
+)] => derive_ber_alias);
+synstructure::decl_derive!([DerAlias, attributes(
+    debug_derive,
+    optional,
+    tag_explicit,
+    tag_implicit,
+    error,
+    map_err
+)] => derive_der_alias);
 
 synstructure::decl_derive!([BerSequence, attributes(
     debug_derive,
