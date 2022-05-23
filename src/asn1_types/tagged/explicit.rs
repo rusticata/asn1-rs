@@ -127,6 +127,46 @@ impl<'a, T, E> TaggedParser<'a, Explicit, T, E> {
             _e: PhantomData,
         }
     }
+
+    /// Parse a BER tagged value and apply the provided parsing function to content
+    ///
+    /// After parsing, the sequence object and header are discarded.
+    ///
+    /// Note: this function is provided for `Explicit`, but there is not difference between
+    /// explicit or implicit tags. The `op` function is responsible of handling the content.
+    #[inline]
+    pub fn from_ber_and_then<F>(
+        class: Class,
+        tag: u32,
+        bytes: &'a [u8],
+        op: F,
+    ) -> ParseResult<'a, T, E>
+    where
+        F: FnOnce(&'a [u8]) -> ParseResult<T, E>,
+        E: From<Error>,
+    {
+        Any::from_ber_and_then(class, tag, bytes, op)
+    }
+
+    /// Parse a DER tagged value and apply the provided parsing function to content
+    ///
+    /// After parsing, the sequence object and header are discarded.
+    ///
+    /// Note: this function is provided for `Explicit`, but there is not difference between
+    /// explicit or implicit tags. The `op` function is responsible of handling the content.
+    #[inline]
+    pub fn from_der_and_then<F>(
+        class: Class,
+        tag: u32,
+        bytes: &'a [u8],
+        op: F,
+    ) -> ParseResult<'a, T, E>
+    where
+        F: FnOnce(&'a [u8]) -> ParseResult<T, E>,
+        E: From<Error>,
+    {
+        Any::from_der_and_then(class, tag, bytes, op)
+    }
 }
 
 impl<'a, T, E> FromBer<'a, E> for TaggedParser<'a, Explicit, T, E>

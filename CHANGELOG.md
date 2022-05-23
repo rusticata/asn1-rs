@@ -16,7 +16,8 @@ It also adds a lot of tests to improve code coverage.
 asn1-rs:
 
 - Add helper types for Application/Private tagged values
-- TaggedParser: remove constraints `from_ber_and_then` (and `_der`)
+- Any: add methods `from_ber_and_then` (and `_der`)
+- TaggedParser: add documentation for `from_ber_and_then` (and `_der`)
 - Oid: add method `starts_with`
 - Fix documentation of application and private tagged helpers
 - Fix clippy warnings

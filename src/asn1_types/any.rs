@@ -85,6 +85,54 @@ impl<'a> Any<'a> {
         T::from_ber(self.data)
     }
 
+    /// Parse a BER value and apply the provided parsing function to content
+    ///
+    /// After parsing, the sequence object and header are discarded.
+    pub fn from_ber_and_then<F, T, E>(
+        class: Class,
+        tag: u32,
+        bytes: &'a [u8],
+        op: F,
+    ) -> ParseResult<'a, T, E>
+    where
+        F: FnOnce(&'a [u8]) -> ParseResult<T, E>,
+        E: From<Error>,
+    {
+        let (rem, any) = Any::from_ber(bytes).map_err(Err::convert)?;
+        any.tag()
+            .assert_eq(Tag(tag))
+            .map_err(|e| nom::Err::Error(e.into()))?;
+        any.class()
+            .assert_eq(class)
+            .map_err(|e| nom::Err::Error(e.into()))?;
+        let (_, res) = op(any.data)?;
+        Ok((rem, res))
+    }
+
+    /// Parse a DER value and apply the provided parsing function to content
+    ///
+    /// After parsing, the sequence object and header are discarded.
+    pub fn from_der_and_then<F, T, E>(
+        class: Class,
+        tag: u32,
+        bytes: &'a [u8],
+        op: F,
+    ) -> ParseResult<'a, T, E>
+    where
+        F: FnOnce(&'a [u8]) -> ParseResult<T, E>,
+        E: From<Error>,
+    {
+        let (rem, any) = Any::from_der(bytes).map_err(Err::convert)?;
+        any.tag()
+            .assert_eq(Tag(tag))
+            .map_err(|e| nom::Err::Error(e.into()))?;
+        any.class()
+            .assert_eq(class)
+            .map_err(|e| nom::Err::Error(e.into()))?;
+        let (_, res) = op(any.data)?;
+        Ok((rem, res))
+    }
+
     #[inline]
     pub fn parse_der<T>(&'a self) -> ParseResult<'a, T>
     where
