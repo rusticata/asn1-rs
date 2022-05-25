@@ -258,7 +258,7 @@ impl<'a> Any<'a> {
     impl_any_as!(as_octetstring => OctetString, "OCTET STRING");
     impl_any_as!(as_oid => Oid, "OBJECT IDENTIFIER");
     /// Attempt to create ASN.1 type `RELATIVE-OID` from this object.
-    pub fn as_relative_oid(self) -> Result<Oid<'a>> {
+    pub fn as_relative_oid(&self) -> Result<Oid<'a>> {
         self.header.assert_tag(Tag::RelativeOid)?;
         let asn1 = Cow::Borrowed(self.data);
         Ok(Oid::new_relative(asn1))
