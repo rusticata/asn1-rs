@@ -11,18 +11,7 @@ where
     type Error = E;
 
     fn try_from(any: Any<'a>) -> Result<Self, E> {
-        any.tag().assert_eq(Tag(TAG))?;
-        any.header.assert_constructed()?;
-        if any.class() as u8 != CLASS {
-            let class = Class::try_from(CLASS).ok();
-            return Err(Error::unexpected_class(class, any.class()).into());
-        }
-        let (_, inner) = match T::from_ber(any.data) {
-            Ok((rem, res)) => (rem, res),
-            Err(Err::Error(e)) | Err(Err::Failure(e)) => return Err(e),
-            Err(Err::Incomplete(n)) => return Err(Error::Incomplete(n).into()),
-        };
-        Ok(TaggedValue::explicit(inner))
+        Self::try_from(&any)
     }
 }
 
@@ -47,6 +36,31 @@ where
             Err(Err::Incomplete(n)) => return Err(Error::Incomplete(n).into()),
         };
         Ok(TaggedValue::explicit(inner))
+    }
+}
+
+impl<'a, T, E, const CLASS: u8, const TAG: u32> FromDer<'a, E>
+    for TaggedValue<T, E, Explicit, CLASS, TAG>
+where
+    T: FromDer<'a, E>,
+    E: From<Error>,
+{
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, E> {
+        let (rem, any) = Any::from_der(bytes).map_err(Err::convert)?;
+        any.tag()
+            .assert_eq(Tag(TAG))
+            .map_err(|e| Err::Error(e.into()))?;
+        any.header
+            .assert_constructed()
+            .map_err(|e| Err::Error(e.into()))?;
+        if any.class() as u8 != CLASS {
+            let class = Class::try_from(CLASS).ok();
+            return Err(Err::Error(
+                Error::unexpected_class(class, any.class()).into(),
+            ));
+        }
+        let (_, inner) = T::from_der(any.data)?;
+        Ok((rem, TaggedValue::explicit(inner)))
     }
 }
 

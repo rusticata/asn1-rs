@@ -47,6 +47,38 @@ where
     }
 }
 
+impl<'a, T, E, const CLASS: u8, const TAG: u32> FromDer<'a, E>
+    for TaggedValue<T, E, Implicit, CLASS, TAG>
+where
+    T: TryFrom<Any<'a>, Error = E>,
+    T: Tagged,
+    E: From<Error>,
+{
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, E> {
+        let (rem, any) = Any::from_der(bytes).map_err(Err::convert)?;
+        any.tag()
+            .assert_eq(Tag(TAG))
+            .map_err(|e| Err::Error(e.into()))?;
+        if any.class() as u8 != CLASS {
+            let class = Class::try_from(CLASS).ok();
+            return Err(Err::Error(
+                Error::unexpected_class(class, any.class()).into(),
+            ));
+        }
+        let any = Any {
+            header: Header {
+                tag: T::TAG,
+                ..any.header.clone()
+            },
+            data: any.data,
+        };
+        match T::try_from(any) {
+            Ok(inner) => Ok((rem, TaggedValue::implicit(inner))),
+            Err(e) => Err(nom::Err::Error(e)),
+        }
+    }
+}
+
 impl<'a, T, E, const CLASS: u8, const TAG: u32> CheckDerConstraints
     for TaggedValue<T, E, Implicit, CLASS, TAG>
 where

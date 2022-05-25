@@ -63,6 +63,22 @@ impl OptTaggedParser {
         OptTaggedParser { class, tag }
     }
 
+    pub const fn universal(tag: u32) -> Self {
+        Self::new(Class::Universal, Tag(tag))
+    }
+
+    pub const fn tagged(tag: u32) -> Self {
+        Self::new(Class::ContextSpecific, Tag(tag))
+    }
+
+    pub const fn application(tag: u32) -> Self {
+        Self::new(Class::Application, Tag(tag))
+    }
+
+    pub const fn private(tag: u32) -> Self {
+        Self::new(Class::Private, Tag(tag))
+    }
+
     /// Parse input as BER, and apply the provided function to parse object.
     ///
     /// Returns the remaining bytes, and `Some(T)` if expected tag was found, else `None`.
