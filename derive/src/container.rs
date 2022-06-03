@@ -70,6 +70,8 @@ pub struct Container {
     pub fields: Vec<FieldInfo>,
     pub where_predicates: Vec<WherePredicate>,
     pub error: Option<Attribute>,
+
+    is_any: bool,
 }
 
 impl Container {
@@ -78,10 +80,23 @@ impl Container {
         ast: &DeriveInput,
         container_type: ContainerType,
     ) -> Self {
+        let mut is_any = false;
         match (container_type, &ds.fields) {
             (ContainerType::Alias, Fields::Unnamed(f)) => {
                 if f.unnamed.len() != 1 {
                     panic!("Alias: only tuple fields with one element are supported");
+                }
+                match &f.unnamed[0].ty {
+                    Type::Path(type_path)
+                        if type_path
+                            .clone()
+                            .into_token_stream()
+                            .to_string()
+                            .starts_with("Any") =>
+                    {
+                        is_any = true;
+                    }
+                    _ => (),
                 }
             }
             (ContainerType::Alias, _) => panic!("BER/DER alias must be used with tuple strucs"),
@@ -113,6 +128,7 @@ impl Container {
             fields,
             where_predicates,
             error,
+            is_any,
         }
     }
 
@@ -129,9 +145,14 @@ impl Container {
         };
 
         let fn_content = if self.container_type == ContainerType::Alias {
-            quote! {
-                let res = TryFrom::try_from(any)?;
-                Ok(Self(res))
+            // special case: is this an alias for Any
+            if self.is_any {
+                quote! { Ok(Self(any)) }
+            } else {
+                quote! {
+                    let res = TryFrom::try_from(any)?;
+                    Ok(Self(res))
+                }
             }
         } else {
             quote! {
@@ -165,6 +186,10 @@ impl Container {
 
     pub fn gen_tagged(&self) -> TokenStream {
         let tag = if self.container_type == ContainerType::Alias {
+            // special case: is this an alias for Any
+            if self.is_any {
+                return quote! {};
+            }
             // find type of sub-item
             let ty = &self.fields[0].type_;
             quote! { <#ty as asn1_rs::Tagged>::TAG }
@@ -185,6 +210,10 @@ impl Container {
         // let parse_content = derive_ber_sequence_content(&field_names, Asn1Type::Der);
 
         let fn_content = if self.container_type == ContainerType::Alias {
+            // special case: is this an alias for Any
+            if self.is_any {
+                return quote! {};
+            }
             let ty = &self.fields[0].type_;
             quote! {
                 any.tag().assert_eq(Self::TAG)?;
@@ -235,11 +264,19 @@ impl Container {
         };
 
         let fn_content = if self.container_type == ContainerType::Alias {
-            quote! {
-                let (rem, any) = asn1_rs::Any::from_der(bytes).map_err(asn1_rs::nom::Err::convert)?;
-                any.header.assert_tag(Self::TAG).map_err(|e| asn1_rs::nom::Err::Error(e.into()))?;
-                let res = TryFrom::try_from(any)?;
-                Ok((rem,Self(res)))
+            // special case: is this an alias for Any
+            if self.is_any {
+                quote! {
+                    let (rem, any) = asn1_rs::Any::from_der(bytes).map_err(asn1_rs::nom::Err::convert)?;
+                    Ok((rem,Self(any)))
+                }
+            } else {
+                quote! {
+                    let (rem, any) = asn1_rs::Any::from_der(bytes).map_err(asn1_rs::nom::Err::convert)?;
+                    any.header.assert_tag(Self::TAG).map_err(|e| asn1_rs::nom::Err::Error(e.into()))?;
+                    let res = TryFrom::try_from(any)?;
+                    Ok((rem,Self(res)))
+                }
             }
         } else {
             quote! {
