@@ -165,6 +165,32 @@ If only one value is present, the parser will affect it to the first field, and 
 
 Note that this does not concern tagged optional values (unless they have the same tag).
 
+## `DEFAULT`
+
+The `default` custom attribute can be specified to indicate the value has a `DEFAULT` attribute. The value can also be marked as
+`OPTIONAL`, but this can be omitted.
+
+Since the value can always be obtained, the type should not be `Option<T>`, but should use `T` directly.
+
+```rust
+# use asn1_rs::*;
+#[derive(Debug, PartialEq, DerSequence)]
+#[debug_derive]
+pub struct S {
+    // a INTEGER
+    a: u16,
+    // b INTEGER DEFAULT 0
+    #[default(0_u16)]
+    b: u16,
+}
+
+# let parser = |input| -> Result<(), Error> {
+let (rem, result) = S::from_ber(input)?;
+# Ok(()) };
+```
+
+Limitations are the same as for `OPTIONAL` attribute.
+
 ## Debugging
 
 To help debugging the generated code, the `#[debug_derive]` attribute has been added.

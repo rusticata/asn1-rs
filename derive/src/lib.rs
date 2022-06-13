@@ -8,6 +8,7 @@ use set::*;
 
 synstructure::decl_derive!([BerAlias, attributes(
     debug_derive,
+    default,
     optional,
     tag_explicit,
     tag_implicit,
@@ -16,6 +17,7 @@ synstructure::decl_derive!([BerAlias, attributes(
 )] => derive_ber_alias);
 synstructure::decl_derive!([DerAlias, attributes(
     debug_derive,
+    default,
     optional,
     tag_explicit,
     tag_implicit,
@@ -25,6 +27,7 @@ synstructure::decl_derive!([DerAlias, attributes(
 
 synstructure::decl_derive!([BerSequence, attributes(
     debug_derive,
+    default,
     optional,
     tag_explicit,
     tag_implicit,
@@ -33,6 +36,7 @@ synstructure::decl_derive!([BerSequence, attributes(
 )] => derive_ber_sequence);
 synstructure::decl_derive!([DerSequence, attributes(
     debug_derive,
+    default,
     optional,
     tag_explicit,
     tag_implicit,
@@ -42,6 +46,7 @@ synstructure::decl_derive!([DerSequence, attributes(
 
 synstructure::decl_derive!([BerSet, attributes(
     debug_derive,
+    default,
     optional,
     tag_explicit,
     tag_implicit,
@@ -50,6 +55,7 @@ synstructure::decl_derive!([BerSet, attributes(
 )] => derive_ber_set);
 synstructure::decl_derive!([DerSet, attributes(
     debug_derive,
+    default,
     optional,
     tag_explicit,
     tag_implicit,

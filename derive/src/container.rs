@@ -308,6 +308,7 @@ impl Container {
 pub struct FieldInfo {
     pub name: Ident,
     pub type_: Type,
+    pub default: Option<TokenStream>,
     pub optional: bool,
     pub tag: Option<(Asn1TagKind, Asn1TagClass, u16)>,
     pub map_err: Option<TokenStream>,
@@ -319,6 +320,7 @@ impl From<&Field> for FieldInfo {
         let mut optional = false;
         let mut tag = None;
         let mut map_err = None;
+        let mut default = None;
         let name = field
             .ident
             .as_ref()
@@ -332,6 +334,11 @@ impl From<&Field> for FieldInfo {
                 "map_err" => {
                     let expr: syn::Expr = attr.parse_args().expect("could not parse map_err");
                     map_err = Some(quote! { #expr });
+                }
+                "default" => {
+                    let expr: syn::Expr = attr.parse_args().expect("could not parse default");
+                    default = Some(quote! { #expr });
+                    optional = true;
                 }
                 "optional" => optional = true,
                 "tag_explicit" => {
@@ -355,6 +362,7 @@ impl From<&Field> for FieldInfo {
         FieldInfo {
             name,
             type_: field.ty.clone(),
+            default,
             optional,
             tag,
             map_err,
@@ -404,6 +412,11 @@ fn get_field_parser(f: &FieldInfo, asn1_type: Asn1Type, custom_errors: bool) -> 
         Asn1Type::Der => quote! {FromDer::from_der},
     };
     let name = &f.name;
+    let default = f
+        .default
+        .as_ref()
+        // use a type hint, otherwise compiler will not know what type provides .unwrap_or
+        .map(|x| quote! {let #name: Option<_> = #name; let #name = #name.unwrap_or(#x);});
     let map_err = if let Some(tt) = f.map_err.as_ref() {
         if asn1_type == Asn1Type::Ber {
             Some(quote! { .finish().map_err(#tt) })
@@ -441,6 +454,7 @@ fn get_field_parser(f: &FieldInfo, asn1_type: Asn1Type, custom_errors: bool) -> 
                         }
                     }
                 };
+                #default
             };
         } else {
             // tagged, but not OPTIONAL
@@ -449,12 +463,14 @@ fn get_field_parser(f: &FieldInfo, asn1_type: Asn1Type, custom_errors: bool) -> 
                     let (i, t): (_, asn1_rs::TaggedValue::<_, _, #tag_kind, {#class}, #tag>) = #from(i)#map_err?;
                     (i, t.into_inner())
                 };
+                #default
             };
         }
     } else {
         // neither tagged nor optional
         quote! {
             let (i, #name) = #from(i)#map_err?;
+            #default
         }
     }
 }
