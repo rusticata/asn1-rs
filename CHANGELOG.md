@@ -8,6 +8,19 @@
 
 ### Thanks
 
+## 0.5.1
+
+Minor fixes:
+
+- Fix constraints too strict on `TaggedValue::FromDer`, do not auto-derive
+- Update oid-registry
+- Fix `Any::as_relative_oid` to take a reference (and not consume input)
+
+derive:
+
+- Add special case handler for alias to Any
+- Add support for DEFAULT attribute
+
 ## 0.5.0
 
 This release adds some new methods and custom derive attributes.
