@@ -3,7 +3,7 @@ use crate::der_constraint_fail_if;
 use crate::error::*;
 #[cfg(feature = "std")]
 use crate::ToDer;
-use crate::{Class, DynTagged, FromBer, FromDer, Length, Tag, ToStatic};
+use crate::{BerParser, Class, DerParser, DynTagged, FromBer, FromDer, Length, Tag, ToStatic};
 use alloc::borrow::Cow;
 use core::convert::TryFrom;
 use nom::bytes::streaming::take;
@@ -189,14 +189,14 @@ impl<'a> Header<'a> {
     pub fn parse_ber_content<'i>(&'_ self, i: &'i [u8]) -> ParseResult<'i, &'i [u8]> {
         // defaults to maximum depth 8
         // depth is used only if BER, and length is indefinite
-        ber_get_object_content(i, self, 8)
+        BerParser::get_object_content(i, self, 8)
     }
 
     /// Get the content following a DER header
     #[inline]
     pub fn parse_der_content<'i>(&'_ self, i: &'i [u8]) -> ParseResult<'i, &'i [u8]> {
         self.assert_definite()?;
-        ber_get_object_content(i, self, 8)
+        DerParser::get_object_content(i, self, 8)
     }
 }
 

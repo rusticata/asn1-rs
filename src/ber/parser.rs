@@ -1,6 +1,6 @@
 use crate::error::*;
 use crate::header::*;
-use crate::{FromDer, Length, Tag};
+use crate::{BerParser, DerParser, FromBer, Length, Tag};
 use nom::bytes::streaming::take;
 use nom::{Err, Needed, Offset};
 use rusticata_macros::custom_check;
@@ -11,8 +11,58 @@ pub const MAX_RECURSION: usize = 50;
 /// Default maximum object size (2^32)
 // pub const MAX_OBJECT_SIZE: usize = 4_294_967_295;
 
+pub trait GetObjectContent {
+    /// Return the raw content (bytes) of the next ASN.1 encoded object
+    ///
+    /// Note: if using BER and length is indefinite, terminating End-Of-Content is NOT included
+    fn get_object_content<'a>(
+        i: &'a [u8],
+        hdr: &'_ Header,
+        max_depth: usize,
+    ) -> ParseResult<'a, &'a [u8]>;
+}
+
+impl GetObjectContent for BerParser {
+    fn get_object_content<'a>(
+        i: &'a [u8],
+        hdr: &'_ Header,
+        max_depth: usize,
+    ) -> ParseResult<'a, &'a [u8]> {
+        let start_i = i;
+        let (i, _) = ber_skip_object_content(i, hdr, max_depth)?;
+        let len = start_i.offset(i);
+        let (content, i) = start_i.split_at(len);
+        // if len is indefinite, there are 2 extra bytes for EOC
+        if hdr.length == Length::Indefinite {
+            let len = content.len();
+            assert!(len >= 2);
+            Ok((i, &content[..len - 2]))
+        } else {
+            Ok((i, content))
+        }
+    }
+}
+
+impl GetObjectContent for DerParser {
+    /// Skip object content, accepting only DER
+    ///
+    /// This this function is for DER only, it cannot go into recursion (no indefinite length)
+    fn get_object_content<'a>(
+        i: &'a [u8],
+        hdr: &'_ Header,
+        _max_depth: usize,
+    ) -> ParseResult<'a, &'a [u8]> {
+        match hdr.length {
+            Length::Definite(l) => take(l)(i),
+            Length::Indefinite => Err(Err::Error(Error::DerConstraintFailed(
+                DerConstraint::IndefiniteLength,
+            ))),
+        }
+    }
+}
+
 /// Skip object content, and return true if object was End-Of-Content
-pub(crate) fn ber_skip_object_content<'a>(
+fn ber_skip_object_content<'a>(
     i: &'a [u8],
     hdr: &Header,
     max_depth: usize,
@@ -34,7 +84,7 @@ pub(crate) fn ber_skip_object_content<'a>(
             // this is recursive
             let mut i = i;
             loop {
-                let (i2, header2) = Header::from_der(i)?;
+                let (i2, header2) = Header::from_ber(i)?;
                 let (i3, eoc) = ber_skip_object_content(i2, &header2, max_depth - 1)?;
                 if eoc {
                     // return false, since top object was not EndOfContent
@@ -43,26 +93,6 @@ pub(crate) fn ber_skip_object_content<'a>(
                 i = i3;
             }
         }
-    }
-}
-
-/// Read object raw content (bytes)
-pub(crate) fn ber_get_object_content<'a>(
-    i: &'a [u8],
-    hdr: &Header,
-    max_depth: usize,
-) -> ParseResult<'a, &'a [u8]> {
-    let start_i = i;
-    let (i, _) = ber_skip_object_content(i, hdr, max_depth)?;
-    let len = start_i.offset(i);
-    let (content, i) = start_i.split_at(len);
-    // if len is indefinite, there are 2 extra bytes for EOC
-    if hdr.length == Length::Indefinite {
-        let len = content.len();
-        assert!(len >= 2);
-        Ok((i, &content[..len - 2]))
-    } else {
-        Ok((i, content))
     }
 }
 
