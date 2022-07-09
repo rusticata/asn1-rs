@@ -219,7 +219,7 @@ fn to_der_integer() {
     // signed i32 (> 0)
     encode_decode_assert_int(4, &[0x02, 0x01, 0x04]);
     // signed i32 (< 0)
-    encode_decode_assert_int(-4, &[0x02, 0x05, 0x00, 0xff, 0xff, 0xff, 0xfc]);
+    encode_decode_assert_int(-4, &[0x02, 0x01, 0xfc]);
 }
 
 #[test]

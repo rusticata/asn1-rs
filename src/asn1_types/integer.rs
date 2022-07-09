@@ -237,7 +237,7 @@ impl_int!(u128 => i128);
 /// assert_eq!(i.as_ref(), &[4]);
 /// // signed
 /// let j = Integer::from(-2);
-/// assert_eq!(j.as_ref(), &[0x0, 0xff, 0xff, 0xff, 0xfe]);
+/// assert_eq!(j.as_ref(), &[0xfe]);
 /// ```
 ///
 /// Converting an `Integer` to a primitive type (using the `TryInto` trait)
@@ -308,15 +308,45 @@ impl<'a> Integer<'a> {
 
     /// Build an `Integer` from a constant array of bytes representation of an integer.
     pub fn from_const_array<const N: usize>(b: [u8; N]) -> Self {
+        // if high bit set -> add leading 0 to ensure unsigned
+        if is_highest_bit_set(&b) {
+            let mut bytes = vec![0];
+            bytes.extend_from_slice(&b);
+
+            Integer {
+                data: Cow::Owned(bytes),
+            }
+        }
+        // otherwise -> remove 0 unless next has high bit set
+        else {
+            let mut idx = 0;
+
+            while idx < b.len() - 1 {
+                if b[idx] == 0 && b[idx + 1] < 0x80 {
+                    idx += 1;
+                    continue;
+                }
+                break;
+            }
+
+            Integer {
+                data: Cow::Owned(b[idx..].to_vec()),
+            }
+        }
+    }
+
+    fn from_const_array_negative<const N: usize>(b: [u8; N]) -> Self {
         let mut idx = 0;
-        // skip leading 0s
-        while idx < b.len() {
-            if b[idx] == 0 {
+
+        // Skip leading FF unless next has high bit clear
+        while idx < b.len() - 1 {
+            if b[idx] == 0xFF && b[idx + 1] >= 0x80 {
                 idx += 1;
                 continue;
             }
             break;
         }
+
         if idx == b.len() {
             Integer {
                 data: Cow::Borrowed(&[0]),
@@ -325,15 +355,6 @@ impl<'a> Integer<'a> {
             Integer {
                 data: Cow::Owned(b[idx..].to_vec()),
             }
-        }
-    }
-
-    fn from_const_array_negative<const N: usize>(b: [u8; N]) -> Self {
-        let mut out = vec![0];
-        out.extend_from_slice(&b);
-
-        Integer {
-            data: Cow::Owned(out),
         }
     }
 }
@@ -538,7 +559,7 @@ macro_rules! int {
 
 #[cfg(test)]
 mod tests {
-    use crate::{Any, FromDer, Header, Tag};
+    use crate::{Any, FromDer, Header, Tag, ToDer};
     use std::convert::TryInto;
 
     // Vectors from Section 5.7 of:
@@ -564,6 +585,13 @@ mod tests {
     }
 
     #[test]
+    fn encode_i8() {
+        assert_eq!(0i8.to_der_vec().unwrap(), I0_BYTES);
+        assert_eq!(127i8.to_der_vec().unwrap(), I127_BYTES);
+        assert_eq!((-128i8).to_der_vec().unwrap(), INEG128_BYTES);
+    }
+
+    #[test]
     fn decode_i16() {
         assert_eq!(0, i16::from_der(I0_BYTES).unwrap().1);
         assert_eq!(127, i16::from_der(I127_BYTES).unwrap().1);
@@ -577,10 +605,30 @@ mod tests {
     }
 
     #[test]
+    fn encode_i16() {
+        assert_eq!(0i16.to_der_vec().unwrap(), I0_BYTES);
+        assert_eq!(127i16.to_der_vec().unwrap(), I127_BYTES);
+        assert_eq!(128i16.to_der_vec().unwrap(), I128_BYTES);
+        assert_eq!(255i16.to_der_vec().unwrap(), I255_BYTES);
+        assert_eq!(256i16.to_der_vec().unwrap(), I256_BYTES);
+        assert_eq!(32767i16.to_der_vec().unwrap(), I32767_BYTES);
+        assert_eq!((-128i16).to_der_vec().unwrap(), INEG128_BYTES);
+        assert_eq!((-129i16).to_der_vec().unwrap(), INEG129_BYTES);
+        assert_eq!((-32768i16).to_der_vec().unwrap(), INEG32768_BYTES);
+    }
+
+    #[test]
     fn decode_u8() {
         assert_eq!(0, u8::from_der(I0_BYTES).unwrap().1);
         assert_eq!(127, u8::from_der(I127_BYTES).unwrap().1);
         assert_eq!(255, u8::from_der(I255_BYTES).unwrap().1);
+    }
+
+    #[test]
+    fn encode_u8() {
+        assert_eq!(0u8.to_der_vec().unwrap(), I0_BYTES);
+        assert_eq!(127u8.to_der_vec().unwrap(), I127_BYTES);
+        assert_eq!(255u8.to_der_vec().unwrap(), I255_BYTES);
     }
 
     #[test]
@@ -591,6 +639,16 @@ mod tests {
         assert_eq!(256, u16::from_der(I256_BYTES).unwrap().1);
         assert_eq!(32767, u16::from_der(I32767_BYTES).unwrap().1);
         assert_eq!(65535, u16::from_der(I65535_BYTES).unwrap().1);
+    }
+
+    #[test]
+    fn encode_u16() {
+        assert_eq!(0u16.to_der_vec().unwrap(), I0_BYTES);
+        assert_eq!(127u16.to_der_vec().unwrap(), I127_BYTES);
+        assert_eq!(255u16.to_der_vec().unwrap(), I255_BYTES);
+        assert_eq!(256u16.to_der_vec().unwrap(), I256_BYTES);
+        assert_eq!(32767u16.to_der_vec().unwrap(), I32767_BYTES);
+        assert_eq!(65535u16.to_der_vec().unwrap(), I65535_BYTES);
     }
 
     /// Integers must be encoded with a minimum number of octets
