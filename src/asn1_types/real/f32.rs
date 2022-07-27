@@ -12,7 +12,7 @@ impl<'a> TryFrom<Any<'a>> for f32 {
     }
 }
 
-impl<'a> CheckDerConstraints for f32 {
+impl CheckDerConstraints for f32 {
     fn check_constraints(any: &Any) -> Result<()> {
         any.header.assert_primitive()?;
         any.header.length.assert_definite()?;

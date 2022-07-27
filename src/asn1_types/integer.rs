@@ -107,7 +107,7 @@ macro_rules! impl_int {
             }
         }
 
-        impl<'a> CheckDerConstraints for $int {
+        impl CheckDerConstraints for $int {
             fn check_constraints(any: &Any) -> Result<()> {
                 check_der_int_constraints(any)
             }
@@ -163,7 +163,7 @@ macro_rules! impl_uint {
                 Ok(result)
             }
         }
-        impl<'a> CheckDerConstraints for $ty {
+        impl CheckDerConstraints for $ty {
             fn check_constraints(any: &Any) -> Result<()> {
                 check_der_int_constraints(any)
             }

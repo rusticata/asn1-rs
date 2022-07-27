@@ -39,7 +39,7 @@ impl CheckDerConstraints for Null {
 
 impl DerAutoDerive for Null {}
 
-impl<'a> Tagged for Null {
+impl Tagged for Null {
     const TAG: Tag = Tag::Null;
 }
 
@@ -71,7 +71,7 @@ impl<'a> TryFrom<Any<'a>> for () {
     }
 }
 
-impl<'a> CheckDerConstraints for () {
+impl CheckDerConstraints for () {
     fn check_constraints(_any: &Any) -> Result<()> {
         Ok(())
     }
@@ -79,7 +79,7 @@ impl<'a> CheckDerConstraints for () {
 
 impl DerAutoDerive for () {}
 
-impl<'a> Tagged for () {
+impl Tagged for () {
     const TAG: Tag = Tag::Null;
 }
 

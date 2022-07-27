@@ -286,7 +286,7 @@ impl<'a> ToStatic for Sequence<'a> {
     }
 }
 
-impl<'a, T, U> ToStatic for Vec<T>
+impl<T, U> ToStatic for Vec<T>
 where
     T: ToStatic<Owned = U>,
     U: 'static,

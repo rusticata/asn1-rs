@@ -5,7 +5,8 @@ use alloc::format;
 use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::{
-    convert::TryFrom, fmt, iter::FusedIterator, marker::PhantomData, ops::Shl, str::FromStr,
+    convert::TryFrom, fmt, fmt::Write, iter::FusedIterator, marker::PhantomData, ops::Shl,
+    str::FromStr,
 };
 
 #[cfg(feature = "bigint")]
@@ -224,7 +225,7 @@ impl<'a> Oid<'a> {
         } else {
             let mut ret = String::with_capacity(self.asn1.len() * 3);
             for (i, o) in self.asn1.iter().enumerate() {
-                ret.push_str(&format!("{:02x}", o));
+                let _ = write!(ret, "{:02x}", o);
                 if i + 1 != self.asn1.len() {
                     ret.push(' ');
                 }

@@ -211,7 +211,7 @@ impl ToDer for UtcTime {
     }
 
     fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let _ = write!(
+        write!(
             writer,
             "{:02}{:02}{:02}{:02}{:02}{:02}Z",
             self.0.year, self.0.month, self.0.day, self.0.hour, self.0.minute, self.0.second,
