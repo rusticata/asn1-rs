@@ -272,7 +272,7 @@ impl<'a> TryFrom<Any<'a>> for Real {
     }
 }
 
-impl<'a> CheckDerConstraints for Real {
+impl CheckDerConstraints for Real {
     fn check_constraints(any: &Any) -> Result<()> {
         any.header.assert_primitive()?;
         any.header.length.assert_definite()?;

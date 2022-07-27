@@ -36,7 +36,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for EndOfContent {
     }
 }
 
-impl<'a> Tagged for EndOfContent {
+impl Tagged for EndOfContent {
     const TAG: Tag = Tag::EndOfContent;
 }
 

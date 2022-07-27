@@ -20,7 +20,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for String {
     }
 }
 
-impl<'a> CheckDerConstraints for String {
+impl CheckDerConstraints for String {
     fn check_constraints(any: &Any) -> Result<()> {
         // X.690 section 10.2
         any.header.assert_primitive()?;

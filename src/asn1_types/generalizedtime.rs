@@ -226,7 +226,7 @@ impl fmt::Display for GeneralizedTime {
     }
 }
 
-impl<'a> CheckDerConstraints for GeneralizedTime {
+impl CheckDerConstraints for GeneralizedTime {
     fn check_constraints(any: &Any) -> Result<()> {
         // X.690 section 11.7.1: The encoding shall terminate with a "Z"
         if any.data.last() != Some(&b'Z') {
@@ -244,7 +244,7 @@ impl<'a> CheckDerConstraints for GeneralizedTime {
 
 impl DerAutoDerive for GeneralizedTime {}
 
-impl<'a> Tagged for GeneralizedTime {
+impl Tagged for GeneralizedTime {
     const TAG: Tag = Tag::GeneralizedTime;
 }
 
@@ -286,7 +286,7 @@ impl ToDer for GeneralizedTime {
             Some(v) => format!(".{}", v),
         };
         let num_digits = fractional.len();
-        let _ = write!(
+        write!(
             writer,
             "{:04}{:02}{:02}{:02}{:02}{:02}{}Z",
             self.0.year,

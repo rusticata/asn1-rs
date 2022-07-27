@@ -79,7 +79,7 @@ where
     }
 }
 
-impl<'a, T, E, const CLASS: u8, const TAG: u32> CheckDerConstraints
+impl<T, E, const CLASS: u8, const TAG: u32> CheckDerConstraints
     for TaggedValue<T, E, Implicit, CLASS, TAG>
 where
     T: CheckDerConstraints,

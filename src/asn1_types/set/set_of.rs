@@ -57,7 +57,7 @@ impl<T> SetOf<T> {
     }
 }
 
-impl<'a, T> AsRef<[T]> for SetOf<T> {
+impl<T> AsRef<[T]> for SetOf<T> {
     fn as_ref(&self) -> &[T] {
         &self.items
     }
