@@ -261,12 +261,12 @@ impl ToDer for GeneralizedTime {
         // thus, length will always be on 1 byte (short length) and
         // class+structure+tag also on 1
         //
-        // total: = 1 (class+constructed+tag) + 1 (length) + 13 + fractional
+        // total: = 1 (class+constructed+tag) + 1 (length) + 15 + fractional
         let num_digits = match self.0.millisecond {
             None => 0,
             Some(v) => 1 + v.to_string().len(),
         };
-        Ok(15 + num_digits)
+        Ok(2 + 15 + num_digits)
     }
 
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
