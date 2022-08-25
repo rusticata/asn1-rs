@@ -265,14 +265,14 @@ impl<'a> TryFrom<Any<'a>> for Real {
                     }
                         }
                 c => {
-                    return Err(any.tag().invalid_value(&format!("Invalid NR ({})", c)));
+                    Err(any.tag().invalid_value(&format!("Invalid NR ({})", c)))
                 }
             }
         }
     }
 }
 
-impl<'a> CheckDerConstraints for Real {
+impl CheckDerConstraints for Real {
     fn check_constraints(any: &Any) -> Result<()> {
         any.header.assert_primitive()?;
         any.header.length.assert_definite()?;

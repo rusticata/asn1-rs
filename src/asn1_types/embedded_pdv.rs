@@ -1,14 +1,14 @@
 use crate::*;
 use core::convert::TryFrom;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct EmbeddedPdv<'a> {
     pub identification: PdvIdentification<'a>,
     pub data_value_descriptor: Option<ObjectDescriptor<'a>>,
     pub data_value: &'a [u8],
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum PdvIdentification<'a> {
     Syntaxes {
         s_abstract: Oid<'a>,

@@ -77,7 +77,7 @@ fn decode_array_int<const N: usize>(any: &Any<'_>) -> Result<[u8; N]> {
 #[inline]
 fn is_highest_bit_set(bytes: &[u8]) -> bool {
     bytes
-        .get(0)
+        .first()
         .map(|byte| byte & 0b10000000 != 0)
         .unwrap_or(false)
 }
@@ -107,7 +107,7 @@ macro_rules! impl_int {
             }
         }
 
-        impl<'a> CheckDerConstraints for $int {
+        impl CheckDerConstraints for $int {
             fn check_constraints(any: &Any) -> Result<()> {
                 check_der_int_constraints(any)
             }
@@ -163,7 +163,7 @@ macro_rules! impl_uint {
                 Ok(result)
             }
         }
-        impl<'a> CheckDerConstraints for $ty {
+        impl CheckDerConstraints for $ty {
             fn check_constraints(any: &Any) -> Result<()> {
                 check_der_int_constraints(any)
             }

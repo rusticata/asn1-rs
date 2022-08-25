@@ -12,7 +12,7 @@ const PRINCIPAL_NAME: &[u8] = &hex!("30 81 11 a0 03 02 01 00 a1 0a 30 81 07 1b 0
 ///         name-type       [0] Int32,
 ///         name-string     [1] SEQUENCE OF KerberosString
 /// }
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct PrincipalName {
     pub name_type: NameType,
     pub name_string: Vec<String>,

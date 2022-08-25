@@ -1,7 +1,7 @@
 use crate::*;
 use core::marker::PhantomData;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct TaggedParser<'a, TagKind, T, E = Error> {
     pub header: Header<'a>,
     pub inner: T,

@@ -54,7 +54,7 @@ macro_rules! asn1_string {
         #[doc="ASN.1 restricted character string type (`"]
         #[doc = $sname]
         #[doc = "`)"]
-        #[derive(Debug, PartialEq)]
+        #[derive(Debug, PartialEq, Eq)]
         pub struct $name<'a> {
             pub(crate) data: alloc::borrow::Cow<'a, str>,
         }
@@ -105,7 +105,7 @@ macro_rules! asn1_string {
             type Error = $crate::Error;
 
             fn try_from(any: &'b $crate::Any<'a>) -> $crate::Result<$name<'a>> {
-                use crate::traits::Tagged;
+                use $crate::traits::Tagged;
                 use alloc::borrow::Cow;
                 any.tag().assert_eq(Self::TAG)?;
                 <$name>::test_valid_charset(any.data)?;

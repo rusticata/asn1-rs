@@ -62,7 +62,7 @@ impl TagKind for Explicit {}
 ///         .unwrap();
 /// assert_eq!(tagged, TaggedValue::explicit(Integer::from(2)));
 /// ```
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct TaggedValue<T, E, TagKind, const CLASS: u8, const TAG: u32> {
     pub(crate) inner: T,
 

@@ -7,7 +7,7 @@ use core::convert::TryFrom;
 /// # Limitations
 ///
 /// Supported values are limited to 0 .. 2^32
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Enumerated(pub u32);
 
 impl Enumerated {

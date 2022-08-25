@@ -6,7 +6,7 @@ use core::convert::TryFrom;
 /// BER objects consider any non-zero value as `true`, and `0` as `false`.
 ///
 /// DER objects must use value `0x0` (`false`) or `0xff` (`true`).
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Boolean {
     pub value: u8,
 }
@@ -54,7 +54,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Boolean {
     }
 }
 
-impl<'a> CheckDerConstraints for Boolean {
+impl CheckDerConstraints for Boolean {
     fn check_constraints(any: &Any) -> Result<()> {
         let c = any.data[0];
         // X.690 section 11.1
@@ -67,7 +67,7 @@ impl<'a> CheckDerConstraints for Boolean {
 
 impl DerAutoDerive for Boolean {}
 
-impl<'a> Tagged for Boolean {
+impl Tagged for Boolean {
     const TAG: Tag = Tag::Boolean;
 }
 
@@ -112,7 +112,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for bool {
     }
 }
 
-impl<'a> CheckDerConstraints for bool {
+impl CheckDerConstraints for bool {
     fn check_constraints(any: &Any) -> Result<()> {
         let c = any.data[0];
         // X.690 section 11.1
@@ -125,7 +125,7 @@ impl<'a> CheckDerConstraints for bool {
 
 impl DerAutoDerive for bool {}
 
-impl<'a> Tagged for bool {
+impl Tagged for bool {
     const TAG: Tag = Tag::Boolean;
 }
 

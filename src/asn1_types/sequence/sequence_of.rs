@@ -57,7 +57,7 @@ impl<T> SequenceOf<T> {
     }
 }
 
-impl<'a, T> AsRef<[T]> for SequenceOf<T> {
+impl<T> AsRef<[T]> for SequenceOf<T> {
     fn as_ref(&self) -> &[T] {
         &self.items
     }

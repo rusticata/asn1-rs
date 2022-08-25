@@ -11,7 +11,7 @@ use core::iter::FromIterator;
 /// ASN.1 `UniversalString` type
 ///
 /// Note: parsing a `UniversalString` allocates memory since the UCS-4 to UTF-8 conversion requires a memory allocation.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct UniversalString<'a> {
     pub(crate) data: Cow<'a, str>,
 }
