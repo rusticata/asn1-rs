@@ -97,7 +97,7 @@ where
 #[cfg(feature = "std")]
 impl<T, E, const CLASS: u8, const TAG: u32> ToDer for TaggedValue<T, E, Implicit, CLASS, TAG>
 where
-    T: ToDer,
+    T: ToDer + DynTagged,
 {
     fn to_der_len(&self) -> Result<usize> {
         self.inner.to_der_len()
@@ -110,7 +110,7 @@ where
         let inner_len = self.inner.write_der_content(&mut v)?;
         // XXX X.690 section 8.14.3: if implicing tagging was used [...]:
         // XXX a) the encoding shall be constructed if the base encoding is constructed, and shall be primitive otherwise
-        let constructed = matches!(TAG, 16 | 17);
+        let constructed = matches!(self.inner.tag(), Tag::Sequence | Tag::Set);
         let header = Header::new(class, constructed, self.tag(), Length::Definite(inner_len));
         let sz = header.write_der_header(writer)?;
         let sz = sz + writer.write(&v)?;
