@@ -97,7 +97,7 @@ where
 #[cfg(feature = "std")]
 impl<T, E, const CLASS: u8, const TAG: u32> ToDer for TaggedValue<T, E, Implicit, CLASS, TAG>
 where
-    T: ToDer + DynTagged,
+    T: ToDer,
 {
     fn to_der_len(&self) -> Result<usize> {
         self.inner.to_der_len()
