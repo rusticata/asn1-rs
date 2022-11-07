@@ -115,7 +115,7 @@ pub(crate) fn parse_identifier(i: &[u8]) -> ParseResult<(u8, u8, u32, &[u8])> {
         Err(Err::Incomplete(Needed::new(1)))
     } else {
         let a = i[0] >> 6;
-        let b = if i[0] & 0b0010_0000 != 0 { 1 } else { 0 };
+        let b = u8::from(i[0] & 0b0010_0000 != 0);
         let mut c = u32::from(i[0] & 0b0001_1111);
 
         let mut tag_byte_count = 1;
