@@ -175,6 +175,7 @@ fn to_der_generalizedtime() {
     assert_eq!(&v[2..], b"19991231235959Z");
     let (_, time2) = GeneralizedTime::from_der(&v).expect("decoding serialized object failed");
     assert!(time.eq(&time2));
+    assert_eq!(time.to_der_len(), Ok(0x11));
     //
     // date with millisecond
     let dt = ASN1DateTime::new(1999, 12, 31, 23, 59, 59, Some(123), ASN1TimeZone::Z);

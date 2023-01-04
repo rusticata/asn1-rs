@@ -207,6 +207,8 @@ impl From<u32> for OptTaggedParser {
 /// // also succeeds (returning None):
 /// let (_, tagged) = OptTaggedExplicit::<Integer, Error, 0>::from_ber(&[]).unwrap();
 /// assert_eq!(tagged, None);
+/// let (_, tagged) = OptTaggedExplicit::<Integer, Error, 1>::from_ber(bytes).unwrap();
+/// assert_eq!(tagged, None);
 /// ```
 pub type OptTaggedExplicit<T, E, const TAG: u32> = Option<TaggedExplicit<T, E, TAG>>;
 

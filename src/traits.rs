@@ -228,7 +228,7 @@ pub trait ToDer
 where
     Self: DynTagged,
 {
-    /// Get the length of the object, when encoded
+    /// Get the length of the object (including the header), when encoded
     ///
     // Since we are using DER, length cannot be Indefinite, so we can use `usize`.
     // XXX can this function fail?
