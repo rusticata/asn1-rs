@@ -135,7 +135,7 @@ impl Real {
                 exponent,
                 ..
             } => {
-                let f = *mantissa as f64;
+                let f = mantissa;
                 let exp = (*base as f64).powi(*exponent);
                 f * exp
             }

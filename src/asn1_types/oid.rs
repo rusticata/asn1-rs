@@ -135,7 +135,7 @@ impl<'a> Oid<'a> {
 
     /// Build an OID from an array of object identifier components.
     /// This method allocates memory on the heap.
-    pub fn from<'b>(s: &'b [u64]) -> core::result::Result<Oid<'static>, OidParseError> {
+    pub fn from(s: &[u64]) -> core::result::Result<Oid<'static>, OidParseError> {
         if s.len() < 2 {
             if s.len() == 1 && s[0] == 0 {
                 return Ok(Oid {
@@ -160,7 +160,7 @@ impl<'a> Oid<'a> {
     }
 
     /// Build a relative OID from an array of object identifier components.
-    pub fn from_relative<'b>(s: &'b [u64]) -> core::result::Result<Oid<'static>, OidParseError> {
+    pub fn from_relative(s: &[u64]) -> core::result::Result<Oid<'static>, OidParseError> {
         if s.is_empty() {
             return Err(OidParseError::TooShort);
         }

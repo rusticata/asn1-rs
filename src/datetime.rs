@@ -60,8 +60,8 @@ impl ASN1DateTime {
         use std::convert::TryFrom;
         use time::{Date, Month, PrimitiveDateTime, Time, UtcOffset};
 
-        let month = Month::try_from(self.month as u8)?;
-        let date = Date::from_calendar_date(self.year as i32, month, self.day as u8)?;
+        let month = Month::try_from(self.month)?;
+        let date = Date::from_calendar_date(self.year as i32, month, self.day)?;
         let time = Time::from_hms_milli(
             self.hour,
             self.minute,
@@ -101,7 +101,7 @@ impl fmt::Display for ASN1DateTime {
 /// Decode 2-digit decimal value
 pub(crate) fn decode_decimal(tag: Tag, hi: u8, lo: u8) -> Result<u8> {
     if (b'0'..=b'9').contains(&hi) && (b'0'..=b'9').contains(&lo) {
-        Ok((hi - b'0') as u8 * 10 + (lo - b'0') as u8)
+        Ok((hi - b'0') * 10 + (lo - b'0'))
     } else {
         Err(tag.invalid_value("expected digit"))
     }
