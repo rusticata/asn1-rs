@@ -184,6 +184,14 @@ fn from_der_int() {
     let (rem, result) = u8::from_der(input).expect("parsing failed");
     assert_eq!(result, 2);
     assert_eq!(rem, &[0xff, 0xff]);
+    // attempt to parse a value too large for container type
+    let input = &hex!("02 03 00 ff ff");
+    let err = u8::from_der(input).expect_err("parsing should fail");
+    assert_eq!(err, Err::Error(Error::IntegerTooLarge));
+    // attempt to parse a value too large (positive large value in signed integer)
+    let input = &hex!("02 03 00 ff ff");
+    let err = i16::from_der(input).expect_err("parsing should fail");
+    assert_eq!(err, Err::Error(Error::IntegerTooLarge));
 }
 
 #[test]

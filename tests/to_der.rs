@@ -220,6 +220,8 @@ fn to_der_integer() {
     encode_decode_assert_int(4, &[0x02, 0x01, 0x04]);
     // signed i32 (< 0)
     encode_decode_assert_int(-4, &[0x02, 0x01, 0xfc]);
+    // negative number
+    encode_decode_assert_int(-1i8, &[0x02, 0x01, 0xff]);
 }
 
 #[test]

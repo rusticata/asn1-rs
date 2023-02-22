@@ -98,12 +98,17 @@ macro_rules! impl_int {
             fn try_from(any: &'b Any<'a>) -> Result<Self> {
                 any.tag().assert_eq(Self::TAG)?;
                 any.header.assert_primitive()?;
-                let result = if is_highest_bit_set(any.as_bytes()) {
-                    <$uint>::from_be_bytes(decode_array_int(&any)?) as $int
+                let uint = if is_highest_bit_set(any.as_bytes()) {
+                    <$uint>::from_be_bytes(decode_array_int(&any)?)
                 } else {
-                    Self::from_be_bytes(decode_array_uint(&any)?)
+                    // read as uint, but check if the value will fit in a signed integer
+                    let u = <$uint>::from_be_bytes(decode_array_uint(&any)?);
+                    if u > <$int>::MAX as $uint {
+                        return Err(Error::IntegerTooLarge);
+                    }
+                    u
                 };
-                Ok(result)
+                Ok(uint as $int)
             }
         }
 
