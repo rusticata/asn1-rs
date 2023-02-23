@@ -38,7 +38,7 @@ where
     }
 }
 
-/// manual impl of FromDer, so we do not need to require TryFrom<Any> + CheckDerConstraints
+/// manual impl of FromDer, so we do not need to require `TryFrom<Any> + CheckDerConstraints`
 impl<'a, T, E> FromDer<'a, E> for HashSet<T>
 where
     T: FromDer<'a, E>,
