@@ -8,6 +8,19 @@
 
 ### Thanks
 
+## 0.5.2
+
+### Changed/Fixed
+
+- Fix decoding of integers: check if value will wrap if integer is signed
+- Fix encoding of integers (add 0x00 prefix when required, and remove extra 0xff for negative integers)
+- Fix a small math error in GeneralizedTime
+- Introduce trait GetObjectContent, use `from_ber` when skipping BER content (closes #14)
+
+### Thanks
+
+- Nadja Reitzenstein, Christian Speich
+
 ## 0.5.1
 
 Minor fixes:
