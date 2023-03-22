@@ -73,12 +73,12 @@ impl<'a> Any<'a> {
 
     /// Get the bytes representation of the *content*
     #[inline]
-    pub fn as_bytes(&'a self) -> &'a [u8] {
+    pub fn as_bytes(&self) -> &'a [u8] {
         self.data
     }
 
     #[inline]
-    pub fn parse_ber<T>(&'a self) -> ParseResult<'a, T>
+    pub fn parse_ber<T>(&self) -> ParseResult<'a, T>
     where
         T: FromBer<'a>,
     {
@@ -134,7 +134,7 @@ impl<'a> Any<'a> {
     }
 
     #[inline]
-    pub fn parse_der<T>(&'a self) -> ParseResult<'a, T>
+    pub fn parse_der<T>(&self) -> ParseResult<'a, T>
     where
         T: FromDer<'a>,
     {
