@@ -26,7 +26,7 @@ use core::iter::FromIterator;
 /// assert_eq!(sum, 9);
 ///
 /// ```
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct SequenceOf<T> {
     pub(crate) items: Vec<T>,
 }
