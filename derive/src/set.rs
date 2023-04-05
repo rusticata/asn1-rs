@@ -12,7 +12,8 @@ pub fn derive_ber_set(s: synstructure::Structure) -> proc_macro2::TokenStream {
     };
 
     let debug_derive = ast.attrs.iter().any(|attr| {
-        attr.path
+        attr.meta
+            .path()
             .is_ident(&Ident::new("debug_derive", Span::call_site()))
     });
 
@@ -39,7 +40,8 @@ pub fn derive_der_set(s: synstructure::Structure) -> proc_macro2::TokenStream {
     };
 
     let debug_derive = ast.attrs.iter().any(|attr| {
-        attr.path
+        attr.meta
+            .path()
             .is_ident(&Ident::new("debug_derive", Span::call_site()))
     });
     let impl_tryfrom = container.gen_tryfrom();

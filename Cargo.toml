@@ -46,8 +46,8 @@ serialize = ["cookie-factory"]
 std = []
 
 [dependencies]
-asn1-rs-derive = { version="0.4", path="./derive" }
-asn1-rs-impl = { version="0.1", path="./impl" }
+asn1-rs-derive = { version="0.5", path="./derive" }
+asn1-rs-impl = { version="0.2", path="./impl" }
 bitvec = { version="1.0", optional=true }
 cookie-factory = { version="0.3.0", optional=true }
 displaydoc = "0.2.2"

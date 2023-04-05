@@ -120,7 +120,11 @@ impl Container {
         let error = ast
             .attrs
             .iter()
-            .find(|attr| attr.path.is_ident(&Ident::new("error", Span::call_site())))
+            .find(|attr| {
+                attr.meta
+                    .path()
+                    .is_ident(&Ident::new("error", Span::call_site()))
+            })
             .cloned();
 
         Container {
@@ -326,7 +330,7 @@ impl From<&Field> for FieldInfo {
             .as_ref()
             .map_or_else(|| Ident::new("_", Span::call_site()), |s| s.clone());
         for attr in &field.attrs {
-            let ident = match attr.path.get_ident() {
+            let ident = match attr.meta.path().get_ident() {
                 Some(ident) => ident.to_string(),
                 None => continue,
             };
@@ -476,8 +480,8 @@ fn get_field_parser(f: &FieldInfo, asn1_type: Asn1Type, custom_errors: bool) -> 
 }
 
 fn get_attribute_meta(attr: &Attribute) -> Result<TokenStream, syn::Error> {
-    if let Ok(Meta::List(meta)) = attr.parse_meta() {
-        let content = &meta.nested;
+    if let Meta::List(meta) = &attr.meta {
+        let content = &meta.tokens;
         Ok(quote! { #content })
     } else {
         Err(syn::Error::new(

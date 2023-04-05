@@ -1,6 +1,6 @@
 [package]
 name = "asn1-rs-impl"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Pierre Chifflier <chifflier@wzdftpd.net>"]
 description = "Implementation details for the `asn1-rs` crate"
 license = "MIT/Apache-2.0"
@@ -14,4 +14,4 @@ proc-macro = true
 [dependencies]
 proc-macro2 = "1"
 quote = "1"
-syn = "1"
+syn = "2.0"
