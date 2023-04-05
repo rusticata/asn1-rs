@@ -100,7 +100,7 @@ impl fmt::Display for ASN1DateTime {
 
 /// Decode 2-digit decimal value
 pub(crate) fn decode_decimal(tag: Tag, hi: u8, lo: u8) -> Result<u8> {
-    if (b'0'..=b'9').contains(&hi) && (b'0'..=b'9').contains(&lo) {
+    if hi.is_ascii_digit() && lo.is_ascii_digit() {
         Ok((hi - b'0') * 10 + (lo - b'0'))
     } else {
         Err(tag.invalid_value("expected digit"))
