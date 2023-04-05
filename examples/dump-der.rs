@@ -56,8 +56,8 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
                 continue;
             }
             for (idx, pem) in pems.iter().enumerate() {
-                eprintln!("Pem entry {} [{}]", idx, pem.tag.bright_blue());
-                print_der(&pem.contents, 1, &ctx);
+                eprintln!("Pem entry {} [{}]", idx, pem.tag().bright_blue());
+                print_der(pem.contents(), 1, &ctx);
             }
         } else {
             print_der(&content, 1, &ctx);
