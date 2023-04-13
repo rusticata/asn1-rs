@@ -2,8 +2,12 @@ use crate::*;
 use alloc::vec::Vec;
 use core::convert::TryFrom;
 use core::iter::FromIterator;
+use core::ops::{Deref, DerefMut};
 
 /// The `SEQUENCE OF` object is an ordered list of homogeneous types.
+///
+/// This type implements `Deref<Target = [T]>` and `DerefMut<Target = [T]>`, so all methods
+/// like `.iter()`, `.len()` and others can be used transparently as if using a vector.
 ///
 /// # Examples
 ///
@@ -12,8 +16,7 @@ use core::iter::FromIterator;
 /// use std::iter::FromIterator;
 ///
 /// // build set
-/// let it = [2, 3, 4].iter();
-/// let seq = SequenceOf::from_iter(it);
+/// let seq = SequenceOf::from_iter([2, 3, 4]);
 ///
 /// // `seq` now contains the serialized DER representation of the array
 ///
@@ -38,22 +41,16 @@ impl<T> SequenceOf<T> {
         SequenceOf { items }
     }
 
-    /// Returns the length of this `SEQUENCE` (the number of items).
+    /// Converts `self` into a vector without clones or allocation.
     #[inline]
-    pub fn len(&self) -> usize {
-        self.items.len()
+    pub fn into_vec(self) -> Vec<T> {
+        self.items
     }
 
-    /// Returns `true` if this `SEQUENCE` is empty.
+    /// Appends an element to the back of a collection
     #[inline]
-    pub fn is_empty(&self) -> bool {
-        self.items.is_empty()
-    }
-
-    /// Returns an iterator over the items of the `SEQUENCE`.
-    #[inline]
-    pub fn iter(&self) -> impl Iterator<Item = &T> {
-        self.items.iter()
+    pub fn push(&mut self, item: T) {
+        self.items.push(item)
     }
 }
 
@@ -63,33 +60,35 @@ impl<T> AsRef<[T]> for SequenceOf<T> {
     }
 }
 
-impl<'a, T> IntoIterator for &'a SequenceOf<T> {
-    type Item = &'a T;
-    type IntoIter = core::slice::Iter<'a, T>;
-
-    fn into_iter(self) -> core::slice::Iter<'a, T> {
-        self.items.iter()
+impl<T> AsMut<[T]> for SequenceOf<T> {
+    fn as_mut(&mut self) -> &mut [T] {
+        &mut self.items
     }
 }
 
-impl<'a, T> IntoIterator for &'a mut SequenceOf<T> {
-    type Item = &'a mut T;
-    type IntoIter = core::slice::IterMut<'a, T>;
+impl<T> Deref for SequenceOf<T> {
+    type Target = [T];
 
-    fn into_iter(self) -> core::slice::IterMut<'a, T> {
-        self.items.iter_mut()
+    fn deref(&self) -> &Self::Target {
+        &self.items
+    }
+}
+
+impl<T> DerefMut for SequenceOf<T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.items
     }
 }
 
 impl<T> From<SequenceOf<T>> for Vec<T> {
-    fn from(set: SequenceOf<T>) -> Self {
-        set.items
+    fn from(seq: SequenceOf<T>) -> Self {
+        seq.items
     }
 }
 
 impl<T> FromIterator<T> for SequenceOf<T> {
     fn from_iter<IT: IntoIterator<Item = T>>(iter: IT) -> Self {
-        let items = iter.into_iter().collect();
+        let items = Vec::from_iter(iter);
         SequenceOf::new(items)
     }
 }
@@ -146,5 +145,25 @@ where
 
     fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         self.items.write_der_content(writer)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::SequenceOf;
+    use core::iter::FromIterator;
+
+    /// Test use of object, available methods and syntax for different use cases
+    #[test]
+    fn use_sequence_of() {
+        let mut set = SequenceOf::from_iter([1, 2, 3]);
+        set.push(4);
+
+        // deref as slice
+        let sum: i32 = set.iter().sum();
+        assert_eq!(sum, 10);
+
+        // range operator
+        assert_eq!(&set[1..3], &[2, 3]);
     }
 }

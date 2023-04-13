@@ -379,6 +379,18 @@ fn to_der_sequence() {
 }
 
 #[test]
+fn to_der_sequenceof() {
+    let seq = SequenceOf::from_iter([2, 3, 4]);
+    let v = seq.to_der_vec().expect("serialization failed");
+    assert_eq!(&v, &hex!("30 09 02 01 02 02 01 03 02 01 04"));
+    let (_, seq2) = SequenceOf::from_der(&v).expect("decoding serialized object failed");
+    assert_eq!(seq, seq2);
+    // Vec<T>::ToDer
+    let v = vec![2, 3, 4].to_der_vec().expect("serialization failed");
+    assert_eq!(&v, &hex!("30 09 02 01 02 02 01 03 02 01 04"));
+}
+
+#[test]
 fn to_der_set() {
     let it = [2u8, 3, 4].iter();
     let set = Set::from_iter_to_der(it).unwrap();
