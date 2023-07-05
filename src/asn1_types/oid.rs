@@ -451,17 +451,20 @@ impl<'a> FromStr for Oid<'a> {
 /// extra check might be necessary.
 #[macro_export]
 macro_rules! oid {
+    (raw $( $item:literal ).*) => {
+        $crate::exports::asn1_rs_impl::encode_oid!( $( $item ).* )
+    };
     (raw $items:expr) => {
         $crate::exports::asn1_rs_impl::encode_oid!($items)
     };
-    (rel $items:expr) => {
+    (rel $($item:literal ).*) => {
         $crate::Oid::new_relative($crate::exports::borrow::Cow::Borrowed(
-            &$crate::exports::asn1_rs_impl::encode_oid!(rel $items),
+            &$crate::exports::asn1_rs_impl::encode_oid!(rel $( $item ).*),
         ))
     };
-    ($items:expr) => {
+    ($($item:literal ).*) => {
         $crate::Oid::new($crate::exports::borrow::Cow::Borrowed(
-            &$crate::oid!(raw $items),
+            &$crate::oid!(raw $( $item ).*),
         ))
     };
 }
@@ -513,5 +516,18 @@ mod tests {
         let oid = super::oid! {1.2.840.113549.1};
         assert!(OID_RSA_ENCRYPTION.starts_with(&oid));
         assert!(!OID_EC_PUBLIC_KEY.starts_with(&oid));
+    }
+
+    #[test]
+    fn oid_macro_parameters() {
+        // Code inspired from https://github.com/rusticata/der-parser/issues/68
+        macro_rules! foo {
+            ($a:literal $b:literal $c:literal) => {
+                super::oid!($a.$b.$c)
+            };
+        }
+
+        let oid = foo!(1 2 3);
+        assert_eq!(oid, oid! {1.2.3});
     }
 }
