@@ -47,10 +47,10 @@ impl From<String> for BmpString<'_> {
     }
 }
 
-impl<'a> core::convert::TryFrom<Any<'a>> for BmpString<'a> {
+impl<'a, 'r> core::convert::TryFrom<&'r Any<'a>> for BmpString<'a> {
     type Error = Error;
 
-    fn try_from(any: Any<'a>) -> Result<BmpString<'a>> {
+    fn try_from(any: &'r Any<'a>) -> Result<BmpString<'a>> {
         any.tag().assert_eq(Self::TAG)?;
 
         // read slice as big-endian UTF-16 string
@@ -68,6 +68,15 @@ impl<'a> core::convert::TryFrom<Any<'a>> for BmpString<'a> {
         let data = Cow::Owned(s);
 
         Ok(BmpString { data })
+    }
+}
+
+impl<'a> core::convert::TryFrom<Any<'a>> for BmpString<'a> {
+    type Error = Error;
+
+    #[inline]
+    fn try_from(any: Any<'a>) -> Result<BmpString<'a>> {
+        BmpString::try_from(&any)
     }
 }
 
