@@ -6,7 +6,7 @@
 [![crates.io](https://img.shields.io/crates/v/asn1-rs.svg)](https://crates.io/crates/asn1-rs)
 [![Download numbers](https://img.shields.io/crates/d/asn1-rs.svg)](https://crates.io/crates/asn1-rs)
 [![Github CI](https://github.com/rusticata/asn1-rs/workflows/Continuous%20integration/badge.svg)](https://github.com/rusticata/asn1-rs/actions)
-[![Minimum rustc version](https://img.shields.io/badge/rustc-1.53.0+-lightgray.svg)](#rust-version-requirements)
+[![Minimum rustc version](https://img.shields.io/badge/rustc-1.63.0+-lightgray.svg)](#rust-version-requirements)
 
 # BER/DER Parsers/Encoders
 
@@ -44,9 +44,7 @@ of `nom::IResult`. This means that most `nom` combinators (`map`, `many0`, etc.)
 combination to objects and methods from this crate. Reading the nom documentation may
 help understanding how to write and combine parsers and use the output.
 
-**Minimum Supported Rust Version**: 1.53.0
-
-Note: if the `bits` feature is enabled, MSRV is 1.56.0 (due to `bitvec` 1.0)
+**Minimum Supported Rust Version**: 1.63.0
 
 # Recipes
 
