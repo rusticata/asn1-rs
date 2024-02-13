@@ -8,9 +8,6 @@ mod hashset;
 mod iterator;
 mod set_of;
 
-pub use btreeset::*;
-#[cfg(feature = "std")]
-pub use hashset::*;
 pub use iterator::*;
 pub use set_of::*;
 

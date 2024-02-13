@@ -21,6 +21,6 @@ mod utctime;
 
 pub use {
     any::*, bitstring::*, boolean::*, choice::*, embedded_pdv::*, end_of_content::*, enumerated::*,
-    generalizedtime::*, integer::*, null::*, object_descriptor::*, octetstring::*, oid::*,
-    optional::*, real::*, sequence::*, set::*, strings::*, tagged::*, utctime::*,
+    generalizedtime::*, integer::*, null::*, object_descriptor::*, octetstring::*, oid::*, real::*,
+    sequence::*, set::*, strings::*, tagged::*, utctime::*,
 };

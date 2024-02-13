@@ -12,14 +12,13 @@ mod utf8string;
 mod videotexstring;
 mod visiblestring;
 
-pub use self::str::*;
 pub use bmpstring::*;
 pub use generalstring::*;
 pub use graphicstring::*;
 pub use ia5string::*;
 pub use numericstring::*;
 pub use printablestring::*;
-pub use string::*;
+
 pub use teletexstring::*;
 pub use universalstring::*;
 pub use utf8string::*;

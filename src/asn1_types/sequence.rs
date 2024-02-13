@@ -9,7 +9,6 @@ mod vec;
 
 pub use iterator::*;
 pub use sequence_of::*;
-pub use vec::*;
 
 /// The `SEQUENCE` object is an ordered list of heteregeneous types.
 ///

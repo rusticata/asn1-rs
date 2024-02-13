@@ -5,8 +5,6 @@ use nom::Needed;
 
 mod f32;
 mod f64;
-pub use self::f32::*;
-pub use self::f64::*;
 
 /// ASN.1 `REAL` type
 ///
@@ -168,7 +166,6 @@ impl<'a> TryFrom<Any<'a>> for Real {
         let rem = &data[1..];
         if first & 0x80 != 0 {
             // binary encoding (X.690 section 8.5.6)
-            let rem = rem;
             // format of exponent
             let (n, rem) = match first & 0x03 {
                 4 => {
