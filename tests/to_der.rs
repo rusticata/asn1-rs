@@ -405,6 +405,15 @@ fn to_der_set() {
 }
 
 #[test]
+fn to_der_set_of() {
+    let seq = SetOf::from_iter([2, 3, 4]);
+    let v = seq.to_der_vec().expect("serialization failed");
+    assert_eq!(&v, &hex!("31 09 02 01 02 02 01 03 02 01 04"));
+    let (_, seq2) = SetOf::from_der(&v).expect("decoding serialized object failed");
+    assert_eq!(seq, seq2);
+}
+
+#[test]
 fn to_der_str() {
     let s = "abcdef";
     assert_eq!(s.to_der_len(), Ok(2 + s.len()));
