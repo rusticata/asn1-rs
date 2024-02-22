@@ -43,6 +43,7 @@ impl display Tag {
     GeneralString = 27,
 
     UniversalString = 28,
+    CharacterString = 29,
     BmpString = 30,
 }
 }
