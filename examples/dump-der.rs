@@ -1,23 +1,23 @@
 use asn1_rs::{Any, Class, FromDer, Length, Result, Tag};
 use colored::*;
 use nom::HexDisplay;
-use oid_registry::{format_oid, Oid as DerOid, OidRegistry};
+// use oid_registry::{format_oid, Oid as DerOid, OidRegistry};
 use std::cmp::min;
 use std::error::Error;
 use std::marker::PhantomData;
 use std::{env, fs};
 
 struct Context<'a> {
-    oid_registry: OidRegistry<'a>,
+    // oid_registry: OidRegistry<'a>,
     hex_max: usize,
     t: PhantomData<&'a ()>,
 }
 
 impl<'a> Default for Context<'a> {
     fn default() -> Self {
-        let oid_registry = OidRegistry::default().with_all_crypto().with_x509();
+        // let oid_registry = OidRegistry::default().with_all_crypto().with_x509();
         Context {
-            oid_registry,
+            // oid_registry,
             hex_max: 64,
             t: PhantomData,
         }
@@ -191,12 +191,10 @@ fn print_der_any(any: Any, depth: usize, ctx: &Context) {
         }
         Tag::Oid => {
             let oid = any.oid().unwrap();
-            let der_oid = DerOid::new(oid.as_bytes().into());
-            indent_println!(
-                depth + 1,
-                "OID: {}",
-                format_oid(&der_oid, &ctx.oid_registry).cyan()
-            );
+            // let der_oid = DerOid::new(oid.as_bytes().into());
+            // let s = format_oid(&der_oid, &ctx.oid_registry).cyan();
+            let s = oid.to_string().cyan();
+            indent_println!(depth + 1, "OID: {}", s);
         }
         Tag::PrintableString => {
             let s = any.printablestring().unwrap();
@@ -204,12 +202,10 @@ fn print_der_any(any: Any, depth: usize, ctx: &Context) {
         }
         Tag::RelativeOid => {
             let oid = any.oid().unwrap();
-            let der_oid = DerOid::new(oid.as_bytes().into());
-            indent_println!(
-                depth + 1,
-                "RELATIVE-OID: {}",
-                format_oid(&der_oid, &ctx.oid_registry).cyan()
-            );
+            // let der_oid = DerOid::new(oid.as_bytes().into());
+            // let s = format_oid(&der_oid, &ctx.oid_registry).cyan();
+            let s = oid.to_string().cyan();
+            indent_println!(depth + 1, "RELATIVE-OID: {}", s);
         }
         Tag::Set => {
             let seq = any.set().unwrap();
