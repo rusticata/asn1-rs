@@ -244,7 +244,7 @@ impl<'a> Any<'a> {
     impl_any_as!(as_endofcontent => EndOfContent, "END OF CONTENT (not a real ASN.1 type)");
     impl_any_as!(as_enumerated => Enumerated, "ENUMERATED");
     impl_any_as!(as_generalizedtime => GeneralizedTime, "GeneralizedTime");
-    impl_any_as!(as_generalstring => GeneralizedTime, "GeneralString");
+    impl_any_as!(as_generalstring => GeneralString, "GeneralString");
     impl_any_as!(as_graphicstring => GraphicString, "GraphicString");
     impl_any_as!(as_i8 => i8, "INTEGER");
     impl_any_as!(as_i16 => i16, "INTEGER");
