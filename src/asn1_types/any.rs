@@ -192,7 +192,7 @@ macro_rules! impl_any_as {
 
 impl<'a> Any<'a> {
     impl_any_into!(bitstring => BitString<'a>, "BIT STRING");
-    impl_any_into!(bmpstring => BmpString<'a>, "BmpString");
+    impl_any_into!(bmpstring => BmpString<'a>, "BMPString");
     impl_any_into!(bool => bool, "BOOLEAN");
     impl_any_into!(boolean => Boolean, "BOOLEAN");
     impl_any_into!(embedded_pdv => EmbeddedPdv<'a>, "EMBEDDED PDV");
@@ -238,6 +238,7 @@ impl<'a> Any<'a> {
     impl_any_into!(visiblestring => VisibleString<'a>, "VisibleString");
 
     impl_any_as!(as_bitstring => BitString, "BITSTRING");
+    impl_any_as!(as_bmpstring => BmpString, "BMPString");
     impl_any_as!(as_bool => bool, "BOOLEAN");
     impl_any_as!(as_boolean => Boolean, "BOOLEAN");
     impl_any_as!(as_embedded_pdv => EmbeddedPdv, "EMBEDDED PDV");
