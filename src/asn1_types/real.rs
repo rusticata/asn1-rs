@@ -155,6 +155,14 @@ impl<'a> TryFrom<Any<'a>> for Real {
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<Self> {
+        TryFrom::try_from(&any)
+    }
+}
+
+impl<'a, 'b> TryFrom<&'b Any<'a>> for Real {
+    type Error = Error;
+
+    fn try_from(any: &'b Any<'a>) -> Result<Self> {
         any.tag().assert_eq(Self::TAG)?;
         any.header.assert_primitive()?;
         let data = &any.data;

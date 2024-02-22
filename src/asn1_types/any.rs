@@ -212,6 +212,7 @@ impl<'a> Any<'a> {
     impl_any_into!(objectdescriptor => ObjectDescriptor<'a>, "ObjectDescriptor");
     impl_any_into!(octetstring => OctetString<'a>, "OCTET STRING");
     impl_any_into!(oid => Oid<'a>, "OBJECT IDENTIFIER");
+    impl_any_into!(real => Real, "REAL");
     /// Attempt to convert object to `Oid` (ASN.1 type: `RELATIVE-OID`).
     pub fn relative_oid(self) -> Result<Oid<'a>> {
         self.header.assert_tag(Tag::RelativeOid)?;
@@ -257,6 +258,7 @@ impl<'a> Any<'a> {
     impl_any_as!(as_objectdescriptor => ObjectDescriptor, "OBJECT IDENTIFIER");
     impl_any_as!(as_octetstring => OctetString, "OCTET STRING");
     impl_any_as!(as_oid => Oid, "OBJECT IDENTIFIER");
+    impl_any_as!(as_real => Real, "REAL");
     /// Attempt to create ASN.1 type `RELATIVE-OID` from this object.
     pub fn as_relative_oid(&self) -> Result<Oid<'a>> {
         self.header.assert_tag(Tag::RelativeOid)?;
