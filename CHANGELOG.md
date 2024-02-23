@@ -8,6 +8,36 @@
 
 ### Thanks
 
+## 0.6.0
+
+### Changed/Fixed
+
+General:
+- Set MSRV to 1.67.0
+- Add PartialEq to SequenceOf and SetOf
+- Implement traits for SequenceOf and SetOf to improve usability
+- Fix receiver lifetimes in `Any` methods
+- Implement `BmpString::try_from` for &Any (so it does not need to consume input) (#26)
+- oid: change macro to expect dot-separated literals (#28)
+- Fix wrong tag in encoding of SET OF (#30)
+- Option: require T::Tagged, and check tag before constraints (#27)
+- Add missing constructed bit when serializing [2] IMPLICIT) (#18)
+- Add methods to convert Any to Real
+- Add tag for CHARACTER STRING (29)
+- Fix method `Any::as_generalstring` (wrong return type)
+- Add method `Any::as_bmpstring`
+- Fix clippy warnings (1.76.0)
+
+Dependencies updates:
+- pem to 3.0
+- hex-literal to 0.4
+- syn to 2.0
+- examples: drop circular dev-dependency caused by oid-registry
+
+### Thanks
+
+- Sergio Benitez, Andrey Chesnokov
+
 ## 0.5.2
 
 ### Changed/Fixed
