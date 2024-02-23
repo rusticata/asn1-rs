@@ -27,6 +27,18 @@ where
     }
 }
 
+impl<'a> FromBer<'a> for Option<Any<'a>> {
+    fn from_ber(bytes: &'a [u8]) -> ParseResult<Self> {
+        if bytes.is_empty() {
+            return Ok((bytes, None));
+        }
+        match Any::from_ber(bytes) {
+            Ok((rem, t)) => Ok((rem, Some(t))),
+            Err(e) => Err(e),
+        }
+    }
+}
+
 impl<'a, T> FromDer<'a> for Option<T>
 where
     T: FromDer<'a>,
@@ -43,6 +55,18 @@ where
             }
         }
         match T::from_der(bytes) {
+            Ok((rem, t)) => Ok((rem, Some(t))),
+            Err(e) => Err(e),
+        }
+    }
+}
+
+impl<'a> FromDer<'a> for Option<Any<'a>> {
+    fn from_der(bytes: &'a [u8]) -> ParseResult<Self> {
+        if bytes.is_empty() {
+            return Ok((bytes, None));
+        }
+        match Any::from_der(bytes) {
             Ok((rem, t)) => Ok((rem, Some(t))),
             Err(e) => Err(e),
         }
