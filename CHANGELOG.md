@@ -8,6 +8,12 @@
 
 ### Thanks
 
+## 0.6.1
+
+### Changed/Fixed
+
+- Provide implementations for `Option<Any>::from_der`
+
 ## 0.6.0
 
 ### Changed/Fixed
