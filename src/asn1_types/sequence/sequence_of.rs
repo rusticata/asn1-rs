@@ -124,7 +124,23 @@ where
     }
 }
 
-impl<T> DerAutoDerive for SequenceOf<T> {}
+/// manual impl of FromDer, so we do not need to require `TryFrom<Any> + CheckDerConstraints`
+impl<'a, T, E> FromDer<'a, E> for SequenceOf<T>
+where
+    T: FromDer<'a, E>,
+    E: From<Error>,
+{
+    fn from_der(bytes: &'a [u8]) -> ParseResult<Self, E> {
+        let (rem, any) = Any::from_der(bytes).map_err(Err::convert)?;
+        any.header
+            .assert_tag(Self::TAG)
+            .map_err(|e| nom::Err::Error(e.into()))?;
+        let items = SequenceIterator::<T, DerParser, E>::new(any.data)
+            .collect::<Result<Vec<T>, E>>()
+            .map_err(nom::Err::Error)?;
+        Ok((rem, SequenceOf::new(items)))
+    }
+}
 
 impl<T> Tagged for SequenceOf<T> {
     const TAG: Tag = Tag::Sequence;
