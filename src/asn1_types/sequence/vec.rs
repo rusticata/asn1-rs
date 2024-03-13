@@ -2,6 +2,8 @@ use crate::*;
 use alloc::vec::Vec;
 use core::convert::TryFrom;
 
+use self::debug::trace;
+
 // // XXX this compiles but requires bound TryFrom :/
 // impl<'a, 'b, T> TryFrom<&'b Any<'a>> for Vec<T>
 // where
@@ -94,7 +96,8 @@ where
     E: From<Error>,
 {
     fn from_der(bytes: &'a [u8]) -> ParseResult<Self, E> {
-        let (rem, any) = Any::from_der(bytes).map_err(Err::convert)?;
+        let (rem, any) =
+            trace(core::any::type_name::<Self>(), parse_der_any, bytes).map_err(Err::convert)?;
         any.header
             .assert_tag(Self::TAG)
             .map_err(|e| nom::Err::Error(e.into()))?;

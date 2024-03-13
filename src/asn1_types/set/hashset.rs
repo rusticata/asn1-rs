@@ -4,6 +4,8 @@ use std::collections::HashSet;
 use std::convert::TryFrom;
 use std::hash::Hash;
 
+use self::debug::trace;
+
 impl<T> Tagged for HashSet<T> {
     const TAG: Tag = Tag::Set;
 }
@@ -46,7 +48,8 @@ where
     E: From<Error>,
 {
     fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, E> {
-        let (rem, any) = Any::from_der(bytes).map_err(Err::convert)?;
+        let (rem, any) =
+            trace(core::any::type_name::<Self>(), Any::from_der, bytes).map_err(Err::convert)?;
         any.tag()
             .assert_eq(Self::TAG)
             .map_err(|e| nom::Err::Error(e.into()))?;

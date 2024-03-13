@@ -90,7 +90,7 @@ pub enum Error {
     /// Invalid Date or Time
     InvalidDateTime,
 
-    /// DER Failed constraint
+    /// DER Failed constraint: {0:?}
     DerConstraintFailed(DerConstraint),
 
     /// Requesting borrowed data from a temporary object
