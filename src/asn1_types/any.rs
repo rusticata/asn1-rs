@@ -4,6 +4,8 @@ use alloc::borrow::Cow;
 use alloc::string::String;
 use core::convert::{TryFrom, TryInto};
 
+use self::debug::trace;
+
 /// The `Any` object is not strictly an ASN.1 type, but holds a generic description of any object
 /// that could be encoded.
 ///
@@ -320,21 +322,31 @@ impl<'a> Any<'a> {
     }
 }
 
+pub(crate) fn parse_ber_any(input: &[u8]) -> ParseResult<Any> {
+    let (i, header) = Header::from_ber(input)?;
+    let (i, data) = BerParser::get_object_content(i, &header, MAX_RECURSION)?;
+    Ok((i, Any { header, data }))
+}
+
+pub(crate) fn parse_der_any(input: &[u8]) -> ParseResult<Any> {
+    let (i, header) = Header::from_der(input)?;
+    // X.690 section 10.1: The definite form of length encoding shall be used
+    header.length.assert_definite()?;
+    let (i, data) = DerParser::get_object_content(i, &header, MAX_RECURSION)?;
+    Ok((i, Any { header, data }))
+}
+
 impl<'a> FromBer<'a> for Any<'a> {
+    #[inline]
     fn from_ber(bytes: &'a [u8]) -> ParseResult<Self> {
-        let (i, header) = Header::from_ber(bytes)?;
-        let (i, data) = BerParser::get_object_content(i, &header, MAX_RECURSION)?;
-        Ok((i, Any { header, data }))
+        trace("Any", parse_ber_any, bytes)
     }
 }
 
 impl<'a> FromDer<'a> for Any<'a> {
+    #[inline]
     fn from_der(bytes: &'a [u8]) -> ParseResult<Self> {
-        let (i, header) = Header::from_der(bytes)?;
-        // X.690 section 10.1: The definite form of length encoding shall be used
-        header.length.assert_definite()?;
-        let (i, data) = DerParser::get_object_content(i, &header, MAX_RECURSION)?;
-        Ok((i, Any { header, data }))
+        trace("Any", parse_der_any, bytes)
     }
 }
 

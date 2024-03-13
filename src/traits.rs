@@ -1,5 +1,8 @@
-use crate::error::*;
+use crate::debug::trace;
+use crate::{debug_eprintln, error::*, parse_der_any};
 use crate::{Any, Class, Explicit, Implicit, Tag, TaggedParser};
+#[cfg(feature = "debug")]
+use colored::Colorize;
 use core::convert::{TryFrom, TryInto};
 #[cfg(feature = "std")]
 use std::io::Write;
@@ -181,11 +184,23 @@ where
     E: From<Error>,
 {
     fn from_der(bytes: &'a [u8]) -> ParseResult<T, E> {
-        // Note: Any::from_der checks than length is definite
-        let (i, any) = Any::from_der(bytes).map_err(nom::Err::convert)?;
-        <T as CheckDerConstraints>::check_constraints(&any)
-            .map_err(|e| nom::Err::Error(e.into()))?;
-        let result = any.try_into().map_err(nom::Err::Error)?;
+        let (i, any) =
+            trace(core::any::type_name::<T>(), parse_der_any, bytes).map_err(nom::Err::convert)?;
+        <T as CheckDerConstraints>::check_constraints(&any).map_err(|e| {
+            debug_eprintln!(
+                std::any::type_name::<T>(),
+                "≠ Checking DER constraints failed:\n    {}",
+                e.to_string().red()
+            );
+            nom::Err::Error(e.into())
+        })?;
+        let result = any
+            .try_into()
+            .map_err(|e| {
+                debug_eprintln!(core::any::type_name::<T>(), "≠ Conversion from Any failed");
+                e
+            })
+            .map_err(nom::Err::Error)?;
         Ok((i, result))
     }
 }
