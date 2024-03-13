@@ -4,6 +4,8 @@ use core::convert::TryFrom;
 use core::iter::FromIterator;
 use core::ops::{Deref, DerefMut};
 
+use self::debug::trace;
+
 /// The `SEQUENCE OF` object is an ordered list of homogeneous types.
 ///
 /// This type implements `Deref<Target = [T]>` and `DerefMut<Target = [T]>`, so all methods
@@ -131,7 +133,8 @@ where
     E: From<Error>,
 {
     fn from_der(bytes: &'a [u8]) -> ParseResult<Self, E> {
-        let (rem, any) = Any::from_der(bytes).map_err(Err::convert)?;
+        let (rem, any) =
+            trace(core::any::type_name::<Self>(), parse_der_any, bytes).map_err(Err::convert)?;
         any.header
             .assert_tag(Self::TAG)
             .map_err(|e| nom::Err::Error(e.into()))?;

@@ -182,6 +182,7 @@ mod asn1_types;
 mod ber;
 mod class;
 mod datetime;
+mod debug;
 mod derive;
 mod error;
 mod header;
