@@ -1,4 +1,5 @@
 use crate::*;
+#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 use core::convert::TryFrom;
 use core::fmt::{Debug, Display};
@@ -142,10 +143,10 @@ where
                     .map_err(Err::convert)?;
                 any.header
                     .assert_tag(Self::TAG)
-                    .map_err(|e| nom::Err::Error(e.into()))?;
+                    .map_err(|e| Err::Error(e.into()))?;
                 let items = SequenceIterator::<T, DerParser, E>::new(any.data)
                     .collect::<Result<Vec<T>, E>>()
-                    .map_err(nom::Err::Error)?;
+                    .map_err(Err::Error)?;
                 Ok((rem, SequenceOf::new(items)))
             },
             bytes,

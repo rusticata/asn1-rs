@@ -34,7 +34,7 @@ where
     parse_der_container(tag, move |any: Any<'a>| {
         any.header
             .assert_tag(tag)
-            .map_err(|e| nom::Err::convert(e.into()))?;
+            .map_err(|e| Err::convert(e.into()))?;
         f(any.data, any.header)
     })
 }
@@ -51,9 +51,7 @@ where
     let tag = tag.into();
     move |i| {
         let (rem, tagged) = TaggedParser::from_der(i)?;
-        tagged
-            .assert_tag(tag)
-            .map_err(|e| nom::Err::convert(e.into()))?;
+        tagged.assert_tag(tag).map_err(|e| Err::convert(e.into()))?;
         Ok((rem, tagged))
     }
 }
@@ -73,7 +71,7 @@ where
         // verify tag of external header
         any.header
             .assert_tag(tag)
-            .map_err(|e| nom::Err::convert(e.into()))?;
+            .map_err(|e| Err::convert(e.into()))?;
         // build a fake header with the expected tag
         let Any { header, data } = any;
         let header = Header {
@@ -93,10 +91,10 @@ where
     E: ParseError<&'a [u8]> + From<Error>,
 {
     move |i: &[u8]| {
-        let (rem, any) = Any::from_der(i).map_err(nom::Err::convert)?;
+        let (rem, any) = Any::from_der(i).map_err(Err::convert)?;
         any.header
             .assert_tag(tag)
-            .map_err(|e| nom::Err::convert(e.into()))?;
+            .map_err(|e| Err::convert(e.into()))?;
         let (_, output) = f(any)?;
         Ok((rem, output))
     }

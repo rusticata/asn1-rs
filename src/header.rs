@@ -248,17 +248,17 @@ impl<'a> FromBer<'a> for Header<'a> {
             (_, l1) => {
                 // if len is 0xff -> error (8.1.3.5)
                 if l1 == 0b0111_1111 {
-                    return Err(::nom::Err::Error(Error::InvalidLength));
+                    return Err(nom::Err::Error(Error::InvalidLength));
                 }
                 let (i3, llen) = take(l1)(i2)?;
                 match bytes_to_u64(llen) {
                     Ok(l) => {
                         let l =
-                            usize::try_from(l).or(Err(::nom::Err::Error(Error::InvalidLength)))?;
+                            usize::try_from(l).or(Err(nom::Err::Error(Error::InvalidLength)))?;
                         (i3, Length::Definite(l))
                     }
                     Err(_) => {
-                        return Err(::nom::Err::Error(Error::InvalidLength));
+                        return Err(nom::Err::Error(Error::InvalidLength));
                     }
                 }
             }
@@ -284,14 +284,14 @@ impl<'a> FromDer<'a> for Header<'a> {
             }
             (_, 0) => {
                 // Indefinite form is not allowed in DER (10.1)
-                return Err(::nom::Err::Error(Error::DerConstraintFailed(
+                return Err(nom::Err::Error(Error::DerConstraintFailed(
                     DerConstraint::IndefiniteLength,
                 )));
             }
             (_, l1) => {
                 // if len is 0xff -> error (8.1.3.5)
                 if l1 == 0b0111_1111 {
-                    return Err(::nom::Err::Error(Error::InvalidLength));
+                    return Err(nom::Err::Error(Error::InvalidLength));
                 }
                 // DER(9.1) if len is 0 (indefinite form), obj must be constructed
                 der_constraint_fail_if!(
@@ -305,11 +305,11 @@ impl<'a> FromDer<'a> for Header<'a> {
                         // DER: should have been encoded in short form (< 127)
                         // XXX der_constraint_fail_if!(i, l < 127);
                         let l =
-                            usize::try_from(l).or(Err(::nom::Err::Error(Error::InvalidLength)))?;
+                            usize::try_from(l).or(Err(nom::Err::Error(Error::InvalidLength)))?;
                         (i3, Length::Definite(l))
                     }
                     Err(_) => {
-                        return Err(::nom::Err::Error(Error::InvalidLength));
+                        return Err(nom::Err::Error(Error::InvalidLength));
                     }
                 }
             }

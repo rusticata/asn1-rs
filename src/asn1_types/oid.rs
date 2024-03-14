@@ -2,14 +2,13 @@ use crate::*;
 use alloc::borrow::Cow;
 #[cfg(not(feature = "std"))]
 use alloc::format;
+#[cfg(not(feature = "std"))]
 use alloc::string::{String, ToString};
+#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 use core::{
     convert::TryFrom, fmt, iter::FusedIterator, marker::PhantomData, ops::Shl, str::FromStr,
 };
-
-#[cfg(feature = "bigint")]
-use num_bigint::BigUint;
 use num_traits::Num;
 
 /// An error for OID parsing functions.
