@@ -1,8 +1,9 @@
 use crate::*;
 use alloc::vec::Vec;
 use core::convert::TryFrom;
+use core::fmt::Debug;
 
-use self::debug::trace;
+use self::debug::{trace, trace_generic};
 
 // // XXX this compiles but requires bound TryFrom :/
 // impl<'a, 'b, T> TryFrom<&'b Any<'a>> for Vec<T>
@@ -51,10 +52,26 @@ where
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<Self> {
-        any.tag().assert_eq(Self::TAG)?;
-        any.header.assert_constructed()?;
-        let items = SetIterator::<T, BerParser>::new(any.data).collect::<Result<Vec<T>>>()?;
-        Ok(items)
+        trace_generic(
+            core::any::type_name::<Self>(),
+            "T::from(Any)",
+            |any| {
+                any.tag().assert_eq(Self::TAG)?;
+                any.header.assert_constructed()?;
+                let items = SetIterator::<T, BerParser>::new(any.data)
+                    .collect::<Result<Vec<T>>>()
+                    .map_err(|e| {
+                        debug_eprintln!(
+                            core::any::type_name::<T>(),
+                            "≠ {}",
+                            "Conversion from Any failed".red()
+                        );
+                        e
+                    })?;
+                Ok(items)
+            },
+            any,
+        )
     }
 }
 
@@ -93,18 +110,25 @@ impl<T> Tagged for Vec<T> {
 impl<'a, T, E> FromDer<'a, E> for Vec<T>
 where
     T: FromDer<'a, E>,
-    E: From<Error>,
+    E: From<Error> + Debug,
 {
     fn from_der(bytes: &'a [u8]) -> ParseResult<Self, E> {
-        let (rem, any) =
-            trace(core::any::type_name::<Self>(), parse_der_any, bytes).map_err(Err::convert)?;
-        any.header
-            .assert_tag(Self::TAG)
-            .map_err(|e| nom::Err::Error(e.into()))?;
-        let v = SequenceIterator::<T, DerParser, E>::new(any.data)
-            .collect::<Result<Vec<T>, E>>()
-            .map_err(nom::Err::Error)?;
-        Ok((rem, v))
+        trace_generic(
+            core::any::type_name::<Self>(),
+            "Sequence::from_der",
+            |bytes| {
+                let (rem, any) = trace(core::any::type_name::<Self>(), parse_der_any, bytes)
+                    .map_err(Err::convert)?;
+                any.header
+                    .assert_tag(Self::TAG)
+                    .map_err(|e| nom::Err::Error(e.into()))?;
+                let v = SequenceIterator::<T, DerParser, E>::new(any.data)
+                    .collect::<Result<Vec<T>, E>>()
+                    .map_err(nom::Err::Error)?;
+                Ok((rem, v))
+            },
+            bytes,
+        )
     }
 }
 

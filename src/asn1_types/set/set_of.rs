@@ -1,10 +1,11 @@
 use crate::*;
 use alloc::vec::Vec;
 use core::convert::TryFrom;
+use core::fmt::{Debug, Display};
 use core::iter::FromIterator;
 use core::ops::{Deref, DerefMut};
 
-use self::debug::trace;
+use self::debug::{trace, trace_generic};
 
 /// The `SET OF` object is an unordered list of homogeneous types.
 ///
@@ -130,18 +131,25 @@ where
 impl<'a, T, E> FromDer<'a, E> for SetOf<T>
 where
     T: FromDer<'a, E>,
-    E: From<Error>,
+    E: From<Error> + Display + Debug,
 {
     fn from_der(bytes: &'a [u8]) -> ParseResult<Self, E> {
-        let (rem, any) =
-            trace(core::any::type_name::<Self>(), Any::from_der, bytes).map_err(Err::convert)?;
-        any.header
-            .assert_tag(Self::TAG)
-            .map_err(|e| nom::Err::Error(e.into()))?;
-        let items = SetIterator::<T, DerParser, E>::new(any.data)
-            .collect::<Result<Vec<T>, E>>()
-            .map_err(nom::Err::Error)?;
-        Ok((rem, SetOf::new(items)))
+        trace_generic(
+            core::any::type_name::<Self>(),
+            "SetOf::from_der",
+            |bytes| {
+                let (rem, any) = trace(core::any::type_name::<Self>(), Any::from_der, bytes)
+                    .map_err(Err::convert)?;
+                any.header
+                    .assert_tag(Self::TAG)
+                    .map_err(|e| nom::Err::Error(e.into()))?;
+                let items = SetIterator::<T, DerParser, E>::new(any.data)
+                    .collect::<Result<Vec<T>, E>>()
+                    .map_err(nom::Err::Error)?;
+                Ok((rem, SetOf::new(items)))
+            },
+            bytes,
+        )
     }
 }
 

@@ -206,6 +206,18 @@ fn from_der_null() {
 }
 
 #[test]
+fn from_der_numericstring() {
+    //
+    let input = &hex!("12 03 31 32 33");
+    let (rem, result) = NumericString::from_der(input).expect("parsing failed");
+    assert_eq!(result.as_ref(), "123");
+    assert_eq!(rem, &[]);
+    // wrong charset
+    let input = &hex!("12 03 41 42 43");
+    let _ = NumericString::from_der(input).expect_err("parsing should fail");
+}
+
+#[test]
 fn from_der_octetstring() {
     // coverage
     use std::borrow::Cow;
