@@ -1,7 +1,6 @@
 use crate::*;
 use alloc::format;
 use core::convert::TryFrom;
-use nom::Needed;
 
 mod f32;
 mod f64;

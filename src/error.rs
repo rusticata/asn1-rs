@@ -1,6 +1,7 @@
 use crate::{Class, Tag};
 use alloc::str;
 use alloc::string;
+#[cfg(not(feature = "std"))]
 use alloc::string::String;
 use displaydoc::Display;
 use nom::error::{ErrorKind, FromExternalError, ParseError};

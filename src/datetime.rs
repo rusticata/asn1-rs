@@ -1,5 +1,6 @@
 use crate::{Result, Tag};
 use alloc::format;
+#[cfg(not(feature = "std"))]
 use alloc::string::ToString;
 use core::fmt;
 #[cfg(feature = "datetime")]

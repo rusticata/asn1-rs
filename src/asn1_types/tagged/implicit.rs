@@ -74,7 +74,7 @@ where
         };
         match T::try_from(any) {
             Ok(inner) => Ok((rem, TaggedValue::implicit(inner))),
-            Err(e) => Err(nom::Err::Error(e)),
+            Err(e) => Err(Err::Error(e)),
         }
     }
 }
@@ -182,7 +182,7 @@ where
                 };
                 Ok((rem, tagged_value))
             }
-            Err(e) => Err(nom::Err::Error(e)),
+            Err(e) => Err(Err::Error(e)),
         }
     }
 }
@@ -217,7 +217,7 @@ where
             },
             data,
         };
-        T::check_constraints(&any).map_err(|e| nom::Err::Error(e.into()))?;
+        T::check_constraints(&any).map_err(|e| Err::Error(e.into()))?;
         match T::try_from(any) {
             Ok(t) => {
                 let tagged_value = TaggedParser {
@@ -228,7 +228,7 @@ where
                 };
                 Ok((rem, tagged_value))
             }
-            Err(e) => Err(nom::Err::Error(e)),
+            Err(e) => Err(Err::Error(e)),
         }
     }
 }

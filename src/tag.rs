@@ -1,4 +1,5 @@
 use crate::{Error, Result};
+#[cfg(not(feature = "std"))]
 use alloc::string::ToString;
 use rusticata_macros::newtype_enum;
 

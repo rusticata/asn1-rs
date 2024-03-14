@@ -3,7 +3,9 @@
 
 use crate::*;
 use alloc::borrow::Cow;
+#[cfg(not(feature = "std"))]
 use alloc::string::{String, ToString};
+#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 
 /// ASN.1 `BMPSTRING` type
@@ -42,7 +44,7 @@ impl<'a> From<&'a str> for BmpString<'a> {
 impl From<String> for BmpString<'_> {
     fn from(s: String) -> Self {
         Self {
-            data: alloc::borrow::Cow::Owned(s),
+            data: Cow::Owned(s),
         }
     }
 }

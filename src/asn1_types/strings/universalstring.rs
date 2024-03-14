@@ -3,7 +3,9 @@
 
 use crate::*;
 use alloc::borrow::Cow;
+#[cfg(not(feature = "std"))]
 use alloc::string::{String, ToString};
+#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 use core::convert::TryFrom;
 use core::iter::FromIterator;
@@ -43,7 +45,7 @@ impl<'a> From<&'a str> for UniversalString<'a> {
 impl From<String> for UniversalString<'_> {
     fn from(s: String) -> Self {
         Self {
-            data: alloc::borrow::Cow::Owned(s),
+            data: Cow::Owned(s),
         }
     }
 }
