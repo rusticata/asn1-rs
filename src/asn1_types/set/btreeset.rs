@@ -1,8 +1,8 @@
 use crate::*;
 use alloc::collections::BTreeSet;
-use core::convert::TryFrom;
+use core::{convert::TryFrom, fmt::Debug};
 
-use self::debug::trace;
+use self::debug::{trace, trace_generic};
 
 impl<T> Tagged for BTreeSet<T> {
     const TAG: Tag = Tag::Set;
@@ -16,10 +16,18 @@ where
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<Self> {
-        any.tag().assert_eq(Self::TAG)?;
-        any.header.assert_constructed()?;
-        let items = SetIterator::<T, BerParser>::new(any.data).collect::<Result<BTreeSet<T>>>()?;
-        Ok(items)
+        trace_generic(
+            core::any::type_name::<Self>(),
+            "BTreeSet::from_der",
+            |any| {
+                any.tag().assert_eq(Self::TAG)?;
+                any.header.assert_constructed()?;
+                let items =
+                    SetIterator::<T, BerParser>::new(any.data).collect::<Result<BTreeSet<T>>>()?;
+                Ok(items)
+            },
+            any,
+        )
     }
 }
 
@@ -43,21 +51,28 @@ impl<'a, T, E> FromDer<'a, E> for BTreeSet<T>
 where
     T: FromDer<'a, E>,
     T: Ord,
-    E: From<Error>,
+    E: From<Error> + Debug,
 {
     fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, E> {
-        let (rem, any) =
-            trace(core::any::type_name::<Self>(), Any::from_der, bytes).map_err(Err::convert)?;
-        any.tag()
-            .assert_eq(Self::TAG)
-            .map_err(|e| nom::Err::Error(e.into()))?;
-        any.header
-            .assert_constructed()
-            .map_err(|e| nom::Err::Error(e.into()))?;
-        let items = SetIterator::<T, DerParser, E>::new(any.data)
-            .collect::<Result<BTreeSet<T>, E>>()
-            .map_err(nom::Err::Error)?;
-        Ok((rem, items))
+        trace_generic(
+            core::any::type_name::<Self>(),
+            "BTreeSet::from_der",
+            |bytes| {
+                let (rem, any) = trace(core::any::type_name::<Self>(), Any::from_der, bytes)
+                    .map_err(Err::convert)?;
+                any.tag()
+                    .assert_eq(Self::TAG)
+                    .map_err(|e| nom::Err::Error(e.into()))?;
+                any.header
+                    .assert_constructed()
+                    .map_err(|e| nom::Err::Error(e.into()))?;
+                let items = SetIterator::<T, DerParser, E>::new(any.data)
+                    .collect::<Result<BTreeSet<T>, E>>()
+                    .map_err(nom::Err::Error)?;
+                Ok((rem, items))
+            },
+            bytes,
+        )
     }
 }
 
