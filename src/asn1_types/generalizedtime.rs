@@ -1,6 +1,6 @@
-use crate::datetime::decode_decimal;
 use crate::*;
 use alloc::format;
+#[cfg(not(feature = "std"))]
 use alloc::string::String;
 use core::convert::TryFrom;
 use core::fmt;

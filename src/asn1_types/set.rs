@@ -1,5 +1,6 @@
 use crate::*;
 use alloc::borrow::Cow;
+#[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 use core::convert::TryFrom;
 
@@ -180,7 +181,7 @@ impl<'a> Set<'a> {
     {
         match self.content {
             Cow::Borrowed(b) => f(b),
-            _ => Err(nom::Err::Error(Error::LifetimeError.into())),
+            _ => Err(Err::Error(Error::LifetimeError.into())),
         }
     }
 

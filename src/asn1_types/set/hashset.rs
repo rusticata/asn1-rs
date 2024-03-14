@@ -57,13 +57,13 @@ where
                     .map_err(Err::convert)?;
                 any.tag()
                     .assert_eq(Self::TAG)
-                    .map_err(|e| nom::Err::Error(e.into()))?;
+                    .map_err(|e| Err::Error(e.into()))?;
                 any.header
                     .assert_constructed()
-                    .map_err(|e| nom::Err::Error(e.into()))?;
+                    .map_err(|e| Err::Error(e.into()))?;
                 let items = SetIterator::<T, DerParser, E>::new(any.data)
                     .collect::<Result<HashSet<T>, E>>()
-                    .map_err(nom::Err::Error)?;
+                    .map_err(Err::Error)?;
                 Ok((rem, items))
             },
             bytes,

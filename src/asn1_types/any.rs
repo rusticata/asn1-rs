@@ -1,6 +1,7 @@
 use crate::ber::*;
 use crate::*;
 use alloc::borrow::Cow;
+#[cfg(not(feature = "std"))]
 use alloc::string::String;
 use core::convert::{TryFrom, TryInto};
 
@@ -103,10 +104,10 @@ impl<'a> Any<'a> {
         let (rem, any) = Any::from_ber(bytes).map_err(Err::convert)?;
         any.tag()
             .assert_eq(Tag(tag))
-            .map_err(|e| nom::Err::Error(e.into()))?;
+            .map_err(|e| Err::Error(e.into()))?;
         any.class()
             .assert_eq(class)
-            .map_err(|e| nom::Err::Error(e.into()))?;
+            .map_err(|e| Err::Error(e.into()))?;
         let (_, res) = op(any.data)?;
         Ok((rem, res))
     }
@@ -127,10 +128,10 @@ impl<'a> Any<'a> {
         let (rem, any) = Any::from_der(bytes).map_err(Err::convert)?;
         any.tag()
             .assert_eq(Tag(tag))
-            .map_err(|e| nom::Err::Error(e.into()))?;
+            .map_err(|e| Err::Error(e.into()))?;
         any.class()
             .assert_eq(class)
-            .map_err(|e| nom::Err::Error(e.into()))?;
+            .map_err(|e| Err::Error(e.into()))?;
         let (_, res) = op(any.data)?;
         Ok((rem, res))
     }
