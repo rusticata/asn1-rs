@@ -96,19 +96,26 @@ macro_rules! impl_int {
             type Error = Error;
 
             fn try_from(any: &'b Any<'a>) -> Result<Self> {
-                any.tag().assert_eq(Self::TAG)?;
-                any.header.assert_primitive()?;
-                let uint = if is_highest_bit_set(any.as_bytes()) {
-                    <$uint>::from_be_bytes(decode_array_int(&any)?)
-                } else {
-                    // read as uint, but check if the value will fit in a signed integer
-                    let u = <$uint>::from_be_bytes(decode_array_uint(&any)?);
-                    if u > <$int>::MAX as $uint {
-                        return Err(Error::IntegerTooLarge);
-                    }
-                    u
-                };
-                Ok(uint as $int)
+                $crate::debug::trace_generic(
+                    core::any::type_name::<$int>(),
+                    "Conversion to int",
+                    |any| {
+                        any.tag().assert_eq(Self::TAG)?;
+                        any.header.assert_primitive()?;
+                        let uint = if is_highest_bit_set(any.as_bytes()) {
+                            <$uint>::from_be_bytes(decode_array_int(&any)?)
+                        } else {
+                            // read as uint, but check if the value will fit in a signed integer
+                            let u = <$uint>::from_be_bytes(decode_array_uint(&any)?);
+                            if u > <$int>::MAX as $uint {
+                                return Err(Error::IntegerTooLarge);
+                            }
+                            u
+                        };
+                        Ok(uint as $int)
+                    },
+                    any,
+                )
             }
         }
 
@@ -162,10 +169,17 @@ macro_rules! impl_uint {
             type Error = Error;
 
             fn try_from(any: &'b Any<'a>) -> Result<Self> {
-                any.tag().assert_eq(Self::TAG)?;
-                any.header.assert_primitive()?;
-                let result = Self::from_be_bytes(decode_array_uint(any)?);
-                Ok(result)
+                $crate::debug::trace_generic(
+                    core::any::type_name::<$ty>(),
+                    "Conversion to uint",
+                    |any| {
+                        any.tag().assert_eq(Self::TAG)?;
+                        any.header.assert_primitive()?;
+                        let result = Self::from_be_bytes(decode_array_uint(any)?);
+                        Ok(result)
+                    },
+                    any,
+                )
             }
         }
         impl CheckDerConstraints for $ty {
