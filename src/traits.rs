@@ -185,7 +185,7 @@ where
     fn from_der(bytes: &'a [u8]) -> ParseResult<T, E> {
         trace_generic(
             core::any::type_name::<T>(),
-            "Any::from_der",
+            "T::from_der",
             |bytes| {
                 let (i, any) = trace(core::any::type_name::<T>(), parse_der_any, bytes)
                     .map_err(nom::Err::convert)?;

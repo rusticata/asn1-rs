@@ -158,6 +158,18 @@ mod tests {
     }
 
     #[test]
+    fn debug_from_der_bool() {
+        eprintln!("** first test is ok**");
+        assert!(<bool>::from_der(&hex!("01 01 ff")).is_ok());
+        eprintln!("** second test fails when parsing ANY (eof)**");
+        assert!(<bool>::from_der(&hex!("01 02 ff")).is_err());
+        eprintln!("** second test fails when checking DER constraints**");
+        assert!(<bool>::from_der(&hex!("01 01 f0")).is_err());
+        eprintln!("** second test fails during TryFrom**");
+        assert!(<bool>::from_der(&hex!("01 02 ff ff")).is_err());
+    }
+
+    #[test]
     fn debug_from_der_failures() {
         use crate::Sequence;
 
