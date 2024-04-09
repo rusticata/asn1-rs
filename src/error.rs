@@ -1,3 +1,6 @@
+#![allow(unknown_lints)]
+#![allow(non_local_definitions)] // false positive for displaydoc::Display: https://github.com/yaahc/displaydoc/issues/46
+
 use crate::{Class, Tag};
 use alloc::str;
 use alloc::string;
