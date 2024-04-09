@@ -1,3 +1,5 @@
+#![allow(unused_imports)]
+
 use crate::ParseResult;
 
 pub(crate) mod macros {
@@ -12,6 +14,7 @@ pub(crate) mod macros {
     };
 }
 
+    #[allow(unused_macros)]
     macro_rules! trace_eprintln {
     ($msg: expr, $( $args:expr ),* ) => {
         #[cfg(feature = "trace")]
