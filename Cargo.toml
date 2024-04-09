@@ -66,3 +66,9 @@ colored = "2.0"
 hex-literal = "0.4"
 pem = "3.0"
 trybuild = "1.0"
+
+[package.metadata.cargo_check_external_types]
+allowed_external_types = [
+    "nom",
+    "nom::*",
+]
