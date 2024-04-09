@@ -59,17 +59,16 @@ where
             |any| {
                 any.tag().assert_eq(Self::TAG)?;
                 any.header.assert_constructed()?;
-                let items = SetIterator::<T, BerParser>::new(any.data)
-                    .collect::<Result<Vec<T>>>()
-                    .map_err(|e| {
-                        debug_eprintln!(
-                            core::any::type_name::<T>(),
-                            "≠ {}",
-                            "Conversion from Any failed".red()
-                        );
-                        e
-                    })?;
-                Ok(items)
+                let res_items: Result<Vec<T>> =
+                    SetIterator::<T, BerParser>::new(any.data).collect();
+                if res_items.is_err() {
+                    debug_eprintln!(
+                        core::any::type_name::<T>(),
+                        "≠ {}",
+                        "Conversion from Any failed".red()
+                    );
+                }
+                res_items
             },
             any,
         )
