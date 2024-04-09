@@ -50,6 +50,8 @@ help understanding how to write and combine parsers and use the output.
 
 See [doc::recipes] and [doc::derive] for more examples and recipes.
 
+See [doc::debug] for advice and tools to debug parsers.
+
 ## Examples
 
 Parse 2 BER integers:
