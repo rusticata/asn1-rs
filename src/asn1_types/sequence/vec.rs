@@ -4,7 +4,7 @@ use alloc::vec::Vec;
 use core::convert::TryFrom;
 use core::fmt::Debug;
 
-use self::debug::{trace, trace_generic};
+use self::debug::{macros::debug_eprintln, trace, trace_generic};
 
 // // XXX this compiles but requires bound TryFrom :/
 // impl<'a, 'b, T> TryFrom<&'b Any<'a>> for Vec<T>

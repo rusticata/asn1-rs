@@ -1,7 +1,7 @@
 use crate::ParseResult;
 
-#[macro_export]
-macro_rules! debug_eprintln {
+pub(crate) mod macros {
+    macro_rules! debug_eprintln {
     ($msg: expr, $( $args:expr ),* ) => {
         #[cfg(feature = "debug")]
         {
@@ -12,8 +12,7 @@ macro_rules! debug_eprintln {
     };
 }
 
-#[macro_export]
-macro_rules! trace_eprintln {
+    macro_rules! trace_eprintln {
     ($msg: expr, $( $args:expr ),* ) => {
         #[cfg(feature = "trace")]
         {
@@ -23,6 +22,12 @@ macro_rules! trace_eprintln {
         }
     };
 }
+
+    pub(crate) use debug_eprintln;
+    pub(crate) use trace_eprintln;
+}
+
+use macros::*;
 
 #[cfg(feature = "debug")]
 fn eprintln_hex_dump(bytes: &[u8], max_len: usize) {
