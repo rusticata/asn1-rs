@@ -29,6 +29,12 @@ pub struct TaggedParserBuilder<TagKind, E = Error> {
     _e: PhantomData<E>,
 }
 
+impl<TagKind, E> Default for TaggedParserBuilder<TagKind, E> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<TagKind, E> TaggedParserBuilder<TagKind, E> {
     /// Create a default `TaggedParserBuilder` builder
     ///

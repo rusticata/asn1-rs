@@ -5,6 +5,12 @@ use core::convert::TryFrom;
 #[derive(Debug, PartialEq, Eq)]
 pub struct Null {}
 
+impl Default for Null {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Null {
     pub const fn new() -> Self {
         Null {}

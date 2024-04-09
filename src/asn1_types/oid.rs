@@ -245,9 +245,7 @@ impl<'a> Oid<'a> {
 
     /// Return an iterator over the sub-identifiers (arcs).
     /// Returns `None` if at least one arc does not fit into `u64`.
-    pub fn iter(
-        &'_ self,
-    ) -> Option<impl Iterator<Item = u64> + FusedIterator + ExactSizeIterator + '_> {
+    pub fn iter(&'_ self) -> Option<impl FusedIterator<Item = u64> + ExactSizeIterator + '_> {
         // Check that every arc fits into u64
         let bytes = if self.relative {
             &self.asn1

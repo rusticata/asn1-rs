@@ -10,6 +10,12 @@ use core::convert::TryFrom;
 #[derive(Debug)]
 pub struct EndOfContent {}
 
+impl Default for EndOfContent {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EndOfContent {
     pub const fn new() -> Self {
         EndOfContent {}
