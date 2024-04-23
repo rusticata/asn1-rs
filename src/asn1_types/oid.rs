@@ -13,12 +13,24 @@ use num_traits::Num;
 
 /// An error for OID parsing functions.
 #[derive(Debug)]
+#[cfg_attr(feature = "std", derive(thiserror::Error))]
 pub enum OidParseError {
+    #[cfg_attr(
+        feature = "std",
+        error("Non-relative OIDs must be at least 2 components long and relative OIDs must not be empty")
+    )]
     TooShort,
+
     /// Signalizes that the first or second component is too large.
     /// The first must be within the range 0 to 6 (inclusive).
     /// The second component must be less than 40.
+    #[cfg_attr(
+        feature = "std",
+        error("The first OID component must be < 7 and the second must be < 40")
+    )]
     FirstComponentsTooLarge,
+
+    #[cfg_attr(feature = "std", error("OID component is not an integer"))]
     ParseIntError,
 }
 
@@ -31,7 +43,6 @@ pub enum OidParseError {
 /// create oids. For example `oid!(1.2.44.233)` or `oid!(rel 44.233)`
 /// for relative oids. See the [module documentation](index.html) for more information.
 #[derive(Hash, PartialEq, Eq, Clone)]
-
 pub struct Oid<'a> {
     asn1: Cow<'a, [u8]>,
     relative: bool,
