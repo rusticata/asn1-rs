@@ -9,28 +9,20 @@ use alloc::vec::Vec;
 use core::{
     convert::TryFrom, fmt, iter::FusedIterator, marker::PhantomData, ops::Shl, str::FromStr,
 };
+use displaydoc::Display;
 use num_traits::Num;
 
 /// An error for OID parsing functions.
-#[derive(Debug)]
+#[derive(Debug, Display)]
 #[cfg_attr(feature = "std", derive(thiserror::Error))]
 pub enum OidParseError {
-    #[cfg_attr(
-        feature = "std",
-        error("Non-relative OIDs must be at least 2 components long and relative OIDs must not be empty")
-    )]
+    /// Non-relative OIDs must be at least 2 components long and relative OIDs must not be empty
     TooShort,
 
-    /// Signalizes that the first or second component is too large.
-    /// The first must be within the range 0 to 6 (inclusive).
-    /// The second component must be less than 40.
-    #[cfg_attr(
-        feature = "std",
-        error("The first OID component must be < 7 and the second must be < 40")
-    )]
+    /// The first OID component must be < 7 and the second must be < 40
     FirstComponentsTooLarge,
 
-    #[cfg_attr(feature = "std", error("OID component is not an integer"))]
+    /// OID component is not an integer
     ParseIntError,
 }
 
