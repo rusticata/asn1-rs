@@ -366,11 +366,6 @@ impl<'a, N: Repr> ExactSizeIterator for SubIdentifierIterator<'a, N> {
                 .count()
         }
     }
-
-    #[cfg(feature = "exact_size_is_empty")]
-    fn is_empty(&self) -> bool {
-        self.oid.asn1.is_empty()
-    }
 }
 
 impl<'a> fmt::Display for Oid<'a> {
