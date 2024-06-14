@@ -177,6 +177,17 @@ impl<I, E> FromExternalError<I, E> for Error {
     }
 }
 
+/// Flatten all `nom::Err` variants error into a single error type
+pub fn from_nom_error<E, F>(e: nom::Err<E>) -> F
+where
+    F: From<E> + From<Error>,
+{
+    match e {
+        nom::Err::Error(e) | nom::Err::Failure(e) => F::from(e),
+        nom::Err::Incomplete(n) => F::from(Error::Incomplete(n)),
+    }
+}
+
 /// Holds the result of BER/DER serialization functions
 pub type ParseResult<'a, T, E = Error> = IResult<&'a [u8], T, E>;
 

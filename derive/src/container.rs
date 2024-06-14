@@ -423,7 +423,10 @@ fn get_field_parser(f: &FieldInfo, asn1_type: Asn1Type, custom_errors: bool) -> 
         .map(|x| quote! {let #name: Option<_> = #name; let #name = #name.unwrap_or(#x);});
     let map_err = if let Some(tt) = f.map_err.as_ref() {
         if asn1_type == Asn1Type::Ber {
-            Some(quote! { .finish().map_err(#tt) })
+            Some(quote! {
+                .map_err(|err| err.map(#tt))
+                .map_err(asn1_rs::from_nom_error::<_, Self::Error>)
+            })
         } else {
             // Some(quote! { .map_err(|err| nom::Err::convert(#tt)) })
             Some(quote! { .map_err(|err| err.map(#tt)) })
@@ -432,7 +435,7 @@ fn get_field_parser(f: &FieldInfo, asn1_type: Asn1Type, custom_errors: bool) -> 
         // add mapping functions only if custom errors are used
         if custom_errors {
             if asn1_type == Asn1Type::Ber {
-                Some(quote! { .finish() })
+                Some(quote! { .map_err(asn1_rs::from_nom_error::<_, Self::Error>) })
             } else {
                 Some(quote! { .map_err(nom::Err::convert) })
             }
