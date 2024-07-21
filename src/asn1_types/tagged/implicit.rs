@@ -130,7 +130,7 @@ where
     }
 
     fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        self.inner.write_der(writer)
+        self.inner.write_der_content(writer)
     }
 }
 
