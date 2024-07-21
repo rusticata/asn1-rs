@@ -483,6 +483,17 @@ fn to_der_tagged_implicit() {
 }
 
 #[test]
+fn to_der_tagged_implicit_optional() {
+    // TaggedValue API
+    let tagged = Some(TaggedValue::implicit(Integer::from(2)));
+    let v = tagged.to_der_vec().expect("serialization failed");
+    assert_eq!(&v, &hex!("81 01 02"));
+    let (_, t2) = OptTaggedImplicit::<Integer, Error, 1>::from_der(&v)
+        .expect("decoding serialized object failed");
+    assert!(tagged.eq(&t2));
+}
+
+#[test]
 fn to_der_teletexstring() {
     test_simple_string!(TeletexString, "abcdef");
 }
