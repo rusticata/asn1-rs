@@ -54,7 +54,7 @@ bitvec = { version="1.0", optional=true }
 colored = { version="2.0", optional=true }
 cookie-factory = { version="0.3.0", optional=true }
 displaydoc = "0.2.2"
-nom = { version="7.0", default_features=false, features=["std"] }
+nom = { version="7.0", default-features=false, features=["std"] }
 num-bigint = { version = "0.4", optional = true }
 num-traits = "0.2.14"
 rusticata-macros = "4.0"
