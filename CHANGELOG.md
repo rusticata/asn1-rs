@@ -8,6 +8,29 @@
 
 ### Thanks
 
+## 0.6.2
+
+### Changed/Fixed
+
+Important:
+
+- Fix a potential panic when using derived parsers, when using custom errors (see #40)
+  This affects only auto-derived parsers specifying a custom error, and parsing incomplete data.
+
+Fixed:
+
+- Fix wrong encoding of large tags (#43)
+- Fix wrong encoding of optional TaggedImplicit object (#42)
+
+General:
+- Add licences to sub-crates (#38)
+- Refactor CI (#36, #41)
+- Updates license field to valid SPDX format (#34)
+
+### Thanks
+
+- Daniel McCarney, Łukasz Wojniłowicz, Isaiah Becker-Mayer, Philip Ye
+
 ## 0.6.1
 
 ### Changed/Fixed
