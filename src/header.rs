@@ -352,19 +352,33 @@ impl ToDer for (Class, bool, Tag) {
         let b0 = (*class as u8) << 6;
         let b0 = b0 | if *constructed { 0b10_0000 } else { 0 };
         if tag.0 > 30 {
+            let mut val = tag.0;
+
+            const BUF_SZ: usize = 8;
+            let mut buffer = [0u8; BUF_SZ];
+            let mut current_index = BUF_SZ - 1;
+
+            // first byte: class+constructed+0x1f
             let b0 = b0 | 0b1_1111;
             let mut sz = writer.write(&[b0])?;
-            let mut val = tag.0;
-            loop {
-                if val <= 127 {
-                    sz += writer.write(&[val as u8])?;
-                    return Ok(sz);
-                } else {
-                    let b = (val & 0b0111_1111) as u8 | 0b1000_0000;
-                    sz += writer.write(&[b])?;
-                    val >>= 7;
+
+            // now write bytes from right (last) to left
+
+            // last encoded byte
+            buffer[current_index] = (val & 0x7f) as u8;
+            val >>= 7;
+
+            while val > 0 {
+                current_index -= 1;
+                if current_index == 0 {
+                    return Err(SerializeError::InvalidLength);
                 }
+                buffer[current_index] = (val & 0x7f) as u8 | 0x80;
+                val >>= 7;
             }
+
+            sz += writer.write(&buffer[current_index..])?;
+            Ok(sz)
         } else {
             let b0 = b0 | (tag.0 as u8);
             let sz = writer.write(&[b0])?;

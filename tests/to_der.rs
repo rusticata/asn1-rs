@@ -68,7 +68,7 @@ fn to_der_tag() {
     let v = (Class::Universal, false, Tag(0x1a1a))
         .to_der_vec()
         .expect("serialization failed");
-    assert_eq!(&v, &[0b1_1111, 0x9a, 0x34]);
+    assert_eq!(&v, &[0b1_1111, 0xb4, 0x1a]);
 }
 
 #[test]
