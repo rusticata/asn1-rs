@@ -352,4 +352,57 @@ pub use asn1_rs_derive::DerAlias;
 /// ```
 pub use asn1_rs_derive::ToStatic;
 
+/// # ToDerSequence custom derive
+///
+/// `ToDerSequence` is a custom derive attribute, to derive both DER [`Sequence`](super::Sequence) serialization automatically from the structure definition.
+/// This attribute will automatically derive implementations for the following traits:
+///   - [`ToDer`](super::ToDer)
+///
+/// Serialization will be automatically derived from struct fields. Every field type must implement the [`ToDer`](super::ToDer) trait.
+///
+/// See [`derive`](crate::doc::derive) documentation for more examples and documentation.
+///
+/// ## Examples
+///
+/// To serialize the following ASN.1 structure:
+/// <pre>
+/// S ::= SEQUENCE {
+///     a INTEGER(0..2^32),
+///     b INTEGER(0..2^16),
+///     c INTEGER(0..2^16),
+/// }
+/// </pre>
+///
+/// Define a structure and add the `DerSequence` derive:
+///
+/// ```rust
+/// use asn1_rs::*;
+///
+/// #[derive(DerSequence, ToDerSequence)]
+/// struct S {
+///   a: u32,
+///   b: u16,
+///   c: u16
+/// }
+///
+/// let s = S { a: 1, b: 2, c: 3 };
+/// let data = s.to_der_vec().expect("Serialization failed");
+/// ```
+///
+/// ## Debugging
+///
+/// To help debugging the generated code, the `#[debug_derive]` attribute has been added.
+///
+/// When this attribute is specified, the generated code will be printed to `stderr` during compilation.
+///
+/// Example:
+/// ```rust
+/// use asn1_rs::*;
+///
+/// #[derive(DerSequence, ToDerSequence)]
+/// #[debug_derive]
+/// struct S {
+///   a: u32,
+/// }
+/// ```
 pub use asn1_rs_derive::ToDerSequence;
