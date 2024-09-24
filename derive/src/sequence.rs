@@ -61,3 +61,42 @@ pub fn derive_der_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
     }
     ts
 }
+
+pub fn derive_toder_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
+    let ast = s.ast();
+
+    let container = match &ast.data {
+        Data::Struct(ds) => Container::from_datastruct(ds, ast, ContainerType::Sequence),
+        _ => panic!("Unsupported type, cannot derive"),
+    };
+
+    let debug_derive = ast.attrs.iter().any(|attr| {
+        attr.meta
+            .path()
+            .is_ident(&Ident::new("debug_derive", Span::call_site()))
+    });
+
+    //let lifetime = Lifetime::new("'ber", Span::call_site());
+    let wh = &container.where_predicates;
+
+    let impl_to_der_len = container.gen_to_der_len();
+    let impl_write_der_header = container.gen_write_der_header();
+    let impl_write_der_content = container.gen_write_der_content();
+
+    // note: `gen impl` in synstructure takes care of appending extra where clauses if any, and removing
+    // the `where` statement if there are none.
+    let ts = s.gen_impl(quote! {
+        extern crate asn1_rs;
+
+        #[cfg(feature = "std")]
+        gen impl asn1_rs::ToDer for @Self where #(#wh)+* {
+            #impl_to_der_len
+            #impl_write_der_header
+            #impl_write_der_content
+        }
+    });
+    if debug_derive {
+        eprintln!("{}", ts);
+    }
+    ts
+}

@@ -68,3 +68,7 @@ synstructure::decl_derive!([DerSet, attributes(
 synstructure::decl_derive!([ToStatic, attributes(
     debug_derive
 )] => derive_tostatic);
+
+synstructure::decl_derive!([ToDerSequence, attributes(
+    debug_derive,
+)] => derive_toder_sequence);
