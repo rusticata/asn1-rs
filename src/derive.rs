@@ -351,3 +351,5 @@ pub use asn1_rs_derive::DerAlias;
 /// struct S<'a>(pub Cow<'a, str>);
 /// ```
 pub use asn1_rs_derive::ToStatic;
+
+pub use asn1_rs_derive::ToDerSequence;
