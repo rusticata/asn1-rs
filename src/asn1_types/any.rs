@@ -98,7 +98,7 @@ impl<'a> Any<'a> {
         op: F,
     ) -> ParseResult<'a, T, E>
     where
-        F: FnOnce(&'a [u8]) -> ParseResult<T, E>,
+        F: FnOnce(&'a [u8]) -> ParseResult<'a, T, E>,
         E: From<Error>,
     {
         let (rem, any) = Any::from_ber(bytes).map_err(Err::convert)?;
@@ -122,7 +122,7 @@ impl<'a> Any<'a> {
         op: F,
     ) -> ParseResult<'a, T, E>
     where
-        F: FnOnce(&'a [u8]) -> ParseResult<T, E>,
+        F: FnOnce(&'a [u8]) -> ParseResult<'a, T, E>,
         E: From<Error>,
     {
         let (rem, any) = Any::from_der(bytes).map_err(Err::convert)?;
@@ -339,14 +339,14 @@ pub(crate) fn parse_der_any(input: &[u8]) -> ParseResult<Any> {
 
 impl<'a> FromBer<'a> for Any<'a> {
     #[inline]
-    fn from_ber(bytes: &'a [u8]) -> ParseResult<Self> {
+    fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self> {
         trace("Any", parse_ber_any, bytes)
     }
 }
 
 impl<'a> FromDer<'a> for Any<'a> {
     #[inline]
-    fn from_der(bytes: &'a [u8]) -> ParseResult<Self> {
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
         trace("Any", parse_der_any, bytes)
     }
 }

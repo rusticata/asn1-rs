@@ -16,7 +16,7 @@ impl<'a> OctetString<'a> {
     }
 
     /// Get the bytes representation of the *content*
-    pub fn as_cow(&'a self) -> &Cow<'a, [u8]> {
+    pub fn as_cow(&'a self) -> &'a Cow<'a, [u8]> {
         &self.data
     }
 

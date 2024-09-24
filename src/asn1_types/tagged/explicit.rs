@@ -156,7 +156,7 @@ impl<'a, T, E> TaggedParser<'a, Explicit, T, E> {
         op: F,
     ) -> ParseResult<'a, T, E>
     where
-        F: FnOnce(&'a [u8]) -> ParseResult<T, E>,
+        F: FnOnce(&'a [u8]) -> ParseResult<'a, T, E>,
         E: From<Error>,
     {
         Any::from_ber_and_then(class, tag, bytes, op)
@@ -176,7 +176,7 @@ impl<'a, T, E> TaggedParser<'a, Explicit, T, E> {
         op: F,
     ) -> ParseResult<'a, T, E>
     where
-        F: FnOnce(&'a [u8]) -> ParseResult<T, E>,
+        F: FnOnce(&'a [u8]) -> ParseResult<'a, T, E>,
         E: From<Error>,
     {
         Any::from_der_and_then(class, tag, bytes, op)

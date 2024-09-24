@@ -225,7 +225,7 @@ impl<'a> ToStatic for Header<'a> {
 }
 
 impl<'a> FromBer<'a> for Header<'a> {
-    fn from_ber(bytes: &'a [u8]) -> ParseResult<Self> {
+    fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self> {
         let (i1, el) = parse_identifier(bytes)?;
         let class = match Class::try_from(el.0) {
             Ok(c) => c,
@@ -270,7 +270,7 @@ impl<'a> FromBer<'a> for Header<'a> {
 }
 
 impl<'a> FromDer<'a> for Header<'a> {
-    fn from_der(bytes: &'a [u8]) -> ParseResult<Self> {
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
         let (i1, el) = parse_identifier(bytes)?;
         let class = match Class::try_from(el.0) {
             Ok(c) => c,

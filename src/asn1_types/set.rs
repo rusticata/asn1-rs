@@ -99,7 +99,7 @@ impl<'a> Set<'a> {
     ///   in one step, ensuring there are only references (and dropping the temporary set).
     pub fn and_then<U, F, E>(self, op: F) -> ParseResult<'a, U, E>
     where
-        F: FnOnce(Cow<'a, [u8]>) -> ParseResult<U, E>,
+        F: FnOnce(Cow<'a, [u8]>) -> ParseResult<'a, U, E>,
     {
         op(self.content)
     }
@@ -107,7 +107,7 @@ impl<'a> Set<'a> {
     /// Same as [`Set::from_der_and_then`], but using BER encoding (no constraints).
     pub fn from_ber_and_then<U, F, E>(bytes: &'a [u8], op: F) -> ParseResult<'a, U, E>
     where
-        F: FnOnce(&'a [u8]) -> ParseResult<U, E>,
+        F: FnOnce(&'a [u8]) -> ParseResult<'a, U, E>,
         E: From<Error>,
     {
         let (rem, seq) = Set::from_ber(bytes).map_err(Err::convert)?;
@@ -143,7 +143,7 @@ impl<'a> Set<'a> {
     /// ```
     pub fn from_der_and_then<U, F, E>(bytes: &'a [u8], op: F) -> ParseResult<'a, U, E>
     where
-        F: FnOnce(&'a [u8]) -> ParseResult<U, E>,
+        F: FnOnce(&'a [u8]) -> ParseResult<'a, U, E>,
         E: From<Error>,
     {
         let (rem, seq) = Set::from_der(bytes).map_err(Err::convert)?;
