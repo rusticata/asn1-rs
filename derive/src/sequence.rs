@@ -1,7 +1,7 @@
 use crate::container::*;
 use proc_macro2::Span;
 use quote::quote;
-use syn::{Data, Ident};
+use syn::{Data, Ident, WherePredicate};
 
 pub fn derive_ber_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
     let ast = s.ast();
@@ -78,6 +78,11 @@ pub fn derive_toder_sequence(s: synstructure::Structure) -> proc_macro2::TokenSt
 
     //let lifetime = Lifetime::new("'ber", Span::call_site());
     let wh = &container.where_predicates;
+    // we must filter out the 'ber lifetime (added for parsers, but not used here)
+    let wh = wh.iter().filter(|predicate| match predicate {
+        WherePredicate::Lifetime(lft) => lft.lifetime.ident != "ber",
+        _ => true,
+    });
 
     let impl_to_der_len = container.gen_to_der_len();
     let impl_write_der_header = container.gen_write_der_header();
