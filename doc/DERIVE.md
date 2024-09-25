@@ -242,6 +242,35 @@ let ref_c = result.c.as_ref();
 # Ok(()) };
 ```
 
+# Serialization
+
+## BER/DER Sequence serialization
+
+To serialize a struct to a DER `SEQUENCE`, add the [`ToDerSequence`] derive attribute to an existing struct.
+Serialization will be derived automatically for all fields, which must implement the [`ToDer`] trait.
+
+Some parser traits may be required, so also deriving parsers using [`DerSequence`] may be required.
+
+*Note*: serialization to BER is currently not available. In most cases, DER serialization should be enough.
+
+
+For ex:
+
+```rust
+# use asn1_rs::*;
+#[derive(Debug, PartialEq, DerSequence, ToDerSequence)]
+pub struct S {
+    a: u32,
+    b: u16,
+    c: u16,
+}
+
+let s = S { a: 1, b: 2, c: 3 };
+let output = s.to_der_vec().expect("serialization failed");
+let (_rest, result) = S::from_ber(&output).expect("parsing failed");
+assert_eq!(s, result);
+```
+
 # Advanced
 
 ## Custom errors
