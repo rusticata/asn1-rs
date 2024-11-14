@@ -109,7 +109,7 @@ impl Tagged for UniversalString<'_> {
 impl ToDer for UniversalString<'_> {
     fn to_der_len(&self) -> Result<usize> {
         // UCS-4: 4 bytes per character
-        let sz = self.data.as_bytes().len() * 4;
+        let sz = self.data.len() * 4;
         if sz < 127 {
             // 1 (class+tag) + 1 (length) + len
             Ok(2 + sz)
@@ -125,7 +125,7 @@ impl ToDer for UniversalString<'_> {
             Class::Universal,
             false,
             Self::TAG,
-            Length::Definite(self.data.as_bytes().len() * 4),
+            Length::Definite(self.data.len() * 4),
         );
         header.write_der_header(writer).map_err(Into::into)
     }
@@ -134,6 +134,6 @@ impl ToDer for UniversalString<'_> {
         self.data
             .chars()
             .try_for_each(|c| writer.write(&(c as u32).to_be_bytes()[..]).map(|_| ()))?;
-        Ok(self.data.as_bytes().len() * 4)
+        Ok(self.data.len() * 4)
     }
 }

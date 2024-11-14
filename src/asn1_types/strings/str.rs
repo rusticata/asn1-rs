@@ -40,7 +40,7 @@ impl Tagged for &'_ str {
 #[cfg(feature = "std")]
 impl ToDer for &'_ str {
     fn to_der_len(&self) -> Result<usize> {
-        let sz = self.as_bytes().len();
+        let sz = self.len();
         if sz < 127 {
             // 1 (class+tag) + 1 (length) + len
             Ok(2 + sz)
@@ -56,7 +56,7 @@ impl ToDer for &'_ str {
             Class::Universal,
             false,
             Self::TAG,
-            Length::Definite(self.as_bytes().len()),
+            Length::Definite(self.len()),
         );
         header.write_der_header(writer).map_err(Into::into)
     }
