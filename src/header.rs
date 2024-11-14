@@ -208,7 +208,7 @@ impl From<Tag> for Header<'_> {
     }
 }
 
-impl<'a> ToStatic for Header<'a> {
+impl ToStatic for Header<'_> {
     type Owned = Header<'static>;
 
     fn to_static(&self) -> Self::Owned {

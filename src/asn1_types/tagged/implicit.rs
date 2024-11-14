@@ -189,7 +189,7 @@ where
 
 // implementations for TaggedParser
 
-impl<'a, T, E> TaggedParser<'a, Implicit, T, E> {
+impl<T, E> TaggedParser<'_, Implicit, T, E> {
     pub const fn new_implicit(class: Class, constructed: bool, tag: u32, inner: T) -> Self {
         Self {
             header: Header::new(class, constructed, Tag(tag), Length::Definite(0)),
@@ -233,7 +233,7 @@ where
     }
 }
 
-impl<'a, T> CheckDerConstraints for TaggedParser<'a, Implicit, T>
+impl<T> CheckDerConstraints for TaggedParser<'_, Implicit, T>
 where
     T: CheckDerConstraints,
     T: Tagged,
@@ -253,7 +253,7 @@ where
 }
 
 #[cfg(feature = "std")]
-impl<'a, T> ToDer for TaggedParser<'a, Implicit, T>
+impl<T> ToDer for TaggedParser<'_, Implicit, T>
 where
     T: ToDer,
 {

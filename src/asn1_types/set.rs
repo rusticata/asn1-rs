@@ -277,7 +277,7 @@ impl<'a> Set<'a> {
     }
 }
 
-impl<'a> ToStatic for Set<'a> {
+impl ToStatic for Set<'_> {
     type Owned = Set<'static>;
 
     fn to_static(&self) -> Self::Owned {
@@ -287,7 +287,7 @@ impl<'a> ToStatic for Set<'a> {
     }
 }
 
-impl<'a> AsRef<[u8]> for Set<'a> {
+impl AsRef<[u8]> for Set<'_> {
     fn as_ref(&self) -> &[u8] {
         &self.content
     }
@@ -313,15 +313,15 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Set<'a> {
     }
 }
 
-impl<'a> CheckDerConstraints for Set<'a> {
+impl CheckDerConstraints for Set<'_> {
     fn check_constraints(_any: &Any) -> Result<()> {
         Ok(())
     }
 }
 
-impl<'a> DerAutoDerive for Set<'a> {}
+impl DerAutoDerive for Set<'_> {}
 
-impl<'a> Tagged for Set<'a> {
+impl Tagged for Set<'_> {
     const TAG: Tag = Tag::Set;
 }
 
@@ -355,7 +355,7 @@ impl ToDer for Set<'_> {
 }
 
 #[cfg(feature = "std")]
-impl<'a> Set<'a> {
+impl Set<'_> {
     /// Attempt to create a `Set` from an iterator over serializable objects (to DER)
     ///
     /// # Examples

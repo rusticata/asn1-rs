@@ -23,7 +23,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for &'a str {
     }
 }
 
-impl<'a> CheckDerConstraints for &'a str {
+impl CheckDerConstraints for &'_ str {
     fn check_constraints(any: &Any) -> Result<()> {
         // X.690 section 10.2
         any.header.assert_primitive()?;
@@ -33,12 +33,12 @@ impl<'a> CheckDerConstraints for &'a str {
 
 impl DerAutoDerive for &'_ str {}
 
-impl<'a> Tagged for &'a str {
+impl Tagged for &'_ str {
     const TAG: Tag = Tag::Utf8String;
 }
 
 #[cfg(feature = "std")]
-impl<'a> ToDer for &'a str {
+impl ToDer for &'_ str {
     fn to_der_len(&self) -> Result<usize> {
         let sz = self.as_bytes().len();
         if sz < 127 {

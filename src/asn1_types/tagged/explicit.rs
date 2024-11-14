@@ -221,7 +221,7 @@ where
     }
 }
 
-impl<'a, T> CheckDerConstraints for TaggedParser<'a, Explicit, T>
+impl<T> CheckDerConstraints for TaggedParser<'_, Explicit, T>
 where
     T: CheckDerConstraints,
 {
@@ -234,7 +234,7 @@ where
 }
 
 #[cfg(feature = "std")]
-impl<'a, T> ToDer for TaggedParser<'a, Explicit, T>
+impl<T> ToDer for TaggedParser<'_, Explicit, T>
 where
     T: ToDer,
 {

@@ -55,7 +55,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Oid<'a> {
     }
 }
 
-impl<'a> CheckDerConstraints for Oid<'a> {
+impl CheckDerConstraints for Oid<'_> {
     fn check_constraints(any: &Any) -> Result<()> {
         any.header.assert_primitive()?;
         any.header.length.assert_definite()?;
@@ -65,7 +65,7 @@ impl<'a> CheckDerConstraints for Oid<'a> {
 
 impl DerAutoDerive for Oid<'_> {}
 
-impl<'a> Tagged for Oid<'a> {
+impl Tagged for Oid<'_> {
     const TAG: Tag = Tag::Oid;
 }
 
@@ -309,7 +309,7 @@ struct SubIdentifierIterator<'a, N: Repr> {
     n: PhantomData<&'a N>,
 }
 
-impl<'a, N: Repr> Iterator for SubIdentifierIterator<'a, N> {
+impl<N: Repr> Iterator for SubIdentifierIterator<'_, N> {
     type Item = N;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -345,9 +345,9 @@ impl<'a, N: Repr> Iterator for SubIdentifierIterator<'a, N> {
     }
 }
 
-impl<'a, N: Repr> FusedIterator for SubIdentifierIterator<'a, N> {}
+impl<N: Repr> FusedIterator for SubIdentifierIterator<'_, N> {}
 
-impl<'a, N: Repr> ExactSizeIterator for SubIdentifierIterator<'a, N> {
+impl<N: Repr> ExactSizeIterator for SubIdentifierIterator<'_, N> {
     fn len(&self) -> usize {
         if self.oid.relative {
             self.oid.asn1.iter().filter(|o| (*o >> 7) == 0u8).count()
@@ -368,7 +368,7 @@ impl<'a, N: Repr> ExactSizeIterator for SubIdentifierIterator<'a, N> {
     }
 }
 
-impl<'a> fmt::Display for Oid<'a> {
+impl fmt::Display for Oid<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         if self.relative {
             f.write_str("rel. ")?;
@@ -377,7 +377,7 @@ impl<'a> fmt::Display for Oid<'a> {
     }
 }
 
-impl<'a> fmt::Debug for Oid<'a> {
+impl fmt::Debug for Oid<'_> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str("OID(")?;
         <Oid as fmt::Display>::fmt(self, f)?;
@@ -385,7 +385,7 @@ impl<'a> fmt::Debug for Oid<'a> {
     }
 }
 
-impl<'a> FromStr for Oid<'a> {
+impl FromStr for Oid<'_> {
     type Err = OidParseError;
 
     fn from_str(s: &str) -> core::result::Result<Self, Self::Err> {

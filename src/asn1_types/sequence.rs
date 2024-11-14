@@ -276,7 +276,7 @@ impl<'a> Sequence<'a> {
     }
 }
 
-impl<'a> ToStatic for Sequence<'a> {
+impl ToStatic for Sequence<'_> {
     type Owned = Sequence<'static>;
 
     fn to_static(&self) -> Self::Owned {
@@ -298,7 +298,7 @@ where
     }
 }
 
-impl<'a> AsRef<[u8]> for Sequence<'a> {
+impl AsRef<[u8]> for Sequence<'_> {
     fn as_ref(&self) -> &[u8] {
         &self.content
     }
@@ -324,7 +324,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Sequence<'a> {
     }
 }
 
-impl<'a> CheckDerConstraints for Sequence<'a> {
+impl CheckDerConstraints for Sequence<'_> {
     fn check_constraints(_any: &Any) -> Result<()> {
         // TODO: iterate on ANY objects and check constraints? -> this will not be exhaustive
         // test, for ex INTEGER encoding will not be checked
@@ -332,9 +332,9 @@ impl<'a> CheckDerConstraints for Sequence<'a> {
     }
 }
 
-impl<'a> DerAutoDerive for Sequence<'a> {}
+impl DerAutoDerive for Sequence<'_> {}
 
-impl<'a> Tagged for Sequence<'a> {
+impl Tagged for Sequence<'_> {
     const TAG: Tag = Tag::Sequence;
 }
 
@@ -368,7 +368,7 @@ impl ToDer for Sequence<'_> {
 }
 
 #[cfg(feature = "std")]
-impl<'a> Sequence<'a> {
+impl Sequence<'_> {
     /// Attempt to create a `Sequence` from an iterator over serializable objects (to DER)
     ///
     /// # Examples

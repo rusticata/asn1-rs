@@ -30,7 +30,7 @@ impl<'a> UniversalString<'a> {
     }
 }
 
-impl<'a> AsRef<str> for UniversalString<'a> {
+impl AsRef<str> for UniversalString<'_> {
     fn as_ref(&self) -> &str {
         &self.data
     }
@@ -92,7 +92,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for UniversalString<'a> {
     }
 }
 
-impl<'a> CheckDerConstraints for UniversalString<'a> {
+impl CheckDerConstraints for UniversalString<'_> {
     fn check_constraints(any: &Any) -> Result<()> {
         any.header.assert_primitive()?;
         Ok(())
@@ -101,7 +101,7 @@ impl<'a> CheckDerConstraints for UniversalString<'a> {
 
 impl DerAutoDerive for UniversalString<'_> {}
 
-impl<'a> Tagged for UniversalString<'a> {
+impl Tagged for UniversalString<'_> {
     const TAG: Tag = Tag::UniversalString;
 }
 

@@ -26,7 +26,7 @@ impl<'a> OctetString<'a> {
     }
 }
 
-impl<'a> AsRef<[u8]> for OctetString<'a> {
+impl AsRef<[u8]> for OctetString<'_> {
     fn as_ref(&self) -> &[u8] {
         &self.data
     }
@@ -59,7 +59,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for OctetString<'a> {
     }
 }
 
-impl<'a> CheckDerConstraints for OctetString<'a> {
+impl CheckDerConstraints for OctetString<'_> {
     fn check_constraints(any: &Any) -> Result<()> {
         // X.690 section 10.2
         any.header.assert_primitive()?;
@@ -69,7 +69,7 @@ impl<'a> CheckDerConstraints for OctetString<'a> {
 
 impl DerAutoDerive for OctetString<'_> {}
 
-impl<'a> Tagged for OctetString<'a> {
+impl Tagged for OctetString<'_> {
     const TAG: Tag = Tag::OctetString;
 }
 
@@ -115,7 +115,7 @@ impl<'a> TryFrom<Any<'a>> for &'a [u8] {
     }
 }
 
-impl<'a> CheckDerConstraints for &'a [u8] {
+impl CheckDerConstraints for &'_ [u8] {
     fn check_constraints(any: &Any) -> Result<()> {
         // X.690 section 10.2
         any.header.assert_primitive()?;
@@ -125,7 +125,7 @@ impl<'a> CheckDerConstraints for &'a [u8] {
 
 impl DerAutoDerive for &'_ [u8] {}
 
-impl<'a> Tagged for &'a [u8] {
+impl Tagged for &'_ [u8] {
     const TAG: Tag = Tag::OctetString;
 }
 

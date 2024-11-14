@@ -458,7 +458,7 @@ impl_from_to!(UNSIGNED u32, from_u32, as_u32);
 impl_from_to!(UNSIGNED u64, from_u64, as_u64);
 impl_from_to!(UNSIGNED u128, from_u128, as_u128);
 
-impl<'a> AsRef<[u8]> for Integer<'a> {
+impl AsRef<[u8]> for Integer<'_> {
     fn as_ref(&self) -> &[u8] {
         &self.data
     }
@@ -483,7 +483,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Integer<'a> {
     }
 }
 
-impl<'a> CheckDerConstraints for Integer<'a> {
+impl CheckDerConstraints for Integer<'_> {
     fn check_constraints(any: &Any) -> Result<()> {
         check_der_int_constraints(any)
     }
@@ -509,7 +509,7 @@ fn check_der_int_constraints(any: &Any) -> Result<()> {
 
 impl DerAutoDerive for Integer<'_> {}
 
-impl<'a> Tagged for Integer<'a> {
+impl Tagged for Integer<'_> {
     const TAG: Tag = Tag::Integer;
 }
 
