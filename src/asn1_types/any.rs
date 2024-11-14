@@ -321,6 +321,54 @@ impl<'a> Any<'a> {
     {
         TryFrom::try_from(self)
     }
+
+    /// Attempt to get value as `str`, for all known string types
+    ///
+    /// This function does not allocate data, so it supports all string types except
+    /// `UniversalString`.
+    pub fn as_any_str(&self) -> Result<String> {
+        match self.tag() {
+            Tag::GeneralString
+            | Tag::GraphicString
+            | Tag::Ia5String
+            | Tag::NumericString
+            | Tag::PrintableString
+            | Tag::T61String
+            | Tag::Utf8String
+            | Tag::VideotexString
+            | Tag::VisibleString => {
+                let res = core::str::from_utf8(self.data)?;
+                Ok(res.to_string())
+            }
+            Tag::UniversalString => {
+                let us = UniversalString::try_from(self)?;
+                Ok(us.string())
+            }
+            _ => todo!(),
+        }
+    }
+
+    /// Attempt to get value as `String`, for all known string types
+    ///
+    /// This function allocates data
+    pub fn as_any_string(&self) -> Result<&str> {
+        match self.tag() {
+            Tag::GeneralString
+            | Tag::GraphicString
+            | Tag::Ia5String
+            | Tag::NumericString
+            | Tag::PrintableString
+            | Tag::T61String
+            //| Tag::UniversalString // UCS-4, cannot be converted
+            | Tag::Utf8String
+            | Tag::VideotexString
+            | Tag::VisibleString => {
+                let res = core::str::from_utf8(self.data)?;
+                Ok(res)
+            }
+            _ => todo!(),
+        }
+    }
 }
 
 pub(crate) fn parse_ber_any(input: &[u8]) -> ParseResult<Any> {
