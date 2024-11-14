@@ -320,3 +320,34 @@ pub use asn1_rs_derive::BerAlias;
 /// struct S(pub u32);
 /// ```
 pub use asn1_rs_derive::DerAlias;
+
+/// # ToStatic custom derive
+///
+/// `ToStatic` is a custom derive attribute, to derive the [`ToStatic`](ToStatic) trait automatically from the structure definition.
+///
+/// ## Example
+///
+/// ```rust
+/// use asn1_rs::ToStatic;
+/// use std::borrow::Cow;
+///
+/// #[derive(ToStatic)]
+/// struct S<'a>(pub Cow<'a, str>);
+/// ```
+///
+/// ## Debugging
+///
+/// To help debugging the generated code, the `#[debug_derive]` attribute has been added.
+///
+/// When this attribute is specified, the generated code will be printed to `stderr` during compilation.
+///
+/// Example:
+/// ```rust
+/// use asn1_rs::ToStatic;
+/// use std::borrow::Cow;
+///
+/// #[derive(ToStatic)]
+/// #[debug_derive]
+/// struct S<'a>(pub Cow<'a, str>);
+/// ```
+pub use asn1_rs_derive::ToStatic;
