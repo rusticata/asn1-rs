@@ -2,7 +2,7 @@ use crate::ber::*;
 use crate::*;
 use alloc::borrow::Cow;
 #[cfg(not(feature = "std"))]
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use core::convert::{TryFrom, TryInto};
 
 use self::debug::trace;
