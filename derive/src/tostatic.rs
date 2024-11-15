@@ -1,6 +1,6 @@
 use proc_macro2::Span;
 use quote::quote;
-use syn::{Data, DeriveInput, FieldsNamed, FieldsUnnamed, Ident, LitInt};
+use syn::{Data, DeriveInput, FieldsNamed, FieldsUnnamed, Ident, Lifetime, LitInt};
 
 pub fn derive_tostatic(s: synstructure::Structure) -> proc_macro2::TokenStream {
     let ast = s.ast();
@@ -55,9 +55,23 @@ fn derive_named_struct(fields: &FieldsNamed, ast: &DeriveInput) -> proc_macro2::
 
     let struct_ident = &ast.ident;
 
+    // check if struct has lifetimes
+    let static_token = match ast.generics.lifetimes().count() {
+        0 => None,
+        1 => {
+            let lt = Lifetime::new("'static", Span::call_site());
+            Some(quote! {<#lt>})
+        }
+        _ => {
+            let lt_static = Lifetime::new("'static", Span::call_site());
+            let lts = ast.generics.lifetimes().map(|_| lt_static.clone());
+            Some(quote! {<#(#lts),*>})
+        }
+    };
+
     quote! {
         gen impl asn1_rs::ToStatic for @Self {
-            type Owned = #struct_ident<'static>;
+            type Owned = #struct_ident #static_token;
 
             fn to_static(&self) -> Self::Owned {
                 #(#field_instrs)*
@@ -77,16 +91,39 @@ fn derive_unnamed_struct(fields: &FieldsUnnamed, ast: &DeriveInput) -> proc_macr
         .map(|idx| Ident::new(&format!("_{idx}"), Span::call_site()))
         .collect();
 
-    let field_instrs = field_idents.iter().enumerate().map(|(idx, ident)| {
-        let idx = LitInt::new(&format!("{idx}"), Span::call_site());
-        quote! { let #ident = self.#idx.to_static(); }
-    });
+    let field_instrs =
+        fields
+            .iter()
+            .zip(field_idents.iter())
+            .enumerate()
+            .map(|(idx, (f, ident))| {
+                if is_primitive_type(f) {
+                    quote! { let #ident = self.#idx; }
+                } else {
+                    let idx = LitInt::new(&format!("{idx}"), Span::call_site());
+                    quote! { let #ident = self.#idx.to_static(); }
+                }
+            });
 
     let struct_ident = &ast.ident;
 
+    // check if struct has lifetimes
+    let static_token = match ast.generics.lifetimes().count() {
+        0 => None,
+        1 => {
+            let lt = Lifetime::new("'static", Span::call_site());
+            Some(quote! {<#lt>})
+        }
+        _ => {
+            let lt_static = Lifetime::new("'static", Span::call_site());
+            let lts = ast.generics.lifetimes().map(|_| lt_static.clone());
+            Some(quote! {<#(#lts),*>})
+        }
+    };
+
     quote! {
         gen impl asn1_rs::ToStatic for @Self {
-            type Owned = #struct_ident<'static>;
+            type Owned = #struct_ident #static_token;
 
             fn to_static(&self) -> Self::Owned {
                 #(#field_instrs)*
@@ -96,4 +133,8 @@ fn derive_unnamed_struct(fields: &FieldsUnnamed, ast: &DeriveInput) -> proc_macr
             }
         }
     }
+}
+
+fn is_primitive_type(f: &syn::Field) -> bool {
+    false
 }

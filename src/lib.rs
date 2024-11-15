@@ -190,6 +190,7 @@ mod error;
 mod header;
 mod length;
 mod tag;
+mod tostatic;
 mod traits;
 
 pub use asn1_types::*;
