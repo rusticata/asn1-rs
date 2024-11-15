@@ -11,7 +11,7 @@ pub fn derive_tostatic(s: synstructure::Structure) -> proc_macro2::TokenStream {
             .is_ident(&Ident::new("debug_derive", Span::call_site()))
     });
 
-    let ds = match &ast.data {
+    let ds: &syn::DataStruct = match &ast.data {
         Data::Struct(ds) => ds,
         Data::Enum(_) => {
             return derive_tostatic_enum(&s);
@@ -49,11 +49,7 @@ fn derive_tostatic_enum(s: &synstructure::Structure) -> proc_macro2::TokenStream
         let prefix = vi.prefix;
         let vname = &vi.ast().ident;
         let bindings = vi.bindings();
-        // if bindings is empty, this is a unit variant
-        if bindings.is_empty() {
-            return quote! { #prefix :: #vname };
-        }
-        // TODO: named/unnamed?
+        // bindings can be empty for unit variants
         let (idents, instrs): (Vec<_>, Vec<_>) = bindings
             .iter()
             .map(|b| {
@@ -114,10 +110,6 @@ fn derive_unit_struct(ast: &DeriveInput) -> proc_macro2::TokenStream {
     }
 }
 
-fn derive_unit_field() -> (Vec<Ident>, Vec<proc_macro2::TokenStream>) {
-    (Vec::new(), Vec::new())
-}
-
 fn derive_named_fields(fields: &FieldsNamed) -> (Vec<Ident>, Vec<proc_macro2::TokenStream>) {
     let fields: Vec<_> = fields.named.iter().collect();
 
@@ -134,7 +126,6 @@ fn derive_named_fields(fields: &FieldsNamed) -> (Vec<Ident>, Vec<proc_macro2::To
 }
 
 fn derive_unnamed_fields(fields: &FieldsUnnamed) -> (Vec<Ident>, Vec<proc_macro2::TokenStream>) {
-    // TODO: if unnamed, check that there is only one lifetime in ast.generics
     let fields: Vec<_> = fields.unnamed.iter().collect();
 
     let field_idents: Vec<_> = (0..fields.len())
@@ -145,13 +136,9 @@ fn derive_unnamed_fields(fields: &FieldsUnnamed) -> (Vec<Ident>, Vec<proc_macro2
         .iter()
         .zip(field_idents.iter())
         .enumerate()
-        .map(|(idx, (f, ident))| {
-            if is_primitive_type(f) {
-                quote! { let #ident = self.#idx; }
-            } else {
-                let idx = LitInt::new(&format!("{idx}"), Span::call_site());
-                quote! { let #ident = self.#idx.to_static(); }
-            }
+        .map(|(idx, (_f, ident))| {
+            let idx = LitInt::new(&format!("{idx}"), Span::call_site());
+            quote! { let #ident = self.#idx.to_static(); }
         })
         .collect();
 
@@ -192,7 +179,6 @@ fn derive_named_struct(fields: &FieldsNamed, ast: &DeriveInput) -> proc_macro2::
 }
 
 fn derive_unnamed_struct(fields: &FieldsUnnamed, ast: &DeriveInput) -> proc_macro2::TokenStream {
-    // TODO: if unnamed, check that there is only one lifetime in ast.generics
     let (field_idents, field_instrs) = derive_unnamed_fields(fields);
 
     let struct_ident = &ast.ident;
@@ -223,8 +209,4 @@ fn derive_unnamed_struct(fields: &FieldsUnnamed, ast: &DeriveInput) -> proc_macr
             }
         }
     }
-}
-
-fn is_primitive_type(f: &syn::Field) -> bool {
-    false
 }
