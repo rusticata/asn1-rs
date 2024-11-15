@@ -1,8 +1,6 @@
 use crate::debug::{trace, trace_generic};
 use crate::error::*;
 use crate::{parse_der_any, Any, Class, Explicit, Implicit, Tag, TaggedParser};
-use alloc::borrow::Cow;
-use alloc::string::ToString;
 use core::convert::{TryFrom, TryInto};
 use core::fmt::{Debug, Display};
 #[cfg(feature = "std")]
@@ -353,21 +351,4 @@ pub trait AsTaggedImplicit<'a, E = Error>: Sized {
 
 impl<'a, T, E> AsTaggedImplicit<'a, E> for T where T: Sized + 'a {}
 
-pub trait ToStatic {
-    type Owned: 'static;
-    fn to_static(&self) -> Self::Owned;
-}
-
-impl ToStatic for Cow<'_, str> {
-    type Owned = Cow<'static, str>;
-    fn to_static(&self) -> <Self as ToStatic>::Owned {
-        Cow::Owned(self.to_string())
-    }
-}
-
-impl ToStatic for Cow<'_, [u8]> {
-    type Owned = Cow<'static, [u8]>;
-    fn to_static(&self) -> <Self as ToStatic>::Owned {
-        Cow::Owned(self.to_vec())
-    }
-}
+pub use crate::tostatic::*;
