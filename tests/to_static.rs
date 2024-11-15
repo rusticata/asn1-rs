@@ -55,6 +55,14 @@ fn derive_named_tostatic() {
     assert!(matches! { _static2.n.cow, Cow::Owned(_) });
 }
 
+#[derive(ToStatic)]
+//#[debug_derive]
+pub enum MyEnum0 {
+    Variant0,
+    Variant1(u32),
+    Variant2{a: u32, b: u32},
+}
+
 fn assert_static_lifetime<T>(_arg: &T)
 where
     T: 'static,
