@@ -47,8 +47,8 @@ macro_rules! impl_tostatic_primitive {
 }
 
 impl_tostatic_primitive!(bool);
-impl_tostatic_primitive!(I i8 i16 i32 i64 i128);
-impl_tostatic_primitive!(I u8 u16 u32 u64 u128);
+impl_tostatic_primitive!(I i8 i16 i32 i64 i128 isize);
+impl_tostatic_primitive!(I u8 u16 u32 u64 u128 usize);
 impl_tostatic_primitive!(I String);
 impl_tostatic_primitive!(str => String, |s| s.to_string());
 
