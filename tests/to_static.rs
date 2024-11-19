@@ -14,6 +14,7 @@ fn derive_unit_tostatic() {
 }
 
 #[derive(ToStatic)]
+//#[debug_derive]
 pub struct Unnamed<'a>(pub Cow<'a, str>);
 
 #[test]
@@ -26,6 +27,7 @@ fn derive_unnamed_tostatic() {
 }
 
 #[derive(ToStatic)]
+//#[debug_derive]
 pub struct Named<'a> {
     cow: Cow<'a, str>,
 }
@@ -60,7 +62,7 @@ fn derive_named_tostatic() {
 pub enum MyEnum0 {
     Variant0,
     Variant1(u32),
-    Variant2{a: u32, b: u32},
+    Variant2 { a: u32, b: u32 },
 }
 
 fn assert_static_lifetime<T>(_arg: &T)
