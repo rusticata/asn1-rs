@@ -49,8 +49,6 @@ macro_rules! impl_tostatic_primitive {
 impl_tostatic_primitive!(bool);
 impl_tostatic_primitive!(I i8 i16 i32 i64 i128 isize);
 impl_tostatic_primitive!(I u8 u16 u32 u64 u128 usize);
-impl_tostatic_primitive!(I String);
-impl_tostatic_primitive!(str => String, |s| s.to_string());
 
 impl<T> ToStatic for &'_ T
 where
@@ -60,17 +58,6 @@ where
 
     fn to_static(&self) -> Self::Owned {
         (*self).to_static()
-    }
-}
-
-impl<T> ToStatic for Box<T>
-where
-    T: ToStatic,
-{
-    type Owned = Box<T::Owned>;
-
-    fn to_static(&self) -> Self::Owned {
-        Box::new(self.as_ref().to_static())
     }
 }
 
@@ -84,3 +71,20 @@ where
         self.as_ref().map(ToStatic::to_static)
     }
 }
+
+#[cfg(feature = "std")]
+const _: () = {
+    impl_tostatic_primitive!(I String);
+    impl_tostatic_primitive!(str => String, |s| s.to_string());
+
+    impl<T> ToStatic for Box<T>
+    where
+        T: ToStatic,
+    {
+        type Owned = Box<T::Owned>;
+
+        fn to_static(&self) -> Self::Owned {
+            Box::new(self.as_ref().to_static())
+        }
+    }
+};
