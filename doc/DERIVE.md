@@ -342,10 +342,12 @@ pub struct T4 {
 
 [`FromBer`]: crate::FromBer
 [`FromDer`]: crate::FromDer
+[`ToDer`]: crate::ToDer
 [`BerSequence`]: crate::BerSequence
 [`DerSequence`]: crate::DerSequence
 [`BerSet`]: crate::BerSet
 [`DerSet`]: crate::DerSet
+[`ToDerSequence`]: crate::ToDerSequence
 [`ParseResult`]: crate::ParseResult
 [`TaggedExplicit`]: crate::TaggedExplicit
 [`TaggedImplicit`]: crate::TaggedImplicit
