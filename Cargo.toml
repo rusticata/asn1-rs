@@ -51,7 +51,7 @@ trace = ["debug"]
 asn1-rs-derive = { version="0.5", path="./derive" }
 asn1-rs-impl = { version="0.2", path="./impl" }
 bitvec = { version="1.0", optional=true }
-colored = { version="2.0", optional=true }
+colored = { version="3.0", optional=true }
 cookie-factory = { version="0.3.0", optional=true }
 displaydoc = "0.2.2"
 nom = { version="7.0", default-features=false, features=["std"] }
@@ -62,7 +62,7 @@ thiserror = "2.0.0"
 time = { version="0.3", features=["macros", "parsing", "formatting"], optional=true }
 
 [dev-dependencies]
-colored = "2.0"
+colored = "3.0"
 hex-literal = "0.4"
 pem = "3.0"
 trybuild = "1.0"
