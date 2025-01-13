@@ -126,7 +126,7 @@ where
         // XXX a) the encoding shall be constructed if the base encoding is constructed, and shall be primitive otherwise
         let constructed = matches!(self.inner.tag(), Tag::Sequence | Tag::Set);
         let header = Header::new(class, constructed, self.tag(), Length::Definite(inner_len));
-        header.write_der_header(writer).map_err(Into::into)
+        header.write_der_header(writer)
     }
 
     fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
@@ -278,7 +278,7 @@ where
         // XXX X.690 section 8.14.3: if implicing tagging was used [...]:
         // XXX a) the encoding shall be constructed if the base encoding is constructed, and shall be primitive otherwise
         let header = Header::new(self.class(), false, self.tag(), Length::Definite(inner_len));
-        header.write_der_header(writer).map_err(Into::into)
+        header.write_der_header(writer)
     }
 
     fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {

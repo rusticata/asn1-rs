@@ -99,7 +99,7 @@ where
         let class =
             Class::try_from(CLASS).map_err(|_| SerializeError::InvalidClass { class: CLASS })?;
         let header = Header::new(class, true, self.tag(), Length::Definite(inner_len));
-        header.write_der_header(writer).map_err(Into::into)
+        header.write_der_header(writer)
     }
 
     fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
@@ -253,7 +253,7 @@ where
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let inner_len = self.inner.to_der_len()?;
         let header = Header::new(self.class(), true, self.tag(), Length::Definite(inner_len));
-        header.write_der_header(writer).map_err(Into::into)
+        header.write_der_header(writer)
     }
 
     fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {

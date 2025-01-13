@@ -129,7 +129,7 @@ impl ToDer for BmpString<'_> {
         // compute the UTF-16 length
         let l = self.data.encode_utf16().count() * 2;
         let header = Header::new(Class::Universal, false, Self::TAG, Length::Definite(l));
-        header.write_der_header(writer).map_err(Into::into)
+        header.write_der_header(writer)
     }
 
     fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {

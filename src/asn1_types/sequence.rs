@@ -359,7 +359,7 @@ impl ToDer for Sequence<'_> {
             Self::TAG,
             Length::Definite(self.content.len()),
         );
-        header.write_der_header(writer).map_err(Into::into)
+        header.write_der_header(writer)
     }
 
     fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {

@@ -99,7 +99,7 @@ impl ToDer for Oid<'_> {
             tag,
             Length::Definite(self.asn1.len()),
         );
-        header.write_der_header(writer).map_err(Into::into)
+        header.write_der_header(writer)
     }
 
     fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
@@ -356,7 +356,7 @@ impl<N: Repr> ExactSizeIterator for SubIdentifierIterator<'_, N> {
     fn len(&self) -> usize {
         if self.oid.relative {
             self.oid.asn1.iter().filter(|o| (*o >> 7) == 0u8).count()
-        } else if self.oid.asn1.len() == 0 {
+        } else if self.oid.asn1.is_empty() {
             0
         } else if self.oid.asn1.len() == 1 {
             if self.oid.asn1[0] == 0 {
