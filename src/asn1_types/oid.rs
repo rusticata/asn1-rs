@@ -9,20 +9,26 @@ use alloc::vec::Vec;
 use core::{
     convert::TryFrom, fmt, iter::FusedIterator, marker::PhantomData, ops::Shl, str::FromStr,
 };
+use displaydoc::Display;
 use num_traits::Num;
+use thiserror::Error;
 
 /// An error for OID parsing functions.
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug, Display, PartialEq, Eq, Error)]
 pub enum OidParseError {
+    /// Encoded data length too short
     TooShort,
-    /// Signalizes that the first or second component is too large.
-    /// The first must be within the range 0 to 6 (inclusive).
-    /// The second component must be less than 40.
+    /** Signalizes that the first or second component is too large.
+     * The first must be within the range 0 to 6 (inclusive).
+     * The second component must be less than 40.
+     */
     FirstComponentsTooLarge,
+    /// a
     ParseIntError,
 }
 
 /// Object ID (OID) representation which can be relative or non-relative.
+///
 /// An example for an OID in string representation is `"1.2.840.113549.1.1.5"`.
 ///
 /// For non-relative OIDs restrictions apply to the first two components.
@@ -31,7 +37,6 @@ pub enum OidParseError {
 /// create oids. For example `oid!(1.2.44.233)` or `oid!(rel 44.233)`
 /// for relative oids. See the [module documentation](index.html) for more information.
 #[derive(Hash, PartialEq, Eq, Clone)]
-
 pub struct Oid<'a> {
     asn1: Cow<'a, [u8]>,
     relative: bool,
