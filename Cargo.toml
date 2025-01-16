@@ -48,7 +48,7 @@ std = []
 trace = ["debug"]
 
 [dependencies]
-asn1-rs-derive = { version="0.5", path="./derive" }
+asn1-rs-derive = { version="0.6", path="./derive" }
 asn1-rs-impl = { version="0.2", path="./impl" }
 bitvec = { version="1.0", optional=true }
 colored = { version="3.0", optional=true }
