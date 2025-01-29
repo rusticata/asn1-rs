@@ -5,6 +5,7 @@
 
 use asn1_rs::*;
 use hex_literal::hex;
+use nom::Parser;
 
 const PRINCIPAL_NAME: &[u8] = &hex!("30 81 11 a0 03 02 01 00 a1 0a 30 81 07 1b 05 4a 6f 6e 65 73");
 
@@ -36,10 +37,10 @@ impl<'a> FromDer<'a> for PrincipalName {
         let (rem, seq) = Sequence::from_ber(bytes)?;
         seq.and_then(|data| {
             let input = &data;
-            let (i, t) = parse_der_tagged_explicit::<_, u32, _>(0)(input)?;
+            let (i, t) = parse_der_tagged_explicit::<_, u32, _>(0).parse(input)?;
             let name_type = t.inner;
             let name_type = NameType(name_type as i32);
-            let (_, t) = parse_der_tagged_explicit::<_, KerberosStringList, _>(1)(i)?;
+            let (_, t) = parse_der_tagged_explicit::<_, KerberosStringList, _>(1).parse(i)?;
             let name_string = t.inner.iter().map(|s| s.string()).collect();
             Ok((
                 rem,
