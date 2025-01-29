@@ -1,5 +1,7 @@
+use nom::{error::ParseError, Parser};
+
 use super::{Error, Explicit, Implicit, TaggedParser};
-use crate::{Class, FromBer, FromDer, ParseResult, Tag};
+use crate::{Class, FromBer, FromDer, Tag};
 use core::marker::PhantomData;
 
 /// A builder for parsing tagged values (`IMPLICIT` or `EXPLICIT`)
@@ -8,14 +10,15 @@ use core::marker::PhantomData;
 ///
 /// ```
 /// use asn1_rs::{Class, Tag, TaggedParserBuilder};
+/// use asn1_rs::nom::Parser;
 ///
-/// let parser = TaggedParserBuilder::explicit()
+/// let mut parser = TaggedParserBuilder::explicit()
 ///     .with_class(Class::ContextSpecific)
 ///     .with_tag(Tag(0))
 ///     .der_parser::<u32>();
 ///
 /// let input = &[0xa0, 0x03, 0x02, 0x01, 0x02];
-/// let (rem, tagged) = parser(input).expect("parsing failed");
+/// let (rem, tagged) = parser.parse(input).expect("parsing failed");
 ///
 /// assert!(rem.is_empty());
 /// assert_eq!(tagged.tag(), Tag(0));
@@ -85,12 +88,12 @@ impl<TagKind, E> TaggedParserBuilder<TagKind, E> {
     /// This method will consume the builder and return a parser (to be used as a function).
     pub fn ber_parser<'a, T>(
         self,
-    ) -> impl Fn(&'a [u8]) -> ParseResult<'a, TaggedParser<'a, TagKind, T, E>, E>
+    ) -> impl Parser<&'a [u8], Output = TaggedParser<'a, TagKind, T, E>, Error = E>
     where
         TaggedParser<'a, TagKind, T, E>: FromBer<'a, E>,
-        E: From<Error>,
+        E: From<Error> + ParseError<&'a [u8]>,
     {
-        move |bytes: &[u8]| TaggedParser::<TagKind, T, E>::parse_ber(self.class, self.tag, bytes)
+        move |bytes: &'a [u8]| TaggedParser::<TagKind, T, E>::parse_ber(self.class, self.tag, bytes)
     }
 }
 
@@ -100,11 +103,11 @@ impl<TagKind, E> TaggedParserBuilder<TagKind, E> {
     /// This method will consume the builder and return a parser (to be used as a function).
     pub fn der_parser<'a, T>(
         self,
-    ) -> impl Fn(&'a [u8]) -> ParseResult<'a, TaggedParser<'a, TagKind, T, E>, E>
+    ) -> impl Parser<&'a [u8], Output = TaggedParser<'a, TagKind, T, E>, Error = E>
     where
         TaggedParser<'a, TagKind, T, E>: FromDer<'a, E>,
-        E: From<Error>,
+        E: From<Error> + ParseError<&'a [u8]>,
     {
-        move |bytes: &[u8]| TaggedParser::<TagKind, T, E>::parse_der(self.class, self.tag, bytes)
+        move |bytes: &'a [u8]| TaggedParser::<TagKind, T, E>::parse_der(self.class, self.tag, bytes)
     }
 }
