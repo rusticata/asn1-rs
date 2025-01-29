@@ -68,8 +68,7 @@ pub struct AttributeTypeAndValue<'a> {
 impl<'a> FromBer<'a> for AttributeTypeAndValue<'a> {
     fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self> {
         let (rem, seq) = Sequence::from_der(bytes)?;
-        let (_, (oid, value)) =
-            seq.parse_into(|i| pair(Oid::from_der, AttributeValue::from_der)(i))?;
+        let (_, (oid, value)) = seq.parse_into(pair(Oid::from_der, AttributeValue::from_der))?;
         let attr = AttributeTypeAndValue { oid, value };
         Ok((rem, attr))
     }
@@ -78,8 +77,7 @@ impl<'a> FromBer<'a> for AttributeTypeAndValue<'a> {
 impl<'a> FromDer<'a> for AttributeTypeAndValue<'a> {
     fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
         let (rem, seq) = Sequence::from_der(bytes)?;
-        let (_, (oid, value)) =
-            seq.parse_into(|i| pair(Oid::from_der, AttributeValue::from_der)(i))?;
+        let (_, (oid, value)) = seq.parse_into(pair(Oid::from_der, AttributeValue::from_der))?;
         let attr = AttributeTypeAndValue { oid, value };
         Ok((rem, attr))
     }
