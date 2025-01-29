@@ -625,11 +625,11 @@ fn from_der_tagged_implicit_all() {
         .expect("parsing failed");
 
     // test TagParser API
-    let parser = TaggedParserBuilder::implicit()
+    let mut parser = TaggedParserBuilder::implicit()
         .with_class(Class::ContextSpecific)
         .with_tag(Tag(1))
         .der_parser::<Ia5String>();
-    let _ = parser(input).expect("parsing failed");
+    let _ = parser.parse(input).expect("parsing failed");
 
     // try specifying the expected tag (correct tag)
     let _ = parse_der_tagged_implicit::<_, Ia5String, _>(1)
