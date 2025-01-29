@@ -3,6 +3,7 @@ use alloc::borrow::Cow;
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 use core::convert::TryFrom;
+use nom::Parser;
 
 mod btreeset;
 mod hashset;
@@ -161,10 +162,10 @@ impl<'a> Set<'a> {
     /// Apply the parsing function to the set content (non-consuming version)
     pub fn parse<F, T, E>(&'a self, mut f: F) -> ParseResult<'a, T, E>
     where
-        F: FnMut(&'a [u8]) -> ParseResult<'a, T, E>,
+        F: Parser<&'a [u8], Output = T, Error = E>,
     {
         let input: &[u8] = &self.content;
-        f(input)
+        f.parse(input)
     }
 
     /// Apply the parsing function to the set content (consuming version)
@@ -178,11 +179,11 @@ impl<'a> Set<'a> {
     /// takes a reference on data (which is dropped).
     pub fn parse_into<F, T, E>(self, mut f: F) -> ParseResult<'a, T, E>
     where
-        F: FnMut(&'a [u8]) -> ParseResult<'a, T, E>,
+        F: Parser<&'a [u8], Output = T, Error = E>,
         E: From<Error>,
     {
         match self.content {
-            Cow::Borrowed(b) => f(b),
+            Cow::Borrowed(b) => f.parse(b),
             _ => Err(Err::Error(Error::LifetimeError.into())),
         }
     }
