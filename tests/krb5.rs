@@ -62,7 +62,7 @@ impl ToDer for PrincipalName {
     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let len = self.to_der_len()?;
         let header = Header::new(Class::Universal, true, Self::TAG, Length::Definite(len));
-        header.write_der_header(writer).map_err(Into::into)
+        header.write_der_header(writer)
     }
 
     fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
