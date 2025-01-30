@@ -552,7 +552,7 @@ impl ToDer for Integer<'_> {
 ///
 /// - `int!(1234)`: Create a const expression for the corresponding `Integer<'static>`
 /// - `int!(raw 1234)`: Return the DER encoded form as a byte array (hex-encoded, big-endian
-///    representation from the integer, with leading zeroes removed).
+///   representation from the integer, with leading zeroes removed).
 ///
 /// # Examples
 ///
