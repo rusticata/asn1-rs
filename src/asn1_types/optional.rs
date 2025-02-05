@@ -5,12 +5,12 @@ use crate::*;
 // `src/traits.rs`, since `T` always satisfies `T: Into<Option<T>>`
 //
 // for the same reason, we cannot use a generic error type here
-impl<'a, T> FromBer<'a> for Option<T>
+impl<'a, T, E> FromBer<'a, E> for Option<T>
 where
-    T: FromBer<'a>,
+    T: FromBer<'a, E>,
     T: Tagged,
 {
-    fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self> {
+    fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self, E> {
         if bytes.is_empty() {
             return Ok((bytes, None));
         }
@@ -39,12 +39,12 @@ impl<'a> FromBer<'a> for Option<Any<'a>> {
     }
 }
 
-impl<'a, T> FromDer<'a> for Option<T>
+impl<'a, T, E> FromDer<'a, E> for Option<T>
 where
-    T: FromDer<'a>,
+    T: FromDer<'a, E>,
     T: Tagged,
 {
-    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
+    fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, E> {
         if bytes.is_empty() {
             return Ok((bytes, None));
         }
@@ -119,5 +119,35 @@ where
             None => Ok(0),
             Some(t) => t.write_der_content(writer),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Debug, PartialEq, Eq)]
+    pub struct CustomError {}
+
+    #[derive(Debug)]
+    pub struct MyType {
+        _a: u32,
+    }
+
+    impl<'a> FromDer<'a, CustomError> for MyType {
+        fn from_der(_bytes: &'a [u8]) -> ParseResult<'a, Self, CustomError> {
+            Err(Err::Error(CustomError {}))
+        }
+    }
+    impl Tagged for MyType {
+        const TAG: Tag = Tag::Sequence;
+    }
+
+    /// test if we are able to define & build code with option and custom error
+    #[test]
+    fn test_option_parser_inference() {
+        let data = &[0x01];
+        let res = <Option<MyType>>::from_der(data);
+        assert!(matches!(res, Err(Err::Error(CustomError {}))));
     }
 }
