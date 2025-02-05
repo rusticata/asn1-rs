@@ -276,7 +276,8 @@ impl_int!(u128 => i128);
 ///
 /// Encoding an `Integer` to DER
 ///
-/// ```
+#[cfg_attr(feature = "std", doc = r#"```"#)]
+#[cfg_attr(not(feature = "std"), doc = r#"```rust,compile_fail"#)]
 /// use asn1_rs::{Integer, ToDer};
 ///
 /// let i = Integer::from(4);
