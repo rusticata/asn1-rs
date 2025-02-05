@@ -9,6 +9,7 @@ pub struct T1 {
     c: u16,
 }
 
+#[cfg(feature = "std")]
 fn main() {
     let input = &hex!("30090201 01020102 020103");
     let (rem, t1) = T1::from_der(input).expect("parsing failed");
@@ -18,3 +19,6 @@ fn main() {
     let output = t1.to_der_vec().expect("serialization failed");
     assert_eq!(&input[..], output);
 }
+
+#[cfg(not(feature = "std"))]
+fn main() {}
