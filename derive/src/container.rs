@@ -505,14 +505,14 @@ fn get_field_parser(f: &FieldInfo, asn1_type: Asn1Type, custom_errors: bool) -> 
             return quote! {
                 let (i, #name) = {
                     if i.is_empty() {
-                        (i, None)
+                        (i, None.into())
                     } else {
                         let (_, header): (_, asn1_rs::Header) = #from(i)#map_err?;
                         if header.tag().0 == #tag {
                             let (i, t): (_, asn1_rs::TaggedValue::<_, _, #tag_kind, {#class}, #tag>) = #from(i)#map_err?;
-                            (i, Some(t.into_inner()))
+                            (i, Some(t.into_inner()).into())
                         } else {
-                            (i, None)
+                            (i, None.into())
                         }
                     }
                 };

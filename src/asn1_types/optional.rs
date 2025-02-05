@@ -155,6 +155,18 @@ impl<T> BerOption<T> {
     }
 }
 
+impl<T> From<Option<T>> for BerOption<T> {
+    fn from(value: Option<T>) -> Self {
+        BerOption(value)
+    }
+}
+
+impl<T> From<BerOption<T>> for Option<T> {
+    fn from(value: BerOption<T>) -> Self {
+        value.0
+    }
+}
+
 impl<'a, T, E> FromBer<'a, E> for BerOption<T>
 where
     T: FromBer<'a, E>,
