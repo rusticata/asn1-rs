@@ -58,6 +58,7 @@ nom = { version="8.0", default-features=false, features=["std"] }
 num-bigint = { version = "0.4", optional = true }
 num-traits = "0.2.14"
 rusticata-macros = "4.0"
+rustversion = "1.0.19"
 thiserror = "2.0.0"
 time = { version="0.3", features=["macros", "parsing", "formatting"], optional=true }
 
