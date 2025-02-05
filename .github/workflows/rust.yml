@@ -44,6 +44,7 @@ jobs:
           - --all-features
           - --features=bigint,serialize,debug
           - --features=bigint,serialize,trace
+          - --no-default-features
     steps:
       - uses: actions/checkout@v4
       - name: Install stable toolchain
