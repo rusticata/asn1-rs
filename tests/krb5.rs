@@ -1,3 +1,5 @@
+#![cfg(feature = "std")]
+
 //! Test implementation for Kerberos v5
 //!
 //! This is mostly used to verify that required types and functions are implemented,

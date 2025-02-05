@@ -108,7 +108,7 @@ where
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod tests {
     use crate::*;
     use core::convert::TryFrom;
