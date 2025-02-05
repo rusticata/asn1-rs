@@ -452,7 +452,7 @@ impl<'a> PartialEq<Header<'a>> for Header<'a> {
 
 impl Eq for Header<'_> {}
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod tests {
     use crate::*;
     use hex_literal::hex;

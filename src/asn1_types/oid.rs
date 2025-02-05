@@ -464,7 +464,7 @@ macro_rules! oid {
     };
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod tests {
     use crate::{FromDer, Oid, ToDer};
     use hex_literal::hex;

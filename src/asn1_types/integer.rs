@@ -576,7 +576,7 @@ macro_rules! int {
     };
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod tests {
     use crate::{Any, FromDer, Header, Tag, ToDer};
     use std::convert::TryInto;
