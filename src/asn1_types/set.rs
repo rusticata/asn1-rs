@@ -29,7 +29,8 @@ pub use set_of::*;
 /// - if the set is composed of objects of the same type, the [`Set::from_iter_to_der`] method can be used
 /// - otherwise, the [`ToDer`] trait can be used to create content incrementally
 ///
-/// ```
+#[cfg_attr(feature = "std", doc = r#"```"#)]
+#[cfg_attr(not(feature = "std"), doc = r#"```rust,compile_fail"#)]
 /// use asn1_rs::{Integer, Set, SerializeResult, ToDer};
 ///
 /// fn build_set<'a>() -> SerializeResult<Set<'a>> {
@@ -49,7 +50,8 @@ pub use set_of::*;
 ///
 /// # Examples
 ///
-/// ```
+#[cfg_attr(feature = "std", doc = r#"```"#)]
+#[cfg_attr(not(feature = "std"), doc = r#"```rust,compile_fail"#)]
 /// use asn1_rs::{Error, Set};
 ///
 /// // build set

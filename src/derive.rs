@@ -375,7 +375,8 @@ pub use asn1_rs_derive::ToStatic;
 ///
 /// Define a structure and add the `DerSequence` derive:
 ///
-/// ```rust
+#[cfg_attr(feature = "std", doc = r#"```rust"#)]
+#[cfg_attr(not(feature = "std"), doc = r#"```rust,compile_fail"#)]
 /// use asn1_rs::*;
 ///
 /// #[derive(DerSequence, ToDerSequence)]

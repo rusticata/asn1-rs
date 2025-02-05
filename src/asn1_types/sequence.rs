@@ -28,7 +28,8 @@ pub use sequence_of::*;
 /// - if the sequence is composed of objects of the same type, the [`Sequence::from_iter_to_der`] method can be used
 /// - otherwise, the [`ToDer`] trait can be used to create content incrementally
 ///
-/// ```
+#[cfg_attr(feature = "std", doc = r#"```"#)]
+#[cfg_attr(not(feature = "std"), doc = r#"```rust,compile_fail"#)]
 /// use asn1_rs::{Integer, Sequence, SerializeResult, ToDer};
 ///
 /// fn build_seq<'a>() -> SerializeResult<Sequence<'a>> {
@@ -48,7 +49,8 @@ pub use sequence_of::*;
 ///
 /// # Examples
 ///
-/// ```
+#[cfg_attr(feature = "std", doc = r#"```"#)]
+#[cfg_attr(not(feature = "std"), doc = r#"```rust,compile_fail"#)]
 /// use asn1_rs::{Error, Sequence};
 ///
 /// // build sequence
