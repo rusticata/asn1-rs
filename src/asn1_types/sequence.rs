@@ -3,6 +3,7 @@ use alloc::borrow::Cow;
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 use core::convert::TryFrom;
+use nom::Parser;
 
 mod iterator;
 mod sequence_of;
@@ -160,10 +161,10 @@ impl<'a> Sequence<'a> {
     /// Apply the parsing function to the sequence content (non-consuming version)
     pub fn parse<F, T, E>(&'a self, mut f: F) -> ParseResult<'a, T, E>
     where
-        F: FnMut(&'a [u8]) -> ParseResult<'a, T, E>,
+        F: Parser<&'a [u8], Output = T, Error = E>,
     {
         let input: &[u8] = &self.content;
-        f(input)
+        f.parse(input)
     }
 
     /// Apply the parsing function to the sequence content (consuming version)
@@ -171,17 +172,17 @@ impl<'a> Sequence<'a> {
     /// Note: to parse and apply a parsing function in one step, use the
     /// [`Sequence::from_der_and_then`] method.
     ///
-    /// # Limitations
+    /// # Limitationsi
     ///
     /// This function fails if the sequence contains `Owned` data, because the parsing function
     /// takes a reference on data (which is dropped).
     pub fn parse_into<F, T, E>(self, mut f: F) -> ParseResult<'a, T, E>
     where
-        F: FnMut(&'a [u8]) -> ParseResult<'a, T, E>,
+        F: Parser<&'a [u8], Output = T, Error = E>,
         E: From<Error>,
     {
         match self.content {
-            Cow::Borrowed(b) => f(b),
+            Cow::Borrowed(b) => f.parse(b),
             _ => Err(Err::Error(Error::LifetimeError.into())),
         }
     }
