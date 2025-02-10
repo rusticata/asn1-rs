@@ -10,10 +10,10 @@ pub use crate::{Error, SequenceIterator};
 /// # Examples
 ///
 /// ```rust
-/// use asn1_rs::{DerParser, Integer, SetIterator};
+/// use asn1_rs::{DerMode, Integer, SetIterator};
 ///
 /// let data = &[0x30, 0x6, 0x2, 0x1, 0x1, 0x2, 0x1, 0x2];
-/// for (idx, item) in SetIterator::<Integer, DerParser>::new(&data[2..]).enumerate() {
+/// for (idx, item) in SetIterator::<Integer, DerMode>::new(&data[2..]).enumerate() {
 ///     let item = item.unwrap(); // parsing could have failed
 ///     let i = item.as_u32().unwrap(); // integer can be negative, or too large to fit into u32
 ///     assert_eq!(i as usize, idx + 1);

@@ -7,20 +7,21 @@ use core::fmt::Debug;
 use std::io::Write;
 
 /// Phantom type representing a BER parser
+// TODO: rename this to `BerMode`?
 #[doc(hidden)]
 #[derive(Debug)]
-pub enum BerParser {}
+pub enum BerMode {}
 
 /// Phantom type representing a DER parser
 #[doc(hidden)]
 #[derive(Debug)]
-pub enum DerParser {}
+pub enum DerMode {}
 
 #[doc(hidden)]
-pub trait ASN1Parser {}
+pub trait ASN1Mode {}
 
-impl ASN1Parser for BerParser {}
-impl ASN1Parser for DerParser {}
+impl ASN1Mode for BerMode {}
+impl ASN1Mode for DerMode {}
 
 /// Common trait for all objects that can be encoded using the DER representation
 ///

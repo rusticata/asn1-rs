@@ -190,7 +190,7 @@ impl<'a> Sequence<'a> {
     /// Return an iterator over the sequence content, attempting to decode objects as BER
     ///
     /// This method can be used when all objects from the sequence have the same type.
-    pub fn ber_iter<T, E>(&'a self) -> SequenceIterator<'a, T, BerParser, E>
+    pub fn ber_iter<T, E>(&'a self) -> SequenceIterator<'a, T, BerMode, E>
     where
         T: FromBer<'a, E>,
     {
@@ -200,7 +200,7 @@ impl<'a> Sequence<'a> {
     /// Return an iterator over the sequence content, attempting to decode objects as DER
     ///
     /// This method can be used when all objects from the sequence have the same type.
-    pub fn der_iter<T, E>(&'a self) -> SequenceIterator<'a, T, DerParser, E>
+    pub fn der_iter<T, E>(&'a self) -> SequenceIterator<'a, T, DerMode, E>
     where
         T: FromDer<'a, E>,
     {
@@ -236,10 +236,10 @@ impl<'a> Sequence<'a> {
         T: ToStatic<Owned = T>,
     {
         match self.content {
-            Cow::Borrowed(bytes) => SequenceIterator::<T, BerParser, E>::new(bytes).collect(),
+            Cow::Borrowed(bytes) => SequenceIterator::<T, BerMode, E>::new(bytes).collect(),
             Cow::Owned(data) => {
-                let v1 = SequenceIterator::<T, BerParser, E>::new(&data)
-                    .collect::<Result<Vec<T>, E>>()?;
+                let v1 =
+                    SequenceIterator::<T, BerMode, E>::new(&data).collect::<Result<Vec<T>, E>>()?;
                 let v2 = v1.iter().map(|t| t.to_static()).collect::<Vec<_>>();
                 Ok(v2)
             }
@@ -257,10 +257,10 @@ impl<'a> Sequence<'a> {
         T: ToStatic<Owned = T>,
     {
         match self.content {
-            Cow::Borrowed(bytes) => SequenceIterator::<T, DerParser, E>::new(bytes).collect(),
+            Cow::Borrowed(bytes) => SequenceIterator::<T, DerMode, E>::new(bytes).collect(),
             Cow::Owned(data) => {
-                let v1 = SequenceIterator::<T, DerParser, E>::new(&data)
-                    .collect::<Result<Vec<T>, E>>()?;
+                let v1 =
+                    SequenceIterator::<T, DerMode, E>::new(&data).collect::<Result<Vec<T>, E>>()?;
                 let v2 = v1.iter().map(|t| t.to_static()).collect::<Vec<_>>();
                 Ok(v2)
             }
@@ -273,7 +273,7 @@ impl<'a> Sequence<'a> {
         E: From<Error>,
     {
         match self.content {
-            Cow::Borrowed(bytes) => SequenceIterator::<T, DerParser, E>::new(bytes).collect(),
+            Cow::Borrowed(bytes) => SequenceIterator::<T, DerMode, E>::new(bytes).collect(),
             Cow::Owned(_) => Err(Error::LifetimeError.into()),
         }
     }

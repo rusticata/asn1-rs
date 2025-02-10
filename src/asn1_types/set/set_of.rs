@@ -108,7 +108,7 @@ where
         if !any.header.is_constructed() {
             return Err(Error::ConstructExpected);
         }
-        let items = SetIterator::<T, BerParser>::new(any.data).collect::<Result<Vec<T>>>()?;
+        let items = SetIterator::<T, BerMode>::new(any.data).collect::<Result<Vec<T>>>()?;
         Ok(SetOf::new(items))
     }
 }
@@ -120,7 +120,7 @@ where
     fn check_constraints(any: &Any) -> Result<()> {
         any.tag().assert_eq(Self::TAG)?;
         any.header.assert_constructed()?;
-        for item in SetIterator::<Any, DerParser>::new(any.data) {
+        for item in SetIterator::<Any, DerMode>::new(any.data) {
             let item = item?;
             T::check_constraints(&item)?;
         }
@@ -144,7 +144,7 @@ where
                 any.header
                     .assert_tag(Self::TAG)
                     .map_err(|e| Err::Error(e.into()))?;
-                let items = SetIterator::<T, DerParser, E>::new(any.data)
+                let items = SetIterator::<T, DerMode, E>::new(any.data)
                     .collect::<Result<Vec<T>, E>>()
                     .map_err(Err::Error)?;
                 Ok((rem, SetOf::new(items)))

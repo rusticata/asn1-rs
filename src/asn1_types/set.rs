@@ -191,7 +191,7 @@ impl<'a> Set<'a> {
     /// Return an iterator over the set content, attempting to decode objects as BER
     ///
     /// This method can be used when all objects from the set have the same type.
-    pub fn ber_iter<T, E>(&'a self) -> SetIterator<'a, T, BerParser, E>
+    pub fn ber_iter<T, E>(&'a self) -> SetIterator<'a, T, BerMode, E>
     where
         T: FromBer<'a, E>,
     {
@@ -201,7 +201,7 @@ impl<'a> Set<'a> {
     /// Return an iterator over the set content, attempting to decode objects as DER
     ///
     /// This method can be used when all objects from the set have the same type.
-    pub fn der_iter<T, E>(&'a self) -> SetIterator<'a, T, DerParser, E>
+    pub fn der_iter<T, E>(&'a self) -> SetIterator<'a, T, DerMode, E>
     where
         T: FromDer<'a, E>,
     {
@@ -237,10 +237,9 @@ impl<'a> Set<'a> {
         T: ToStatic<Owned = T>,
     {
         match self.content {
-            Cow::Borrowed(bytes) => SetIterator::<T, BerParser, E>::new(bytes).collect(),
+            Cow::Borrowed(bytes) => SetIterator::<T, BerMode, E>::new(bytes).collect(),
             Cow::Owned(data) => {
-                let v1 =
-                    SetIterator::<T, BerParser, E>::new(&data).collect::<Result<Vec<T>, E>>()?;
+                let v1 = SetIterator::<T, BerMode, E>::new(&data).collect::<Result<Vec<T>, E>>()?;
                 let v2 = v1.iter().map(|t| t.to_static()).collect::<Vec<_>>();
                 Ok(v2)
             }
@@ -258,10 +257,9 @@ impl<'a> Set<'a> {
         T: ToStatic<Owned = T>,
     {
         match self.content {
-            Cow::Borrowed(bytes) => SetIterator::<T, DerParser, E>::new(bytes).collect(),
+            Cow::Borrowed(bytes) => SetIterator::<T, DerMode, E>::new(bytes).collect(),
             Cow::Owned(data) => {
-                let v1 =
-                    SetIterator::<T, DerParser, E>::new(&data).collect::<Result<Vec<T>, E>>()?;
+                let v1 = SetIterator::<T, DerMode, E>::new(&data).collect::<Result<Vec<T>, E>>()?;
                 let v2 = v1.iter().map(|t| t.to_static()).collect::<Vec<_>>();
                 Ok(v2)
             }
@@ -274,7 +272,7 @@ impl<'a> Set<'a> {
         E: From<Error>,
     {
         match self.content {
-            Cow::Borrowed(bytes) => SetIterator::<T, DerParser, E>::new(bytes).collect(),
+            Cow::Borrowed(bytes) => SetIterator::<T, DerMode, E>::new(bytes).collect(),
             Cow::Owned(_) => Err(Error::LifetimeError.into()),
         }
     }

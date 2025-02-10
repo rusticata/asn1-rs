@@ -59,8 +59,7 @@ where
             |any| {
                 any.tag().assert_eq(Self::TAG)?;
                 any.header.assert_constructed()?;
-                let res_items: Result<Vec<T>> =
-                    SetIterator::<T, BerParser>::new(any.data).collect();
+                let res_items: Result<Vec<T>> = SetIterator::<T, BerMode>::new(any.data).collect();
                 if res_items.is_err() {
                     debug_eprintln!(
                         core::any::type_name::<T>(),
@@ -82,7 +81,7 @@ where
     fn check_constraints(any: &Any) -> Result<()> {
         any.tag().assert_eq(Self::TAG)?;
         any.header.assert_constructed()?;
-        for item in SequenceIterator::<Any, DerParser>::new(any.data) {
+        for item in SequenceIterator::<Any, DerMode>::new(any.data) {
             let item = item?;
             <T as CheckDerConstraints>::check_constraints(&item)?;
         }
@@ -122,7 +121,7 @@ where
                 any.header
                     .assert_tag(Self::TAG)
                     .map_err(|e| Err::Error(e.into()))?;
-                let v = SequenceIterator::<T, DerParser, E>::new(any.data)
+                let v = SequenceIterator::<T, DerMode, E>::new(any.data)
                     .collect::<Result<Vec<T>, E>>()
                     .map_err(Err::Error)?;
                 Ok((rem, v))
