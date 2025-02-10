@@ -1,5 +1,7 @@
 use crate::debug::{trace, trace_generic};
-use crate::{error::*, DynTagged};
+use crate::error::*;
+#[cfg(feature = "std")]
+use crate::DynTagged;
 use crate::{parse_der_any, Any, Class, Explicit, Implicit, TaggedParser};
 use core::convert::{TryFrom, TryInto};
 use core::fmt::{Debug, Display};
