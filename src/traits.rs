@@ -1,6 +1,6 @@
 use crate::debug::{trace, trace_generic};
-use crate::error::*;
-use crate::{parse_der_any, Any, Class, Explicit, Implicit, Tag, TaggedParser};
+use crate::{error::*, DynTagged};
+use crate::{parse_der_any, Any, Class, Explicit, Implicit, TaggedParser};
 use core::convert::{TryFrom, TryInto};
 use core::fmt::{Debug, Display};
 #[cfg(feature = "std")]
@@ -21,30 +21,6 @@ pub trait ASN1Parser {}
 
 impl ASN1Parser for BerParser {}
 impl ASN1Parser for DerParser {}
-
-pub trait Tagged {
-    const TAG: Tag;
-}
-
-impl<T> Tagged for &'_ T
-where
-    T: Tagged,
-{
-    const TAG: Tag = T::TAG;
-}
-
-pub trait DynTagged {
-    fn tag(&self) -> Tag;
-}
-
-impl<T> DynTagged for T
-where
-    T: Tagged,
-{
-    fn tag(&self) -> Tag {
-        T::TAG
-    }
-}
 
 /// Base trait for BER object parsers
 ///

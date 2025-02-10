@@ -74,3 +74,27 @@ impl From<u32> for Tag {
         Tag(v)
     }
 }
+
+pub trait Tagged {
+    const TAG: Tag;
+}
+
+impl<T> Tagged for &'_ T
+where
+    T: Tagged,
+{
+    const TAG: Tag = T::TAG;
+}
+
+pub trait DynTagged {
+    fn tag(&self) -> Tag;
+}
+
+impl<T> DynTagged for T
+where
+    T: Tagged,
+{
+    fn tag(&self) -> Tag {
+        T::TAG
+    }
+}
