@@ -1,4 +1,4 @@
-use crate::{ASN1Parser, BerParser, DerParser, Error, FromBer, FromDer};
+use crate::{ASN1Mode, BerMode, DerMode, Error, FromBer, FromDer};
 use core::marker::PhantomData;
 
 /// An Iterator over binary data, parsing elements of type `T`
@@ -11,10 +11,10 @@ use core::marker::PhantomData;
 /// # Examples
 ///
 /// ```rust
-/// use asn1_rs::{DerParser, Integer, SequenceIterator};
+/// use asn1_rs::{DerMode, Integer, SequenceIterator};
 ///
 /// let data = &[0x30, 0x6, 0x2, 0x1, 0x1, 0x2, 0x1, 0x2];
-/// for (idx, item) in SequenceIterator::<Integer, DerParser>::new(&data[2..]).enumerate() {
+/// for (idx, item) in SequenceIterator::<Integer, DerMode>::new(&data[2..]).enumerate() {
 ///     let item = item.unwrap(); // parsing could have failed
 ///     let i = item.as_u32().unwrap(); // integer can be negative, or too large to fit into u32
 ///     assert_eq!(i as usize, idx + 1);
@@ -23,7 +23,7 @@ use core::marker::PhantomData;
 #[derive(Debug)]
 pub struct SequenceIterator<'a, T, F, E = Error>
 where
-    F: ASN1Parser,
+    F: ASN1Mode,
 {
     data: &'a [u8],
     has_error: bool,
@@ -34,7 +34,7 @@ where
 
 impl<'a, T, F, E> SequenceIterator<'a, T, F, E>
 where
-    F: ASN1Parser,
+    F: ASN1Mode,
 {
     pub fn new(data: &'a [u8]) -> Self {
         SequenceIterator {
@@ -47,7 +47,7 @@ where
     }
 }
 
-impl<'a, T, E> Iterator for SequenceIterator<'a, T, BerParser, E>
+impl<'a, T, E> Iterator for SequenceIterator<'a, T, BerMode, E>
 where
     T: FromBer<'a, E>,
     E: From<Error>,
@@ -76,7 +76,7 @@ where
     }
 }
 
-impl<'a, T, E> Iterator for SequenceIterator<'a, T, DerParser, E>
+impl<'a, T, E> Iterator for SequenceIterator<'a, T, DerMode, E>
 where
     T: FromDer<'a, E>,
     E: From<Error>,

@@ -154,7 +154,7 @@ impl<'a> Any<'a> {
     #[inline]
     pub fn parse_der_content<'i>(i: &'i [u8], header: &'_ Header) -> ParseResult<'i, &'i [u8]> {
         header.assert_definite()?;
-        DerParser::get_object_content(i, header, 8)
+        DerMode::get_object_content(i, header, 8)
     }
 }
 
@@ -373,7 +373,7 @@ impl<'a> Any<'a> {
 
 pub(crate) fn parse_ber_any(input: &[u8]) -> ParseResult<Any> {
     let (i, header) = Header::from_ber(input)?;
-    let (i, data) = BerParser::get_object_content(i, &header, MAX_RECURSION)?;
+    let (i, data) = BerMode::get_object_content(i, &header, MAX_RECURSION)?;
     Ok((i, Any { header, data }))
 }
 
@@ -381,7 +381,7 @@ pub(crate) fn parse_der_any(input: &[u8]) -> ParseResult<Any> {
     let (i, header) = Header::from_der(input)?;
     // X.690 section 10.1: The definite form of length encoding shall be used
     header.length.assert_definite()?;
-    let (i, data) = DerParser::get_object_content(i, &header, MAX_RECURSION)?;
+    let (i, data) = DerMode::get_object_content(i, &header, MAX_RECURSION)?;
     Ok((i, Any { header, data }))
 }
 

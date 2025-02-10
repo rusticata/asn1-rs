@@ -1,6 +1,6 @@
 use crate::error::*;
 use crate::header::*;
-use crate::{BerParser, DerParser, FromBer, Length, Tag};
+use crate::{BerMode, DerMode, FromBer, Length, Tag};
 use nom::bytes::streaming::take;
 use nom::{Err, Needed, Offset};
 use rusticata_macros::custom_check;
@@ -22,7 +22,7 @@ pub trait GetObjectContent {
     ) -> ParseResult<'a, &'a [u8]>;
 }
 
-impl GetObjectContent for BerParser {
+impl GetObjectContent for BerMode {
     fn get_object_content<'a>(
         i: &'a [u8],
         hdr: &'_ Header,
@@ -43,7 +43,7 @@ impl GetObjectContent for BerParser {
     }
 }
 
-impl GetObjectContent for DerParser {
+impl GetObjectContent for DerMode {
     /// Skip object content, accepting only DER
     ///
     /// This this function is for DER only, it cannot go into recursion (no indefinite length)
