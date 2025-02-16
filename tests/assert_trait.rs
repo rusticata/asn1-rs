@@ -13,6 +13,7 @@ fn assert_traits_slice() {
     assert_trait_ber_parser::<&[u8], Null>();
     assert_trait_ber_parser::<&[u8], ()>();
     assert_trait_ber_parser::<&[u8], EndOfContent>();
+    assert_trait_ber_parser::<&[u8], Enumerated>();
 
     assert_trait_ber_parser::<&[u8], u8>();
 
@@ -31,6 +32,7 @@ fn assert_traits_generic() {
         assert_trait_ber_parser::<I, Null>();
         assert_trait_ber_parser::<I, ()>();
         assert_trait_ber_parser::<I, EndOfContent>();
+        assert_trait_ber_parser::<I, Enumerated>();
 
         // assert_trait_ber_parser::<I, u8>();
 

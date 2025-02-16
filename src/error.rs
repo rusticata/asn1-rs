@@ -307,7 +307,13 @@ impl From<nom::Err<Error>> for Error {
 
 impl<I: Input> From<BerError<I>> for Error {
     fn from(value: BerError<I>) -> Self {
-        match value.inner_error {
+        Self::from(value.inner_error)
+    }
+}
+
+impl From<InnerError> for Error {
+    fn from(value: InnerError) -> Self {
+        match value {
             InnerError::BerTypeError => Self::BerTypeError,
             InnerError::BerValueError => Self::BerValueError,
             InnerError::InvalidLength => Self::InvalidLength,
