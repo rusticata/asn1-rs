@@ -4,6 +4,7 @@ use alloc::borrow::Cow;
 #[cfg(not(feature = "std"))]
 use alloc::string::{String, ToString};
 use core::convert::{TryFrom, TryInto};
+use nom::{AsBytes, Input};
 
 use self::debug::trace;
 
@@ -14,30 +15,36 @@ use self::debug::trace;
 ///
 /// Note: this type is only provided in **borrowed** version (*i.e.* it cannot own the inner data).
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub struct Any<'a> {
+pub struct Any<'a, I = &'a [u8]>
+where
+    I: Input<Item = u8>,
+{
     /// The object header
     pub header: Header<'a>,
     /// The object contents
-    pub data: &'a [u8],
+    pub data: I,
 }
 
-impl<'a> Any<'a> {
+impl<'a, I> Any<'a, I>
+where
+    I: Input<Item = u8>,
+{
     /// Create a new `Any` from BER/DER header and content
     #[inline]
-    pub const fn new(header: Header<'a>, data: &'a [u8]) -> Self {
+    pub const fn new(header: Header<'a>, data: I) -> Self {
         Any { header, data }
     }
 
     /// Create a new `Any` from a tag, and BER/DER content
     #[inline]
-    pub const fn from_tag_and_data(tag: Tag, data: &'a [u8]) -> Self {
+    pub fn from_tag_and_data(tag: Tag, data: I) -> Self {
         let constructed = matches!(tag, Tag::Sequence | Tag::Set);
         Any {
             header: Header {
                 tag,
                 constructed,
                 class: Class::Universal,
-                length: Length::Definite(data.len()),
+                length: Length::Definite(data.input_len()),
                 raw_tag: None,
             },
             data,
@@ -72,20 +79,6 @@ impl<'a> Any<'a> {
             header: self.header.with_tag(tag),
             data: self.data,
         }
-    }
-
-    /// Get the bytes representation of the *content*
-    #[inline]
-    pub fn as_bytes(&self) -> &'a [u8] {
-        self.data
-    }
-
-    #[inline]
-    pub fn parse_ber<T>(&self) -> ParseResult<'a, T>
-    where
-        T: FromBer<'a>,
-    {
-        T::from_ber(self.data)
     }
 
     /// Parse a BER value and apply the provided parsing function to content
@@ -135,15 +128,37 @@ impl<'a> Any<'a> {
         let (_, res) = op(any.data)?;
         Ok((rem, res))
     }
+}
+
+impl<I> Any<'_, I>
+where
+    I: Input<Item = u8>,
+    I: AsBytes,
+{
+    /// Get the bytes representation of the *content*
+    #[inline]
+    pub fn as_bytes(&self) -> &'_ [u8] {
+        self.data.as_bytes()
+    }
 
     #[inline]
-    pub fn parse_der<T>(&self) -> ParseResult<'a, T>
+    pub fn parse_ber<'a, T>(&'a self) -> ParseResult<'a, T>
+    where
+        T: FromBer<'a>,
+    {
+        T::from_ber(self.data.as_bytes())
+    }
+
+    #[inline]
+    pub fn parse_der<'a, T>(&'a self) -> ParseResult<'a, T>
     where
         T: FromDer<'a>,
     {
-        T::from_der(self.data)
+        T::from_der(self.data.as_bytes())
     }
+}
 
+impl<'a> Any<'a, &'a [u8]> {
     /// Get the content following a BER header
     #[inline]
     pub fn parse_ber_content<'i>(i: &'i [u8], header: &'_ Header) -> ParseResult<'i, &'i [u8]> {
@@ -392,6 +407,24 @@ impl<'a> FromBer<'a> for Any<'a> {
     }
 }
 
+// impl<I: Input<Item = u8>> BerParser<I> for Any<'_> {
+//     type Error = BerError<I>;
+
+//     fn from_any_ber<'a>(input: I, header: Header<'a>) -> IResult<I, Self, Self::Error>
+//     where
+//         I: 'a,
+//     {
+//         // TODO: handle indefinite
+//         let length = header
+//             .length
+//             .definite()
+//             .map_err(BerError::convert(input.clone()))?;
+//         let (rem, data) = take(length)(input)?;
+//         let any = Any { header, data };
+//         Ok((rem, any))
+//     }
+// }
+
 impl<'a> FromDer<'a> for Any<'a> {
     #[inline]
     fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
@@ -465,7 +498,7 @@ mod tests {
     #[test]
     fn methods_any() {
         let header = Header::new_simple(Tag::Integer);
-        let any = Any::new(header, &[])
+        let any = Any::new(header, &[] as &[u8])
             .with_class(Class::ContextSpecific)
             .with_tag(Tag(0));
         assert_eq!(any.as_bytes(), &[]);

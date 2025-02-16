@@ -1,4 +1,4 @@
-# Change Log
+# ChangeLog
 
 ## [Unreleased][unreleased]
 
@@ -7,6 +7,28 @@
 ### Added
 
 ### Thanks
+
+## 0.8.0
+
+This is a major upgrade, with breaking changes!
+The main changes for this version are generic types for input, and the new traits `BerParser`
+and `DerParser`. These traits define a cleaner implementation of parsing functions for
+header and content, allowing better implementation of tagged values, of content parsing, and
+of serialization functions.
+
+The previous traits (`FromBer` and `FromDer`) have been kept for compatibility, but will
+become obsolete and will be replaced in future upgrades. This version is a transition version.
+
+Some efforts have been done to make upgrade easier, but a few things are broken or changed and
+will require manual upgrade.
+
+Breaking changes:
+- `BerParser` and `DerParser` constants have been renamed to `BerMode` and `DerMode`
+
+Upgrade notes:
+- `Any` now has a generic type parameter, defaulting to `&[u8]`
+- A new error type `BerError` has been introduced
+- when using generic input, it may be necessary to cast input as `&[u8]`
 
 ## 0.7.0
 
