@@ -51,6 +51,15 @@ impl Length {
             Length::Indefinite => Err(Error::IndefiniteLengthUnexpected),
         }
     }
+
+    /// Return error if length is not definite
+    #[inline]
+    pub const fn assert_definite_inner(&self) -> Result<(), InnerError> {
+        match self {
+            Length::Definite(_) => Ok(()),
+            Length::Indefinite => Err(InnerError::IndefiniteLengthUnexpected),
+        }
+    }
 }
 
 impl From<usize> for Length {

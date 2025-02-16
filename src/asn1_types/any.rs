@@ -4,7 +4,7 @@ use alloc::borrow::Cow;
 #[cfg(not(feature = "std"))]
 use alloc::string::{String, ToString};
 use core::convert::{TryFrom, TryInto};
-use nom::{AsBytes, Input};
+use nom::{bytes::streaming::take, AsBytes, Input};
 
 use self::debug::trace;
 
@@ -407,23 +407,23 @@ impl<'a> FromBer<'a> for Any<'a> {
     }
 }
 
-// impl<I: Input<Item = u8>> BerParser<I> for Any<'_> {
-//     type Error = BerError<I>;
+impl<'a, I: Input<Item = u8>> BerParser<'a, I> for Any<'a, I>
+where
+    I: 'a,
+{
+    type Error = BerError<I>;
 
-//     fn from_any_ber<'a>(input: I, header: Header<'a>) -> IResult<I, Self, Self::Error>
-//     where
-//         I: 'a,
-//     {
-//         // TODO: handle indefinite
-//         let length = header
-//             .length
-//             .definite()
-//             .map_err(BerError::convert(input.clone()))?;
-//         let (rem, data) = take(length)(input)?;
-//         let any = Any { header, data };
-//         Ok((rem, any))
-//     }
-// }
+    fn from_any_ber(input: I, header: Header<'a>) -> IResult<I, Self, Self::Error> {
+        // TODO: handle indefinite
+        let length = header
+            .length
+            .definite_inner()
+            .map_err(BerError::convert(input.clone()))?;
+        let (rem, data) = take(length)(input)?;
+        let any = Any { header, data };
+        Ok((rem, any))
+    }
+}
 
 impl<'a> FromDer<'a> for Any<'a> {
     #[inline]
@@ -501,7 +501,7 @@ mod tests {
         let any = Any::new(header, &[] as &[u8])
             .with_class(Class::ContextSpecific)
             .with_tag(Tag(0));
-        assert_eq!(any.as_bytes(), &[]);
+        assert_eq!(any.as_bytes(), &[] as &[u8]);
 
         let input = &hex! {"80 03 02 01 01"};
         let (_, any) = Any::from_ber(input).expect("parsing failed");
