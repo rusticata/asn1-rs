@@ -1,4 +1,3 @@
-use nom::number::streaming::be_u8;
 use nom::Input;
 
 use crate::*;
@@ -33,59 +32,32 @@ impl Boolean {
     }
 }
 
-impl<'a> TryFrom<Any<'a>> for Boolean {
+impl<'a, I: Input<Item = u8>> TryFrom<Any<'a, I>> for Boolean {
     type Error = Error;
 
-    fn try_from(any: Any<'a>) -> Result<Boolean> {
+    fn try_from(any: Any<'a, I>) -> Result<Boolean> {
         TryFrom::try_from(&any)
     }
 }
 
 // non-consuming version
-impl<'a, 'b> TryFrom<&'b Any<'a>> for Boolean {
+impl<'a, 'b, I: Input<Item = u8>> TryFrom<&'b Any<'a, I>> for Boolean {
     type Error = Error;
 
-    fn try_from(any: &'b Any<'a>) -> Result<Boolean> {
+    fn try_from(any: &'b Any<'a, I>) -> Result<Boolean> {
         any.tag().assert_eq(Self::TAG)?;
         // X.690 section 8.2.1:
         // The encoding of a boolean value shall be primitive. The contents octets shall consist of a single octet
         if any.header.length != Length::Definite(1) {
             return Err(Error::InvalidLength);
         }
-        let value = any.data[0];
+        let value = any
+            .data
+            .iter_elements()
+            .next()
+            .ok_or(Error::InvalidLength)?;
+        // let value = any.data[0];
         Ok(Boolean { value })
-    }
-}
-
-impl<'a, I: Input<Item = u8>> BerParser<'a, I> for Boolean
-where
-    I: 'a,
-{
-    type Error = BerError<I>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Self::TAG
-    }
-
-    fn from_any_ber(input: I, header: Header) -> IResult<I, Self, Self::Error> {
-        // The encoding of a boolean value shall be primitive (X.690: 8.2.1)
-        header
-            .assert_primitive_inner()
-            .map_err(BerError::convert(input.clone()))?;
-
-        // length cannot be indefinite, because of content definition
-        let length = header
-            .length
-            .definite_inner()
-            .map_err(BerError::convert(input.clone()))?;
-
-        // The contents octets shall consist of a single octet (X.690: 8.2.1)
-        if length != 1 {
-            return Err(Err::Error(BerError::new(input, InnerError::InvalidLength)));
-        }
-        let (rem, value) = be_u8(input)?;
-        let b = Boolean { value };
-        Ok((rem, b))
     }
 }
 
@@ -129,18 +101,18 @@ impl ToDer for Boolean {
     }
 }
 
-impl<'a> TryFrom<Any<'a>> for bool {
+impl<'a, I: Input<Item = u8>> TryFrom<Any<'a, I>> for bool {
     type Error = Error;
 
-    fn try_from(any: Any<'a>) -> Result<bool> {
+    fn try_from(any: Any<'a, I>) -> Result<bool> {
         TryFrom::try_from(&any)
     }
 }
 
-impl<'a, 'b> TryFrom<&'b Any<'a>> for bool {
+impl<'a, 'b, I: Input<Item = u8>> TryFrom<&'b Any<'a, I>> for bool {
     type Error = Error;
 
-    fn try_from(any: &'b Any<'a>) -> Result<bool> {
+    fn try_from(any: &'b Any<'a, I>) -> Result<bool> {
         any.tag().assert_eq(Self::TAG)?;
         let b = Boolean::try_from(any)?;
         Ok(b.bool())

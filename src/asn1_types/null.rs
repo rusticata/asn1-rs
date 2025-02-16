@@ -1,3 +1,5 @@
+use nom::Input;
+
 use crate::*;
 use core::convert::TryFrom;
 
@@ -17,18 +19,18 @@ impl Null {
     }
 }
 
-impl<'a> TryFrom<Any<'a>> for Null {
+impl<'a, I: Input<Item = u8>> TryFrom<Any<'a, I>> for Null {
     type Error = Error;
 
-    fn try_from(any: Any<'a>) -> Result<Null> {
+    fn try_from(any: Any<'a, I>) -> Result<Null> {
         TryFrom::try_from(&any)
     }
 }
 
-impl<'a, 'b> TryFrom<&'b Any<'a>> for Null {
+impl<'a, 'b, I: Input<Item = u8>> TryFrom<&'b Any<'a, I>> for Null {
     type Error = Error;
 
-    fn try_from(any: &'b Any<'a>) -> Result<Null> {
+    fn try_from(any: &'b Any<'a, I>) -> Result<Null> {
         any.tag().assert_eq(Self::TAG)?;
         if !any.header.length.is_null() {
             return Err(Error::InvalidLength);
@@ -64,10 +66,10 @@ impl ToDer for Null {
     }
 }
 
-impl<'a> TryFrom<Any<'a>> for () {
+impl<'a, I: Input<Item = u8>> TryFrom<Any<'a, I>> for () {
     type Error = Error;
 
-    fn try_from(any: Any<'a>) -> Result<()> {
+    fn try_from(any: Any<'a, I>) -> Result<()> {
         any.tag().assert_eq(Self::TAG)?;
         any.header.assert_primitive()?;
         if !any.header.length.is_null() {

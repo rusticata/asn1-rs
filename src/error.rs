@@ -263,11 +263,11 @@ impl Error {
     }
 }
 
-impl<'a> ParseError<&'a [u8]> for Error {
-    fn from_error_kind(_input: &'a [u8], kind: ErrorKind) -> Self {
+impl<I> ParseError<I> for Error {
+    fn from_error_kind(_input: I, kind: ErrorKind) -> Self {
         Error::NomError(kind)
     }
-    fn append(_input: &'a [u8], kind: ErrorKind, _other: Self) -> Self {
+    fn append(_input: I, kind: ErrorKind, _other: Self) -> Self {
         Error::NomError(kind)
     }
 }

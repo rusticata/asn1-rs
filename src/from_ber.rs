@@ -121,3 +121,23 @@ where
         Ok((rem, Some(obj)))
     }
 }
+
+impl<'a, T, E, I: Input<Item = u8> + 'a> BerParser<'a, I> for T
+where
+    T: TryFrom<Any<'a, I>, Error = E>,
+    E: ParseError<I> + From<BerError<I>>,
+{
+    type Error = E;
+
+    fn from_any_ber(input: I, header: Header<'a>) -> IResult<I, Self, Self::Error> {
+        let length = header
+            .length
+            .definite_inner()
+            .map_err(BerError::convert_into(input.clone()))?;
+        let (rem, data) = take(length)(input)?;
+
+        let any = Any::new(header, data);
+        let obj = T::try_from(any).map_err(|e| Err::Error(e))?;
+        Ok((rem, obj))
+    }
+}
