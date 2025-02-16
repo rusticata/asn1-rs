@@ -60,7 +60,10 @@ where
     }
 }
 
-pub trait BerParser<I: Input<Item = u8>>: Sized {
+pub trait BerParser<'a, I: Input<Item = u8> + 'a>: Sized
+where
+    I: 'a,
+{
     type Error: ParseError<I> + From<BerError<I>>;
 
     /// Attempt to parse a new BER object from data.
@@ -97,10 +100,8 @@ pub trait BerParser<I: Input<Item = u8>>: Sized {
     ///
     /// Note: in this method, implementers should *not* check header tag (which can be
     /// different from the usual object tag when using IMPLICIT tagging, for ex.).
-    fn from_any_ber<'a>(input: I, header: Header<'a>) -> IResult<I, Self, Self::Error>
     // TODO: when header is generic, remove this lifetime and use <I>
-    where
-        I: 'a;
+    fn from_any_ber(input: I, header: Header<'a>) -> IResult<I, Self, Self::Error>;
 
     fn parse_ber_optional(input: I) -> IResult<I, Option<Self>, Self::Error> {
         if input.input_len() == 0 {

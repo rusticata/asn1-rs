@@ -1,3 +1,6 @@
+use nom::number::streaming::be_u8;
+use nom::Input;
+
 use crate::*;
 use core::convert::TryFrom;
 
@@ -51,6 +54,38 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Boolean {
         }
         let value = any.data[0];
         Ok(Boolean { value })
+    }
+}
+
+impl<'a, I: Input<Item = u8>> BerParser<'a, I> for Boolean
+where
+    I: 'a,
+{
+    type Error = BerError<I>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Self::TAG
+    }
+
+    fn from_any_ber(input: I, header: Header) -> IResult<I, Self, Self::Error> {
+        // The encoding of a boolean value shall be primitive (X.690: 8.2.1)
+        header
+            .assert_primitive_inner()
+            .map_err(BerError::convert(input.clone()))?;
+
+        // length cannot be indefinite, because of content definition
+        let length = header
+            .length
+            .definite_inner()
+            .map_err(BerError::convert(input.clone()))?;
+
+        // The contents octets shall consist of a single octet (X.690: 8.2.1)
+        if length != 1 {
+            return Err(Err::Error(BerError::new(input, InnerError::InvalidLength)));
+        }
+        let (rem, value) = be_u8(input)?;
+        let b = Boolean { value };
+        Ok((rem, b))
     }
 }
 

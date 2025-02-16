@@ -147,6 +147,16 @@ impl<'a> Header<'a> {
         }
     }
 
+    /// Return error if object is not primitive
+    #[inline]
+    pub const fn assert_primitive_inner(&self) -> Result<(), InnerError> {
+        if self.is_primitive() {
+            Ok(())
+        } else {
+            Err(InnerError::ConstructUnexpected)
+        }
+    }
+
     /// Return error if object is primitive
     #[inline]
     pub const fn assert_constructed(&self) -> Result<()> {
@@ -234,17 +244,17 @@ impl<'a> FromBer<'a> for Header<'a> {
     }
 }
 
-impl<I: Input<Item = u8>> BerParser<I> for Header<'_> {
+impl<'a, I: Input<Item = u8>> BerParser<'a, I> for Header<'a>
+where
+    I: 'a,
+{
     type Error = BerError<I>;
 
     fn parse_ber(input: I) -> IResult<I, Self, Self::Error> {
         parse_header(input)
     }
 
-    fn from_any_ber<'a>(input: I, header: Header<'a>) -> IResult<I, Self, Self::Error>
-    where
-        I: 'a,
-    {
+    fn from_any_ber(input: I, header: Header<'a>) -> IResult<I, Self, Self::Error> {
         // TODO: when header is generic, remove this copy/to_static()
         Ok((input, header.to_static()))
     }
