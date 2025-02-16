@@ -65,8 +65,8 @@ fn methods_error() {
     );
     //
     use nom::error::ParseError;
-    let e = Error::from_error_kind(&[], nom::error::ErrorKind::Fail);
-    let e = <asn1_rs::Error as ParseError<_>>::append(&[], nom::error::ErrorKind::Eof, e);
+    let e = Error::from_error_kind(&[] as &[u8], nom::error::ErrorKind::Fail);
+    let e = <asn1_rs::Error as ParseError<_>>::append(&[] as &[u8], nom::error::ErrorKind::Eof, e);
     let s = format!("{}", e);
     assert!(s.starts_with("nom error:"));
     //
