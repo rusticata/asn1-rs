@@ -88,7 +88,7 @@ fn to_der_header() {
 #[test]
 fn to_der_any() {
     let header = Header::new_simple(Tag::Integer);
-    let any = Any::new(header, &hex!("02"));
+    let any = Any::new(header, &hex!("02") as &[u8]);
     assert_eq!(any.to_der_len(), Ok(3));
     let v = any.to_der_vec().expect("serialization failed");
     assert_eq!(&v, &[0x02, 0x01, 0x02]);
@@ -97,7 +97,7 @@ fn to_der_any() {
 #[test]
 fn to_der_any_raw() {
     let header = Header::new(Class::Universal, false, Tag::Integer, Length::Definite(3));
-    let any = Any::new(header, &hex!("02"));
+    let any = Any::new(header, &hex!("02") as &[u8]);
     // to_vec should compute the length
     let v = any.to_der_vec().expect("serialization failed");
     assert_eq!(&v, &[0x02, 0x01, 0x02]);

@@ -6,6 +6,7 @@ use crate::BerParser;
 use crate::ToDer;
 use crate::{BerMode, Class, DerMode, DynTagged, FromBer, FromDer, Length, Tag, ToStatic};
 use alloc::borrow::Cow;
+use alloc::vec::Vec;
 use core::convert::TryFrom;
 use nom::bytes::streaming::take;
 use nom::number::streaming::be_u8;

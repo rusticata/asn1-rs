@@ -159,7 +159,7 @@ impl<'a, T, E> TaggedParser<'a, Explicit, T, E> {
         F: FnOnce(&'a [u8]) -> ParseResult<'a, T, E>,
         E: From<Error>,
     {
-        Any::from_ber_and_then(class, tag, bytes, op)
+        Any::<'a, &'a [u8]>::from_ber_and_then(class, tag, bytes, op)
     }
 
     /// Parse a DER tagged value and apply the provided parsing function to content
@@ -179,7 +179,7 @@ impl<'a, T, E> TaggedParser<'a, Explicit, T, E> {
         F: FnOnce(&'a [u8]) -> ParseResult<'a, T, E>,
         E: From<Error>,
     {
-        Any::from_der_and_then(class, tag, bytes, op)
+        Any::<'a, &'a [u8]>::from_der_and_then(class, tag, bytes, op)
     }
 }
 
