@@ -1,6 +1,10 @@
 use core::convert::{TryFrom, TryInto};
 
-use crate::{Any, Error, ParseResult};
+use nom::bytes::streaming::take;
+use nom::error::ParseError;
+use nom::{Err, IResult, Input};
+
+use crate::{Any, BerError, Error, Header, ParseResult, Tag};
 
 /// Base trait for BER object parsers
 ///
@@ -50,8 +54,69 @@ where
     E: From<Error>,
 {
     fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, T, E> {
-        let (i, any) = Any::from_ber(bytes).map_err(nom::Err::convert)?;
-        let result = any.try_into().map_err(nom::Err::Error)?;
+        let (i, any) = Any::from_ber(bytes).map_err(Err::convert)?;
+        let result = any.try_into().map_err(Err::Error)?;
         Ok((i, result))
+    }
+}
+
+pub trait BerParser<I: Input<Item = u8>>: Sized {
+    type Error: ParseError<I> + From<BerError<I>>;
+
+    /// Attempt to parse a new BER object from data.
+    ///
+    /// Header tag must match expected tag
+    fn parse_ber(input: I) -> IResult<I, Self, Self::Error> {
+        let (rem, header) = Header::parse_ber(input.clone()).map_err(Err::convert)?;
+        // TODO: handle indefinite
+        let length = header
+            .length
+            .definite_inner()
+            .map_err(BerError::convert_into(input.clone()))?;
+        if !Self::check_tag(header.tag) {
+            return Err(Err::Error(
+                // TODO: expected Tag is `None`, so the error will not be helpful
+                BerError::unexpected_tag(input, None, header.tag).into(),
+            ));
+        }
+        let (rem, data) = take(length)(rem)?;
+        let (_, obj) = Self::from_any_ber(data, header).map_err(Err::convert)?;
+        Ok((rem, obj))
+    }
+
+    /// Check if provided tag is acceptable
+    ///
+    /// Return `true` if tag can match current object.
+    fn check_tag(_tag: Tag) -> bool {
+        true
+    }
+
+    /// Parse a new BER object from header and data.
+    ///
+    /// `input` length is guaranteed to match `header` length (definite or indefinite)
+    ///
+    /// Note: in this method, implementers should *not* check header tag (which can be
+    /// different from the usual object tag when using IMPLICIT tagging, for ex.).
+    fn from_any_ber<'a>(input: I, header: Header<'a>) -> IResult<I, Self, Self::Error>
+    // TODO: when header is generic, remove this lifetime and use <I>
+    where
+        I: 'a;
+
+    fn parse_ber_optional(input: I) -> IResult<I, Option<Self>, Self::Error> {
+        if input.input_len() == 0 {
+            return Ok((input, None));
+        }
+        let (rem, header) = Header::parse_ber(input.clone()).map_err(Err::convert)?;
+        if !Self::check_tag(header.tag) {
+            return Ok((input, None));
+        }
+        // TODO: handle indefinite
+        let length = header
+            .length
+            .definite_inner()
+            .map_err(BerError::convert_into(input.clone()))?;
+        let (rem, data) = take(length)(rem)?;
+        let (_, obj) = Self::from_any_ber(data, header).map_err(Err::convert)?;
+        Ok((rem, Some(obj)))
     }
 }

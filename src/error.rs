@@ -8,7 +8,7 @@ use alloc::string;
 use alloc::string::String;
 use displaydoc::Display;
 use nom::error::{ErrorKind, FromExternalError, ParseError};
-use nom::IResult;
+use nom::{IResult, Input};
 #[cfg(feature = "std")]
 use std::io;
 use thiserror::Error;
@@ -97,6 +97,152 @@ pub enum Error {
     NomError(ErrorKind),
 }
 
+#[derive(Debug, Error)]
+pub struct BerError<I: Input> {
+    /// Input location where error happened
+    input: I,
+    /// Error kind
+    inner_error: InnerError,
+}
+
+impl<I: Input> BerError<I> {
+    /// Build a new error
+    #[inline]
+    pub const fn new(input: I, inner: InnerError) -> Self {
+        Self {
+            input,
+            inner_error: inner,
+        }
+    }
+
+    /// Return the error location
+    pub const fn input(&self) -> &I {
+        &self.input
+    }
+
+    /// Return the error kind
+    pub fn inner(&self) -> &InnerError {
+        &self.inner_error
+    }
+
+    #[inline]
+    pub const fn nom_err(input: I, inner_error: InnerError) -> nom::Err<Self> {
+        nom::Err::Error(Self { input, inner_error })
+    }
+
+    /// convert an `InnerError` to a `nom::Err::Error(input, inner)`
+    ///
+    /// This is usefull when mapping the result of a function returning `InnerError`
+    /// inside a parser function (expecting error type `Err<Error<I>>`).
+    ///
+    /// For ex: `header.tag().assert_eq(Tag(0)).map_err(Error::convert(input))?`
+    pub fn convert(input: I) -> impl Fn(InnerError) -> nom::Err<Self>
+    where
+        I: Clone,
+    {
+        move |inner_error| Self::nom_err(input.clone(), inner_error)
+    }
+
+    /// convert an `InnerError` to a `nom::Err::Error<E>` with `e: From<Error<I>>`
+    ///
+    /// This is similar to [`Self::convert`], but with an `Into` applied to the result
+    pub fn convert_into<E: From<Self>>(input: I) -> impl Fn(InnerError) -> nom::Err<E>
+    where
+        I: Clone,
+    {
+        move |inner_error| nom::Err::Error(Self::new(input.clone(), inner_error).into())
+    }
+
+    /// Build an error from the provided invalid value
+    #[inline]
+    pub const fn invalid_value(input: I, tag: Tag, msg: String) -> Self {
+        Self::new(input, InnerError::InvalidValue { tag, msg })
+    }
+
+    // /// Build an error from the provided unexpected class
+    // #[inline]
+    // pub const fn unexpected_class(expected: Option<Class>, actual: Class) -> Self {
+    //     Self::UnexpectedClass { expected, actual }
+    // }
+
+    /// Build an error from the provided unexpected tag
+    #[inline]
+    pub const fn unexpected_tag(input: I, expected: Option<Tag>, actual: Tag) -> Self {
+        Self::new(input, InnerError::UnexpectedTag { expected, actual })
+    }
+}
+
+impl<I: Input> ParseError<I> for BerError<I> {
+    fn from_error_kind(input: I, kind: ErrorKind) -> Self {
+        Self {
+            input,
+            inner_error: InnerError::Nom(kind),
+        }
+    }
+
+    fn append(_: I, _z: ErrorKind, other: Self) -> Self {
+        // NOTE: we do not support error stacking, and just use the last one
+        other
+    }
+}
+
+/// The error type for operations of the [`FromBer`](crate::FromBer),
+/// [`FromDer`](crate::FromDer), and associated traits.
+#[derive(Clone, Debug, Display, PartialEq, Eq, Error)]
+#[non_exhaustive]
+pub enum InnerError {
+    /// BER object does not have the expected type
+    BerTypeError,
+    /// BER object does not have the expected value
+    BerValueError,
+    /// Invalid Length
+    InvalidLength,
+    /// Invalid Value when parsing object with tag {tag:?} {msg:}
+    InvalidValue { tag: Tag, msg: String },
+    /// Invalid Tag
+    InvalidTag,
+    /// Unknown tag: {0:?}
+    UnknownTag(u32),
+    /// Unexpected Tag (expected: {expected:?}, actual: {actual:?})
+    UnexpectedTag { expected: Option<Tag>, actual: Tag },
+    /// Unexpected Class (expected: {expected:?}, actual: {actual:?})
+    UnexpectedClass {
+        expected: Option<Class>,
+        actual: Class,
+    },
+
+    /// Indefinite length not allowed
+    IndefiniteLengthUnexpected,
+
+    /// DER object was expected to be constructed (and found to be primitive)
+    ConstructExpected,
+    /// DER object was expected to be primitive (and found to be constructed)
+    ConstructUnexpected,
+
+    /// Integer too large to fit requested type
+    IntegerTooLarge,
+    /// BER integer is negative, while an unsigned integer was requested
+    IntegerNegative,
+    /// BER recursive parsing reached maximum depth
+    BerMaxDepth,
+
+    /// Invalid encoding or forbidden characters in string
+    StringInvalidCharset,
+    /// Invalid Date or Time
+    InvalidDateTime,
+
+    /// DER Failed constraint: {0:?}
+    DerConstraintFailed(DerConstraint),
+
+    /// Parse error
+    Nom(ErrorKind),
+
+    /// Requesting borrowed data from a temporary object
+    LifetimeError,
+    /// Feature is not yet implemented
+    Unsupported,
+}
+
 impl Error {
     /// Build an error from the provided invalid value
     #[inline]
@@ -155,6 +301,39 @@ impl From<nom::Err<Error>> for Error {
         match e {
             nom::Err::Incomplete(n) => Self::Incomplete(n),
             nom::Err::Error(e) | nom::Err::Failure(e) => e,
+        }
+    }
+}
+
+impl<I: Input> From<BerError<I>> for Error {
+    fn from(value: BerError<I>) -> Self {
+        match value.inner_error {
+            InnerError::BerTypeError => Self::BerTypeError,
+            InnerError::BerValueError => Self::BerValueError,
+            InnerError::InvalidLength => Self::InvalidLength,
+            InnerError::InvalidValue { tag, msg } => Self::InvalidValue { tag, msg },
+            InnerError::InvalidTag => Self::InvalidTag,
+            InnerError::UnknownTag(t) => Self::UnknownTag(t),
+            InnerError::UnexpectedTag { expected, actual } => {
+                Self::UnexpectedTag { expected, actual }
+            }
+            InnerError::UnexpectedClass { expected, actual } => {
+                Self::unexpected_class(expected, actual)
+            }
+            InnerError::IndefiniteLengthUnexpected => Self::IndefiniteLengthUnexpected,
+            InnerError::ConstructExpected => Self::ConstructExpected,
+            InnerError::ConstructUnexpected => Self::ConstructUnexpected,
+            InnerError::IntegerTooLarge => Self::IntegerTooLarge,
+            InnerError::IntegerNegative => Self::IntegerNegative,
+            InnerError::BerMaxDepth => Self::BerMaxDepth,
+            InnerError::StringInvalidCharset => Self::StringInvalidCharset,
+            InnerError::InvalidDateTime => Self::InvalidDateTime,
+            InnerError::DerConstraintFailed(der_constraint) => {
+                Self::DerConstraintFailed(der_constraint)
+            }
+            InnerError::Nom(error_kind) => Self::NomError(error_kind),
+            InnerError::LifetimeError => Self::LifetimeError,
+            InnerError::Unsupported => Self::Unsupported,
         }
     }
 }

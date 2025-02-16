@@ -1,4 +1,4 @@
-use crate::{DynTagged, Error, Result, Tag};
+use crate::{DynTagged, Error, InnerError, Result, Tag};
 #[cfg(feature = "std")]
 use crate::{SerializeResult, ToDer};
 use core::ops;
@@ -25,6 +25,15 @@ impl Length {
         match self {
             Length::Definite(sz) => Ok(*sz),
             Length::Indefinite => Err(Error::IndefiniteLengthUnexpected),
+        }
+    }
+
+    /// Get length of primitive object
+    #[inline]
+    pub fn definite_inner(&self) -> Result<usize, InnerError> {
+        match self {
+            Length::Definite(sz) => Ok(*sz),
+            Length::Indefinite => Err(InnerError::IndefiniteLengthUnexpected),
         }
     }
 

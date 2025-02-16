@@ -1,12 +1,15 @@
 use crate::ber::*;
 use crate::der_constraint_fail_if;
 use crate::error::*;
+use crate::BerParser;
 #[cfg(feature = "std")]
 use crate::ToDer;
 use crate::{BerMode, Class, DerMode, DynTagged, FromBer, FromDer, Length, Tag, ToStatic};
 use alloc::borrow::Cow;
 use core::convert::TryFrom;
 use nom::bytes::streaming::take;
+use nom::number::streaming::be_u8;
+use nom::{Err, IResult, Input};
 
 /// BER/DER object header (identifier and length)
 #[derive(Clone, Debug)]
@@ -226,46 +229,23 @@ impl ToStatic for Header<'_> {
 
 impl<'a> FromBer<'a> for Header<'a> {
     fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self> {
-        let (i1, el) = parse_identifier(bytes)?;
-        let class = match Class::try_from(el.0) {
-            Ok(c) => c,
-            Err(_) => unreachable!(), // Cannot fail, we have read exactly 2 bits
-        };
-        let (i2, len) = parse_ber_length_byte(i1)?;
-        let (i3, len) = match (len.0, len.1) {
-            (0, l1) => {
-                // Short form: MSB is 0, the rest encodes the length (which can be 0) (8.1.3.4)
-                (i2, Length::Definite(usize::from(l1)))
-            }
-            (_, 0) => {
-                // Indefinite form: MSB is 1, the rest is 0 (8.1.3.6)
-                // If encoding is primitive, definite form shall be used (8.1.3.2)
-                if el.1 == 0 {
-                    return Err(nom::Err::Error(Error::ConstructExpected));
-                }
-                (i2, Length::Indefinite)
-            }
-            (_, l1) => {
-                // if len is 0xff -> error (8.1.3.5)
-                if l1 == 0b0111_1111 {
-                    return Err(nom::Err::Error(Error::InvalidLength));
-                }
-                let (i3, llen) = take(l1)(i2)?;
-                match bytes_to_u64(llen) {
-                    Ok(l) => {
-                        let l =
-                            usize::try_from(l).or(Err(nom::Err::Error(Error::InvalidLength)))?;
-                        (i3, Length::Definite(l))
-                    }
-                    Err(_) => {
-                        return Err(nom::Err::Error(Error::InvalidLength));
-                    }
-                }
-            }
-        };
-        let constructed = el.1 != 0;
-        let hdr = Header::new(class, constructed, Tag(el.2), len).with_raw_tag(Some(el.3.into()));
-        Ok((i3, hdr))
+        parse_header(bytes).map_err(Err::convert)
+    }
+}
+
+impl<I: Input<Item = u8>> BerParser<I> for Header<'_> {
+    type Error = BerError<I>;
+
+    fn parse_ber(input: I) -> IResult<I, Self, Self::Error> {
+        parse_header(input)
+    }
+
+    fn from_any_ber<'a>(input: I, header: Header<'a>) -> IResult<I, Self, Self::Error>
+    where
+        I: 'a,
+    {
+        // TODO: when header is generic, remove this copy/to_static()
+        Ok((input, header.to_static()))
     }
 }
 
@@ -284,14 +264,14 @@ impl<'a> FromDer<'a> for Header<'a> {
             }
             (_, 0) => {
                 // Indefinite form is not allowed in DER (10.1)
-                return Err(nom::Err::Error(Error::DerConstraintFailed(
+                return Err(Err::Error(Error::DerConstraintFailed(
                     DerConstraint::IndefiniteLength,
                 )));
             }
             (_, l1) => {
                 // if len is 0xff -> error (8.1.3.5)
                 if l1 == 0b0111_1111 {
-                    return Err(nom::Err::Error(Error::InvalidLength));
+                    return Err(Err::Error(Error::InvalidLength));
                 }
                 // DER(9.1) if len is 0 (indefinite form), obj must be constructed
                 der_constraint_fail_if!(
@@ -304,12 +284,11 @@ impl<'a> FromDer<'a> for Header<'a> {
                     Ok(l) => {
                         // DER: should have been encoded in short form (< 127)
                         // XXX der_constraint_fail_if!(i, l < 127);
-                        let l =
-                            usize::try_from(l).or(Err(nom::Err::Error(Error::InvalidLength)))?;
+                        let l = usize::try_from(l).or(Err(Err::Error(Error::InvalidLength)))?;
                         (i3, Length::Definite(l))
                     }
                     Err(_) => {
-                        return Err(nom::Err::Error(Error::InvalidLength));
+                        return Err(Err::Error(Error::InvalidLength));
                     }
                 }
             }
@@ -451,6 +430,115 @@ impl<'a> PartialEq<Header<'a>> for Header<'a> {
 }
 
 impl Eq for Header<'_> {}
+
+pub(crate) fn parse_header<'a, I: Input<Item = u8>>(
+    input: I,
+) -> IResult<I, Header<'a>, BerError<I>> {
+    // parse identifier octets (X.690: 8.1.2)
+    let (rem, b0) = be_u8(input.clone())?;
+
+    // bits 8 and 7 represent the class of the tag
+    let class_b0 = b0 >> 6;
+
+    let class = match Class::try_from(class_b0) {
+        Ok(c) => c,
+        Err(_) => unreachable!(), // Cannot fail, we have read exactly 2 bits
+    };
+
+    const CONSTRUCTED_BIT: u8 = 0b0010_0000;
+    // bit 6 shall be a 0 (primitive) or 1 (constructed)
+    let constructed = (b0 & CONSTRUCTED_BIT) != 0;
+
+    const TAG_MASK0: u8 = 0b0001_1111;
+    // bits 5 to 1 encode the number of the tag
+    let tag0 = b0 & TAG_MASK0;
+
+    let mut rem = rem;
+    let mut tag = u32::from(tag0);
+    let mut tag_byte_count = 1;
+    // test if tag >= 31 (X.690: 8.1.2.4)
+    if tag0 == TAG_MASK0 {
+        // read next bytes as specified in 8.1.2.4.2
+        let mut c = 0;
+        loop {
+            // Make sure we don't read past the end of our data.
+            let (r, b) = be_u8(rem).map_err(|_: Err<_, BerError<I>>| {
+                Err::Error(BerError::new(input.clone(), InnerError::InvalidTag))
+            })?;
+            rem = r;
+
+            // With tag defined as u32 the most we can fit in is four tag bytes.
+            // (X.690 doesn't actually specify maximum tag width.)
+            // custom_check!(i, tag_byte_count > 5, Error::InvalidTag)?;
+            if tag_byte_count > 5 {
+                return Err(Err::Error(BerError::new(input, InnerError::InvalidTag)));
+            }
+
+            c = (c << 7) | (u32::from(b) & 0x7f);
+            let done = b & 0x80 == 0;
+            tag_byte_count += 1;
+            if done {
+                break;
+            }
+        }
+        tag = c;
+    }
+
+    // TODO: this code allocates & copies the raw tag. implement a borrowed version?
+    let mut raw_tag = Vec::with_capacity(tag_byte_count);
+    input.take(tag_byte_count).iter_elements().for_each(|item| {
+        raw_tag.push(item);
+    });
+
+    // now parse length byte (X.690: 8.1.3)
+    let (rem, len_b0) = be_u8(rem)?;
+    let mut rem = rem;
+
+    const INDEFINITE: u8 = 0b1000_0000;
+    let length = if len_b0 == INDEFINITE {
+        // indefinite form (X.690: 8.1.3.6)
+        Length::Indefinite
+    } else if len_b0 & INDEFINITE == 0 {
+        // definite, short form (X.690: 8.1.3.4)
+        Length::Definite(len_b0 as usize)
+    } else {
+        // definite, long form (X.690: 8.1.3.5)
+
+        // value 0b1111_1111 shall not be used (X.690: 8.1.3.5)
+        if len_b0 == 0xff {
+            return Err(Err::Error(BerError::new(input, InnerError::InvalidLength)));
+        }
+        let (r, len_bytes) = take(len_b0 & !INDEFINITE)(rem)?;
+        rem = r;
+
+        match bytes_to_u64_g(len_bytes) {
+            Ok(l) => {
+                let l = usize::try_from(l)
+                    .map_err(|_| Err::Error(BerError::new(input, InnerError::InvalidLength)))?;
+                Length::Definite(l)
+            }
+            _ => return Err(Err::Error(BerError::new(input, InnerError::InvalidLength))),
+        }
+    };
+
+    let header =
+        Header::new(class, constructed, Tag(tag), length).with_raw_tag(Some(Cow::Owned(raw_tag)));
+    Ok((rem, header))
+}
+
+/// Try to parse *all* input bytes as u64
+#[inline]
+pub(crate) fn bytes_to_u64_g<I: Input<Item = u8>>(s: I) -> Result<u64, InnerError> {
+    let mut u: u64 = 0;
+    for c in s.iter_elements() {
+        if u & 0xff00_0000_0000_0000 != 0 {
+            return Err(InnerError::IntegerTooLarge);
+        }
+        u <<= 8;
+        u |= u64::from(c);
+    }
+    Ok(u)
+}
 
 #[cfg(all(test, feature = "std"))]
 mod tests {
