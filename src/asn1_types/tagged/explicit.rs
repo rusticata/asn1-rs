@@ -39,6 +39,42 @@ where
     }
 }
 
+impl<'a, T, E, const CLASS: u8, const TAG: u32> BerParser<'a>
+    for TaggedValue<T, E, Explicit, CLASS, TAG>
+where
+    // T: Tagged,
+    T: BerParser<'a>,
+    // E: ParseError<Input<'a>> + From<BerError<Input<'a>>>,
+{
+    type Error = T::Error;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Self::TAG
+    }
+
+    fn from_any_ber(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+        // Tagged Explicit must be constructed (X.690 8.14.2)
+        if !header.constructed {
+            return Err(Err::Error(
+                BerError::new(input, InnerError::ConstructExpected).into(),
+            ));
+        }
+        // note: we check tag here, because the only way to have a different tag
+        // would be to be IMPLICIT, and we already know we are EXPLICIT
+        // This is an exception!
+        if !Self::check_tag(header.tag) {
+            return Err(Err::Error(
+                BerError::unexpected_tag(input, Some(TAG.into()), header.tag).into(),
+            ));
+        }
+        // calling `parse_ber` will read a new header and parse object `T``
+        // this will also check that T::TAG is expected
+        let (rem, t) = T::parse_ber(input)?;
+        let tagged = TaggedValue::explicit(t);
+        Ok((rem, tagged))
+    }
+}
+
 impl<'a, T, E, const CLASS: u8, const TAG: u32> FromDer<'a, E>
     for TaggedValue<T, E, Explicit, CLASS, TAG>
 where
@@ -258,5 +294,78 @@ where
 
     fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         self.inner.write_der(writer)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+
+    use crate::{BerError, BerParser, Input, TaggedExplicit};
+
+    #[test]
+    fn check_tagged_explicit() {
+        type T<'a> = TaggedExplicit<bool, BerError<Input<'a>>, 0>;
+
+        // untagged value -> should fail
+        let input: &[u8] = &hex! {"0101ff"};
+        let _res = T::parse_ber(input.into()).expect_err("parsing should have failed");
+
+        // tagged value, correct tag -> Ok
+        let input: &[u8] = &hex! {"a0 03 0101ff"};
+        let _res = T::parse_ber(input.into()).expect("parsing failed");
+
+        // tagged value, incorrect tag -> Fail
+        let input: &[u8] = &hex! {"a1 03 0101ff"};
+        let _res = T::parse_ber(input.into()).expect_err("parsing should have failed");
+    }
+
+    #[test]
+    fn check_opttagged_explicit() {
+        // **** using parse_ber_optional ****
+        type T1<'a> = TaggedExplicit<bool, BerError<Input<'a>>, 0>;
+
+        // empty -> OK, should return None
+        let input: &[u8] = &hex! {""};
+        let res = T1::parse_ber_optional(input.into()).expect("parsing failed");
+        assert_eq!(res.1, None);
+
+        // incorrect tag -> OK, should return None
+        let input: &[u8] = &hex! {"a1 03 0101ff"};
+        let res = T1::parse_ber_optional(input.into()).expect("parsing failed");
+        assert_eq!(res.1, None);
+
+        // tagged value, correct tag -> Ok
+        let input: &[u8] = &hex! {"a0 03 0101ff"};
+        let (rem, res) = T1::parse_ber_optional(input.into()).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert!(res.is_some());
+
+        // tagged value, correct tag and invalid content -> Fail
+        let input: &[u8] = &hex! {"a0 03 0102ffff"};
+        let _res = T1::parse_ber_optional(input.into()).expect_err("parsing should have failed");
+
+        // **** using Option<T> ****
+        type T2<'a> = Option<TaggedExplicit<bool, BerError<Input<'a>>, 0>>;
+
+        // empty -> OK, should return None
+        let input: &[u8] = &hex! {""};
+        let res = T2::parse_ber(input.into()).expect("parsing failed");
+        assert_eq!(res.1, None);
+
+        // incorrect tag -> OK, should return None
+        let input: &[u8] = &hex! {"a1 03 0101ff"};
+        let res = T2::parse_ber(input.into()).expect("parsing failed");
+        assert_eq!(res.1, None);
+
+        // tagged value, correct tag -> Ok
+        let input: &[u8] = &hex! {"a0 03 0101ff"};
+        let (rem, res) = T2::parse_ber(input.into()).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert!(res.is_some());
+
+        // tagged value, correct tag and invalid content -> Fail
+        let input: &[u8] = &hex! {"a0 03 0102ffff"};
+        let _res = T2::parse_ber(input.into()).expect_err("parsing should have failed");
     }
 }
