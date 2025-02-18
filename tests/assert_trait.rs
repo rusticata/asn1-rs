@@ -1,8 +1,3 @@
-use std::{
-    collections::{BTreeSet, HashSet},
-    hash::Hash,
-};
-
 use asn1_rs::*;
 // use nom::Input;
 
@@ -71,12 +66,18 @@ fn assert_traits_slice() {
         test_assert!(SetOf<T>);
 
         // NOTE: trait bounds require the *old* trait FromBer, with specific additional trait bounds
+        #[cfg(feature = "std")]
         #[allow(dead_code)]
         fn compound_wrapper_requiring_fromber_ord<'a, T: FromBer<'a> + Ord>(_: T) {
+            use std::collections::BTreeSet;
             test_assert!(BTreeSet<T>);
         }
+        #[cfg(feature = "std")]
         #[allow(dead_code)]
-        fn compound_wrapper_requiring_fromber_hash_eq<'a, T: FromBer<'a> + Hash + Eq>(_: T) {
+        fn compound_wrapper_requiring_fromber_hash_eq<'a, T: FromBer<'a> + std::hash::Hash + Eq>(
+            _: T,
+        ) {
+            use std::collections::HashSet;
             test_assert!(HashSet<T>);
         }
     }
