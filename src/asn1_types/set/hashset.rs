@@ -27,6 +27,8 @@ where
     }
 }
 
+impl<T> DeriveBerParserFromTryFrom for HashSet<T> {}
+
 impl<T> CheckDerConstraints for HashSet<T>
 where
     T: CheckDerConstraints,

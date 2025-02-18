@@ -114,6 +114,8 @@ where
     }
 }
 
+impl<T> DeriveBerParserFromTryFrom for SequenceOf<T> {}
+
 impl<T> CheckDerConstraints for SequenceOf<T>
 where
     T: CheckDerConstraints,

@@ -117,6 +117,8 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for EmbeddedPdv<'a> {
     }
 }
 
+impl DeriveBerParserFromTryFrom for EmbeddedPdv<'_> {}
+
 impl CheckDerConstraints for EmbeddedPdv<'_> {
     fn check_constraints(any: &Any) -> Result<()> {
         any.header.length().assert_definite()?;

@@ -276,6 +276,8 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Real {
     }
 }
 
+impl DeriveBerParserFromTryFrom for Real {}
+
 impl CheckDerConstraints for Real {
     fn check_constraints(any: &Any) -> Result<()> {
         any.header.assert_primitive()?;

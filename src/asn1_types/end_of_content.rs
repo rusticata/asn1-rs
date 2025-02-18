@@ -1,4 +1,4 @@
-use crate::{Any, Error, Result, Tag, Tagged};
+use crate::{Any, DeriveBerParserFromTryFrom, Error, Result, Tag, Tagged};
 use core::convert::TryFrom;
 
 /// End-of-contents octets
@@ -41,6 +41,8 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for EndOfContent {
         Ok(EndOfContent {})
     }
 }
+
+impl DeriveBerParserFromTryFrom for EndOfContent {}
 
 impl Tagged for EndOfContent {
     const TAG: Tag = Tag::EndOfContent;

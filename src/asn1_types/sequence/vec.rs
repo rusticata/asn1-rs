@@ -75,6 +75,8 @@ where
     }
 }
 
+impl<T> DeriveBerParserFromTryFrom for Vec<T> {}
+
 impl<T> CheckDerConstraints for Vec<T>
 where
     T: CheckDerConstraints,

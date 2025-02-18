@@ -29,6 +29,8 @@ impl CheckDerConstraints for String {
     }
 }
 
+impl DeriveBerParserFromTryFrom for String {}
+
 impl DerAutoDerive for String {}
 
 impl Tagged for String {
