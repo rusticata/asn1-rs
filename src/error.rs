@@ -97,7 +97,7 @@ pub enum Error {
     NomError(ErrorKind),
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq, Eq)]
 pub struct BerError<I: Input> {
     /// Input location where error happened
     input: I,
