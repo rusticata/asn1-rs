@@ -117,7 +117,7 @@ impl OptTaggedParser {
             ));
         }
         let Any { header, data } = any;
-        let (_, res) = f(header, data)?;
+        let (_, res) = f(header, data.as_bytes2())?;
         Ok((rem, Some(res)))
     }
 
@@ -160,7 +160,7 @@ impl OptTaggedParser {
             ));
         }
         let Any { header, data } = any;
-        let (_, res) = f(header, data)?;
+        let (_, res) = f(header, data.as_bytes2())?;
         Ok((rem, Some(res)))
     }
 }

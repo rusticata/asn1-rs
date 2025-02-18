@@ -30,7 +30,7 @@ where
             let class = Class::try_from(CLASS).ok();
             return Err(Error::unexpected_class(class, any.class()).into());
         }
-        let (_, inner) = match T::from_ber(any.data) {
+        let (_, inner) = match T::from_ber(any.data.as_bytes2()) {
             Ok((rem, res)) => (rem, res),
             Err(Err::Error(e)) | Err(Err::Failure(e)) => return Err(e),
             Err(Err::Incomplete(n)) => return Err(Error::Incomplete(n).into()),
@@ -59,7 +59,7 @@ where
                 Error::unexpected_class(class, any.class()).into(),
             ));
         }
-        let (_, inner) = T::from_der(any.data)?;
+        let (_, inner) = T::from_der(any.data.as_bytes2())?;
         Ok((rem, TaggedValue::explicit(inner)))
     }
 }
@@ -71,7 +71,7 @@ where
 {
     fn check_constraints(any: &Any) -> Result<()> {
         any.header.length.assert_definite()?;
-        let (_, inner) = Any::from_ber(any.data)?;
+        let (_, inner) = Any::from_ber(any.data.as_bytes2())?;
         T::check_constraints(&inner)?;
         Ok(())
     }
@@ -159,7 +159,7 @@ impl<'a, T, E> TaggedParser<'a, Explicit, T, E> {
         F: FnOnce(&'a [u8]) -> ParseResult<'a, T, E>,
         E: From<Error>,
     {
-        Any::<'a, &'a [u8]>::from_ber_and_then(class, tag, bytes, op)
+        Any::from_ber_and_then(class, tag, bytes, op)
     }
 
     /// Parse a DER tagged value and apply the provided parsing function to content
@@ -179,7 +179,7 @@ impl<'a, T, E> TaggedParser<'a, Explicit, T, E> {
         F: FnOnce(&'a [u8]) -> ParseResult<'a, T, E>,
         E: From<Error>,
     {
-        Any::<'a, &'a [u8]>::from_der_and_then(class, tag, bytes, op)
+        Any::from_der_and_then(class, tag, bytes, op)
     }
 }
 
@@ -191,7 +191,7 @@ where
     fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self, E> {
         let (rem, any) = Any::from_ber(bytes).map_err(Err::convert)?;
         let header = any.header;
-        let (_, inner) = T::from_ber(any.data)?;
+        let (_, inner) = T::from_ber(any.data.as_bytes2())?;
         let tagged = TaggedParser {
             header,
             inner,
@@ -210,7 +210,7 @@ where
     fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, E> {
         let (rem, any) = Any::from_der(bytes).map_err(Err::convert)?;
         let header = any.header;
-        let (_, inner) = T::from_der(any.data)?;
+        let (_, inner) = T::from_der(any.data.as_bytes2())?;
         let tagged = TaggedParser {
             header,
             inner,
@@ -227,7 +227,7 @@ where
 {
     fn check_constraints(any: &Any) -> Result<()> {
         any.header.length.assert_definite()?;
-        let (_, inner_any) = Any::from_der(any.data)?;
+        let (_, inner_any) = Any::from_der(any.data.as_bytes2())?;
         T::check_constraints(&inner_any)?;
         Ok(())
     }

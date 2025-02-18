@@ -1,16 +1,16 @@
 use crate::ber::*;
 use crate::der_constraint_fail_if;
 use crate::error::*;
-use crate::BerParser;
 #[cfg(feature = "std")]
 use crate::ToDer;
 use crate::{BerMode, Class, DerMode, DynTagged, FromBer, FromDer, Length, Tag, ToStatic};
+use crate::{BerParser, Input};
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
 use core::convert::TryFrom;
 use nom::bytes::streaming::take;
 use nom::number::streaming::be_u8;
-use nom::{Err, IResult, Input};
+use nom::{Err, IResult};
 
 /// BER/DER object header (identifier and length)
 #[derive(Clone, Debug)]
@@ -244,19 +244,31 @@ impl<'a> FromBer<'a> for Header<'a> {
     }
 }
 
-impl<'a, I: Input<Item = u8>> BerParser<'a, I> for Header<'a>
-where
-    I: 'a,
-{
-    type Error = BerError<I>;
+// impl<'a, I: Input<Item = u8>> BerParser<'a, I> for Header<'a>
+// where
+//     I: 'a,
+// {
+//     type Error = BerError<I>;
 
-    fn parse_ber(input: I) -> IResult<I, Self, Self::Error> {
+//     fn parse_ber(input: I) -> IResult<I, Self, Self::Error> {
+//         parse_header(input)
+//     }
+
+//     fn from_any_ber(input: I, header: Header<'a>) -> IResult<I, Self, Self::Error> {
+//         // TODO: when header is generic, remove this copy/to_static()
+//         Ok((input, header.to_static()))
+//     }
+// }
+
+impl<'i> BerParser<'i> for Header<'i> {
+    type Error = BerError<Input<'i>>;
+
+    fn parse_ber(input: Input<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         parse_header(input)
     }
 
-    fn from_any_ber(input: I, header: Header<'a>) -> IResult<I, Self, Self::Error> {
-        // TODO: when header is generic, remove this copy/to_static()
-        Ok((input, header.to_static()))
+    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        Ok((input, header))
     }
 }
 
@@ -442,7 +454,7 @@ impl<'a> PartialEq<Header<'a>> for Header<'a> {
 
 impl Eq for Header<'_> {}
 
-pub(crate) fn parse_header<'a, I: Input<Item = u8>>(
+pub(crate) fn parse_header<'a, I: nom::Input<Item = u8>>(
     input: I,
 ) -> IResult<I, Header<'a>, BerError<I>> {
     // parse identifier octets (X.690: 8.1.2)
@@ -539,7 +551,7 @@ pub(crate) fn parse_header<'a, I: Input<Item = u8>>(
 
 /// Try to parse *all* input bytes as u64
 #[inline]
-pub(crate) fn bytes_to_u64_g<I: Input<Item = u8>>(s: I) -> Result<u64, InnerError> {
+pub(crate) fn bytes_to_u64_g<I: nom::Input<Item = u8>>(s: I) -> Result<u64, InnerError> {
     let mut u: u64 = 0;
     for c in s.iter_elements() {
         if u & 0xff00_0000_0000_0000 != 0 {

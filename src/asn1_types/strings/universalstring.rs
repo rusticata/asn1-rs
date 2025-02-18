@@ -71,6 +71,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for UniversalString<'a> {
         // read slice as big-endian UCS-4 string
         let v = &any
             .data
+            .as_bytes2()
             .chunks(4)
             .map(|s| match s {
                 [a, b, c, d] => {

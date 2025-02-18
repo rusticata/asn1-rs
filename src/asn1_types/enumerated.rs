@@ -1,5 +1,3 @@
-use nom::Input;
-
 use crate::*;
 use core::convert::TryFrom;
 
@@ -17,18 +15,18 @@ impl Enumerated {
     }
 }
 
-impl<'a, I: Input<Item = u8>> TryFrom<Any<'a, I>> for Enumerated {
+impl<'a> TryFrom<Any<'a>> for Enumerated {
     type Error = Error;
 
-    fn try_from(any: Any<'a, I>) -> Result<Enumerated> {
+    fn try_from(any: Any<'a>) -> Result<Enumerated> {
         TryFrom::try_from(&any)
     }
 }
 
-impl<'a, 'b, I: Input<Item = u8>> TryFrom<&'b Any<'a, I>> for Enumerated {
+impl<'a, 'b> TryFrom<&'b Any<'a>> for Enumerated {
     type Error = Error;
 
-    fn try_from(any: &'b Any<'a, I>) -> Result<Enumerated> {
+    fn try_from(any: &'b Any<'a>) -> Result<Enumerated> {
         any.tag().assert_eq(Self::TAG)?;
         any.header.assert_primitive()?;
         let res_u64 = bytes_to_u64_g(any.data.clone())?;

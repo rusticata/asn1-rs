@@ -1,5 +1,3 @@
-use nom::Input;
-
 use crate::{Any, Error, Result, Tag, Tagged};
 use core::convert::TryFrom;
 
@@ -24,18 +22,18 @@ impl EndOfContent {
     }
 }
 
-impl<'a, I: Input<Item = u8>> TryFrom<Any<'a, I>> for EndOfContent {
+impl<'a> TryFrom<Any<'a>> for EndOfContent {
     type Error = Error;
 
-    fn try_from(any: Any<'a, I>) -> Result<EndOfContent> {
+    fn try_from(any: Any<'a>) -> Result<EndOfContent> {
         TryFrom::try_from(&any)
     }
 }
 
-impl<'a, 'b, I: Input<Item = u8>> TryFrom<&'b Any<'a, I>> for EndOfContent {
+impl<'a, 'b> TryFrom<&'b Any<'a>> for EndOfContent {
     type Error = Error;
 
-    fn try_from(any: &'b Any<'a, I>) -> Result<EndOfContent> {
+    fn try_from(any: &'b Any<'a>) -> Result<EndOfContent> {
         any.tag().assert_eq(Self::TAG)?;
         if !any.header.length.is_null() {
             return Err(Error::InvalidLength);

@@ -36,11 +36,14 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for EmbeddedPdv<'a> {
     type Error = Error;
 
     fn try_from(any: &'b Any<'a>) -> Result<Self> {
-        let data = any.data;
+        let data = any.data.clone();
         // AUTOMATIC TAGS means all values will be tagged (IMPLICIT)
         // [0] -> identification
-        let (rem, seq0) =
-            TaggedParser::<Explicit, Any>::parse_ber(Class::ContextSpecific, Tag(0), data)?;
+        let (rem, seq0) = TaggedParser::<Explicit, Any>::parse_ber(
+            Class::ContextSpecific,
+            Tag(0),
+            data.as_bytes2(),
+        )?;
         let inner = seq0.inner;
         let identification = match inner.tag() {
             Tag(0) => {
@@ -49,7 +52,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for EmbeddedPdv<'a> {
                 //     transfer OBJECT IDENTIFIER
                 // },
                 // AUTOMATIC tags -> implicit! Hopefully, Oid does not check tag value!
-                let (rem, s_abstract) = Oid::from_ber(inner.data)?;
+                let (rem, s_abstract) = Oid::from_ber(inner.data.as_bytes2())?;
                 let (_, s_transfer) = Oid::from_ber(rem)?;
                 PdvIdentification::Syntaxes {
                     s_abstract,
@@ -58,12 +61,12 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for EmbeddedPdv<'a> {
             }
             Tag(1) => {
                 // syntax OBJECT IDENTIFIER
-                let oid = Oid::new(inner.data.into());
+                let oid = Oid::new(inner.data.as_bytes2().into());
                 PdvIdentification::Syntax(oid)
             }
             Tag(2) => {
                 // presentation-context-id INTEGER
-                let i = Integer::new(inner.data);
+                let i = Integer::new(inner.data.as_bytes2());
                 PdvIdentification::PresentationContextId(i)
             }
             Tag(3) => {
@@ -72,8 +75,8 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for EmbeddedPdv<'a> {
                 //     transfer-syntax OBJECT IDENTIFIER
                 // },
                 // AUTOMATIC tags -> implicit!
-                let (rem, any) = Any::from_ber(inner.data)?;
-                let presentation_context_id = Integer::new(any.data);
+                let (rem, any) = Any::from_ber(inner.data.as_bytes2())?;
+                let presentation_context_id = Integer::new(any.data.as_bytes2());
                 let (_, presentation_syntax) = Oid::from_ber(rem)?;
                 PdvIdentification::ContextNegotiation {
                     presentation_context_id,
@@ -82,7 +85,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for EmbeddedPdv<'a> {
             }
             Tag(4) => {
                 // transfer-syntax OBJECT IDENTIFIER
-                let oid = Oid::new(inner.data.into());
+                let oid = Oid::new(inner.data.as_bytes2().into());
                 PdvIdentification::TransferSyntax(oid)
             }
             Tag(5) => {

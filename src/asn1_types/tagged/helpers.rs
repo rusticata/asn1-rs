@@ -36,7 +36,7 @@ where
         any.header
             .assert_tag(tag)
             .map_err(|e| Err::convert(e.into()))?;
-        f(any.data, any.header)
+        f(any.data.as_bytes2(), any.header)
     })
 }
 
@@ -79,7 +79,7 @@ where
             tag: T::TAG,
             ..header.clone()
         };
-        f(data, tag, header)
+        f(data.as_bytes2(), tag, header)
     })
 }
 

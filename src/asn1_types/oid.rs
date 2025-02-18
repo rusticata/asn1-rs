@@ -55,7 +55,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Oid<'a> {
 
     fn try_from(any: &'b Any<'a>) -> Result<Self> {
         // check that any.data.last().unwrap() >> 7 == 0u8
-        let asn1 = Cow::Borrowed(any.data);
+        let asn1 = Cow::Borrowed(any.data.as_bytes2());
         Ok(Oid::new(asn1))
     }
 }
@@ -286,7 +286,7 @@ impl<'a> Oid<'a> {
         let (rem, any) = Any::from_ber(bytes)?;
         any.header.assert_primitive()?;
         any.header.assert_tag(Tag::RelativeOid)?;
-        let asn1 = Cow::Borrowed(any.data);
+        let asn1 = Cow::Borrowed(any.data.as_bytes2());
         Ok((rem, Oid::new_relative(asn1)))
     }
 
@@ -294,7 +294,7 @@ impl<'a> Oid<'a> {
         let (rem, any) = Any::from_der(bytes)?;
         any.header.assert_tag(Tag::RelativeOid)?;
         Self::check_constraints(&any)?;
-        let asn1 = Cow::Borrowed(any.data);
+        let asn1 = Cow::Borrowed(any.data.as_bytes2());
         Ok((rem, Oid::new_relative(asn1)))
     }
 

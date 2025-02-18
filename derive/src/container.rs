@@ -164,7 +164,7 @@ impl Container {
                 any.tag().assert_eq(Self::TAG)?;
 
                 // no need to parse sequence, we already have content
-                let i = any.data;
+                let i = any.data.as_bytes2();
                 //
                 #parse_content
                 //
@@ -237,7 +237,7 @@ impl Container {
                 .collect();
             quote! {
                 any.tag().assert_eq(Self::TAG)?;
-                let rem = &any.data;
+                let rem = any.data.as_bytes2();
                 #(#check_fields)*
                 Ok(())
             }
@@ -286,7 +286,7 @@ impl Container {
             quote! {
                 let (rem, any) = asn1_rs::Any::from_der(bytes).map_err(asn1_rs::nom::Err::convert)?;
                 any.header.assert_tag(Self::TAG).map_err(|e| asn1_rs::nom::Err::Error(e.into()))?;
-                let i = any.data;
+                let i = any.data.as_bytes2();
                 //
                 #parse_content
                 //

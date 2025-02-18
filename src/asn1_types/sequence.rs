@@ -322,7 +322,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Sequence<'a> {
         any.tag().assert_eq(Self::TAG)?;
         any.header.assert_constructed()?;
         Ok(Sequence {
-            content: Cow::Borrowed(any.data),
+            content: Cow::Borrowed(any.data.as_bytes2()),
         })
     }
 }

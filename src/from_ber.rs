@@ -2,9 +2,10 @@ use core::convert::{TryFrom, TryInto};
 
 use nom::bytes::streaming::take;
 use nom::error::ParseError;
-use nom::{Err, IResult, Input};
+use nom::Input as _;
+use nom::{Err, IResult};
 
-use crate::{Any, BerError, Error, Header, ParseResult, Tag};
+use crate::{Any, BerError, Error, Header, Input, ParseResult, Tag};
 
 /// Base trait for BER object parsers
 ///
@@ -60,16 +61,16 @@ where
     }
 }
 
-pub trait BerParser<'a, I: Input<Item = u8> + 'a>: Sized
+pub trait BerParser<'i>
 where
-    I: 'a,
+    Self: Sized,
 {
-    type Error: ParseError<I> + From<BerError<I>>;
+    type Error: ParseError<Input<'i>> + From<BerError<Input<'i>>>;
 
     /// Attempt to parse a new BER object from data.
     ///
     /// Header tag must match expected tag
-    fn parse_ber(input: I) -> IResult<I, Self, Self::Error> {
+    fn parse_ber(input: Input<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         let (rem, header) = Header::parse_ber(input.clone()).map_err(Err::convert)?;
         // TODO: handle indefinite
         let length = header
@@ -100,10 +101,9 @@ where
     ///
     /// Note: in this method, implementers should *not* check header tag (which can be
     /// different from the usual object tag when using IMPLICIT tagging, for ex.).
-    // TODO: when header is generic, remove this lifetime and use <I>
-    fn from_any_ber(input: I, header: Header<'a>) -> IResult<I, Self, Self::Error>;
+    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error>;
 
-    fn parse_ber_optional(input: I) -> IResult<I, Option<Self>, Self::Error> {
+    fn parse_ber_optional(input: Input<'i>) -> IResult<Input<'i>, Option<Self>, Self::Error> {
         if input.input_len() == 0 {
             return Ok((input, None));
         }
@@ -122,14 +122,14 @@ where
     }
 }
 
-impl<'a, T, E, I: Input<Item = u8> + 'a> BerParser<'a, I> for T
+impl<'i, E, T> BerParser<'i> for T
 where
-    T: TryFrom<Any<'a, I>, Error = E>,
-    E: ParseError<I> + From<BerError<I>>,
+    T: TryFrom<Any<'i>, Error = E>,
+    E: ParseError<Input<'i>> + From<BerError<Input<'i>>>,
 {
     type Error = E;
 
-    fn from_any_ber(input: I, header: Header<'a>) -> IResult<I, Self, Self::Error> {
+    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         let length = header
             .length
             .definite_inner()

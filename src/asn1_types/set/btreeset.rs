@@ -22,8 +22,8 @@ where
             |any| {
                 any.tag().assert_eq(Self::TAG)?;
                 any.header.assert_constructed()?;
-                let items =
-                    SetIterator::<T, BerMode>::new(any.data).collect::<Result<BTreeSet<T>>>()?;
+                let items = SetIterator::<T, BerMode>::new(any.data.as_bytes2())
+                    .collect::<Result<BTreeSet<T>>>()?;
                 Ok(items)
             },
             any,
@@ -38,7 +38,7 @@ where
     fn check_constraints(any: &Any) -> Result<()> {
         any.tag().assert_eq(Self::TAG)?;
         any.header.assert_constructed()?;
-        for item in SetIterator::<Any, DerMode>::new(any.data) {
+        for item in SetIterator::<Any, DerMode>::new(any.data.as_bytes2()) {
             let item = item?;
             T::check_constraints(&item)?;
         }
@@ -66,7 +66,7 @@ where
                 any.header
                     .assert_constructed()
                     .map_err(|e| Err::Error(e.into()))?;
-                let items = SetIterator::<T, DerMode, E>::new(any.data)
+                let items = SetIterator::<T, DerMode, E>::new(any.data.as_bytes2())
                     .collect::<Result<BTreeSet<T>, E>>()
                     .map_err(Err::Error)?;
                 Ok((rem, items))
