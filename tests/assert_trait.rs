@@ -92,6 +92,12 @@ fn assert_traits_slice() {
         test_assert!(TaggedExplicit<T, E, 0>);
         test_assert!(TaggedValue<T, E, Explicit, {Class::Application as u8}, 0>);
 
-        // test_assert!(TaggedImplicit<T, _, 0>);
+        #[allow(dead_code)]
+        fn compound_wrapper_requiring_berparser_tagged<'a, T: BerParser<'a> + Tagged>(_: T) {
+            // TODO: test for custom error types
+            type E<'a> = BerError<Input<'a>>;
+            test_assert!(TaggedImplicit<T, E, 0>);
+            test_assert!(TaggedValue<T, E, Implicit, {Class::Application as u8}, 0>);
+        }
     }
 }
