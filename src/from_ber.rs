@@ -5,7 +5,7 @@ use nom::error::ParseError;
 use nom::Input as _;
 use nom::{Err, IResult};
 
-use crate::{Any, BerError, Error, Header, Input, ParseResult, Tag};
+use crate::{Any, BerError, Error, Header, Input, ParseResult, Tag, Tagged};
 
 /// Base trait for BER object parsers
 ///
@@ -124,10 +124,15 @@ where
 
 impl<'i, E, T> BerParser<'i> for T
 where
+    T: Tagged,
     T: TryFrom<Any<'i>, Error = E>,
     E: ParseError<Input<'i>> + From<BerError<Input<'i>>>,
 {
     type Error = E;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Self::TAG
+    }
 
     fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         let length = header
