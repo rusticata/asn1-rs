@@ -38,7 +38,7 @@ where
                 tag: T::TAG,
                 ..any.header.clone()
             },
-            data: any.data,
+            data: any.data.clone(),
         };
         match T::try_from(any) {
             Ok(inner) => Ok(TaggedValue::implicit(inner)),
@@ -88,7 +88,7 @@ where
     fn check_constraints(any: &Any) -> Result<()> {
         any.header.length.assert_definite()?;
         let header = any.header.clone().with_tag(T::TAG);
-        let inner = Any::new(header, any.data);
+        let inner = Any::new(header, any.data.clone());
         T::check_constraints(&inner)?;
         Ok(())
     }
@@ -245,7 +245,7 @@ where
                 tag: T::TAG,
                 ..any.header.clone()
             },
-            data: any.data,
+            data: any.data.clone(),
         };
         T::check_constraints(&any)?;
         Ok(())

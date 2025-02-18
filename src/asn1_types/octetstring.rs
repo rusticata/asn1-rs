@@ -1,6 +1,7 @@
 use crate::*;
 use alloc::borrow::Cow;
 use core::convert::TryFrom;
+use core::fmt::Debug;
 
 /// ASN.1 `OCTETSTRING` type
 #[derive(Debug, PartialEq, Eq)]
@@ -54,7 +55,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for OctetString<'a> {
     fn try_from(any: &'b Any<'a>) -> Result<OctetString<'a>> {
         any.tag().assert_eq(Self::TAG)?;
         Ok(OctetString {
-            data: Cow::Borrowed(any.data),
+            data: Cow::Borrowed(any.data.as_bytes2()),
         })
     }
 }

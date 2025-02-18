@@ -1,4 +1,4 @@
-use nom::Input;
+use nom::{AsBytes, Input};
 
 use crate::*;
 use core::convert::TryFrom;
@@ -32,19 +32,19 @@ impl Boolean {
     }
 }
 
-impl<'a, I: Input<Item = u8>> TryFrom<Any<'a, I>> for Boolean {
+impl<'a> TryFrom<Any<'a>> for Boolean {
     type Error = Error;
 
-    fn try_from(any: Any<'a, I>) -> Result<Boolean> {
+    fn try_from(any: Any<'a>) -> Result<Boolean> {
         TryFrom::try_from(&any)
     }
 }
 
 // non-consuming version
-impl<'a, 'b, I: Input<Item = u8>> TryFrom<&'b Any<'a, I>> for Boolean {
+impl<'a, 'b> TryFrom<&'b Any<'a>> for Boolean {
     type Error = Error;
 
-    fn try_from(any: &'b Any<'a, I>) -> Result<Boolean> {
+    fn try_from(any: &'b Any<'a>) -> Result<Boolean> {
         any.tag().assert_eq(Self::TAG)?;
         // X.690 section 8.2.1:
         // The encoding of a boolean value shall be primitive. The contents octets shall consist of a single octet
@@ -63,7 +63,7 @@ impl<'a, 'b, I: Input<Item = u8>> TryFrom<&'b Any<'a, I>> for Boolean {
 
 impl CheckDerConstraints for Boolean {
     fn check_constraints(any: &Any) -> Result<()> {
-        let c = any.data[0];
+        let c = any.data.as_bytes()[0];
         // X.690 section 11.1
         if !(c == 0 || c == 0xff) {
             return Err(Error::DerConstraintFailed(DerConstraint::InvalidBoolean));
@@ -101,18 +101,18 @@ impl ToDer for Boolean {
     }
 }
 
-impl<'a, I: Input<Item = u8>> TryFrom<Any<'a, I>> for bool {
+impl<'a> TryFrom<Any<'a>> for bool {
     type Error = Error;
 
-    fn try_from(any: Any<'a, I>) -> Result<bool> {
+    fn try_from(any: Any<'a>) -> Result<bool> {
         TryFrom::try_from(&any)
     }
 }
 
-impl<'a, 'b, I: Input<Item = u8>> TryFrom<&'b Any<'a, I>> for bool {
+impl<'a, 'b> TryFrom<&'b Any<'a>> for bool {
     type Error = Error;
 
-    fn try_from(any: &'b Any<'a, I>) -> Result<bool> {
+    fn try_from(any: &'b Any<'a>) -> Result<bool> {
         any.tag().assert_eq(Self::TAG)?;
         let b = Boolean::try_from(any)?;
         Ok(b.bool())
@@ -121,7 +121,7 @@ impl<'a, 'b, I: Input<Item = u8>> TryFrom<&'b Any<'a, I>> for bool {
 
 impl CheckDerConstraints for bool {
     fn check_constraints(any: &Any) -> Result<()> {
-        let c = any.data[0];
+        let c = any.data.as_bytes()[0];
         // X.690 section 11.1
         if !(c == 0 || c == 0xff) {
             return Err(Error::DerConstraintFailed(DerConstraint::InvalidBoolean));

@@ -10,7 +10,7 @@ pub use num_bigint::{BigInt, BigUint, Sign};
 /// Decode an unsigned integer into a big endian byte slice with all leading
 /// zeroes removed (if positive) and extra 0xff remove (if negative)
 fn trim_slice<'a>(any: &'a Any<'_>) -> Result<&'a [u8]> {
-    let bytes = any.data;
+    let bytes = any.data.as_bytes2();
 
     if bytes.is_empty() || (bytes[0] != 0x00 && bytes[0] != 0xff) {
         return Ok(bytes);
@@ -42,7 +42,7 @@ fn trim_slice<'a>(any: &'a Any<'_>) -> Result<&'a [u8]> {
 /// Decode an unsigned integer into a byte array of the requested size
 /// containing a big endian integer.
 fn decode_array_uint<const N: usize>(any: &Any<'_>) -> Result<[u8; N]> {
-    if is_highest_bit_set(any.data) {
+    if is_highest_bit_set(any.data.as_bytes2()) {
         return Err(Error::IntegerNegative);
     }
     let input = trim_slice(any)?;
@@ -305,7 +305,7 @@ impl<'a> Integer<'a> {
     /// Creates a borrowed `Any` for this object
     #[inline]
     pub fn any(&'a self) -> Any<'a> {
-        Any::from_tag_and_data(Self::TAG, &self.data)
+        Any::from_tag_and_data(Self::TAG, self.data.as_ref().into())
     }
 
     /// Returns a `BigInt` built from this `Integer` value.
@@ -476,10 +476,10 @@ impl<'a> TryFrom<Any<'a>> for Integer<'a> {
 impl<'a, 'b> TryFrom<&'b Any<'a>> for Integer<'a> {
     type Error = Error;
 
-    fn try_from(any: &'b Any<'a>) -> Result<Integer<'a>> {
+    fn try_from(any: &'b Any<'a>) -> Result<Integer<'a>, Self::Error> {
         any.tag().assert_eq(Self::TAG)?;
         Ok(Integer {
-            data: Cow::Borrowed(any.data),
+            data: Cow::Borrowed(any.data.as_bytes2()),
         })
     }
 }
@@ -692,36 +692,63 @@ mod tests {
         let h = Header::new_simple(Tag(0));
         // no zero nor ff - nothing to remove
         let input: &[u8] = &[0x7f, 0xff, 0x00, 0x02];
-        assert_eq!(Ok(input), trim_slice(&Any::new(h.clone(), input)));
+        assert_eq!(
+            Ok(input),
+            trim_slice(&Any::from_header_and_data(h.clone(), input))
+        );
         //
         // 0x00
         //
         // empty - nothing to remove
         let input: &[u8] = &[];
-        assert_eq!(Ok(input), trim_slice(&Any::new(h.clone(), input)));
+        assert_eq!(
+            Ok(input),
+            trim_slice(&Any::from_header_and_data(h.clone(), input))
+        );
         // one zero - nothing to remove
         let input: &[u8] = &[0];
-        assert_eq!(Ok(input), trim_slice(&Any::new(h.clone(), input)));
+        assert_eq!(
+            Ok(input),
+            trim_slice(&Any::from_header_and_data(h.clone(), input))
+        );
         // all zeroes - keep only one
         let input: &[u8] = &[0, 0, 0];
-        assert_eq!(Ok(&input[2..]), trim_slice(&Any::new(h.clone(), input)));
+        assert_eq!(
+            Ok(&input[2..]),
+            trim_slice(&Any::from_header_and_data(h.clone(), input))
+        );
         // some zeroes - keep only the non-zero part
         let input: &[u8] = &[0, 0, 1];
-        assert_eq!(Ok(&input[2..]), trim_slice(&Any::new(h.clone(), input)));
+        assert_eq!(
+            Ok(&input[2..]),
+            trim_slice(&Any::from_header_and_data(h.clone(), input))
+        );
         //
         // 0xff
         //
         // one ff - nothing to remove
         let input: &[u8] = &[0xff];
-        assert_eq!(Ok(input), trim_slice(&Any::new(h.clone(), input)));
+        assert_eq!(
+            Ok(input),
+            trim_slice(&Any::from_header_and_data(h.clone(), input))
+        );
         // all ff - keep only one
         let input: &[u8] = &[0xff, 0xff, 0xff];
-        assert_eq!(Ok(&input[2..]), trim_slice(&Any::new(h.clone(), input)));
+        assert_eq!(
+            Ok(&input[2..]),
+            trim_slice(&Any::from_header_and_data(h.clone(), input))
+        );
         // some ff - keep only the non-zero part
         let input: &[u8] = &[0xff, 0xff, 1];
-        assert_eq!(Ok(&input[1..]), trim_slice(&Any::new(h.clone(), input)));
+        assert_eq!(
+            Ok(&input[1..]),
+            trim_slice(&Any::from_header_and_data(h.clone(), input))
+        );
         // some ff and a MSB 1 - keep only the non-zero part
         let input: &[u8] = &[0xff, 0xff, 0x80, 1];
-        assert_eq!(Ok(&input[2..]), trim_slice(&Any::new(h.clone(), input)));
+        assert_eq!(
+            Ok(&input[2..]),
+            trim_slice(&Any::from_header_and_data(h.clone(), input))
+        );
     }
 }

@@ -58,6 +58,7 @@ impl<'a, 'r> core::convert::TryFrom<&'r Any<'a>> for BmpString<'a> {
         // read slice as big-endian UTF-16 string
         let v = &any
             .data
+            .as_bytes2()
             .chunks(2)
             .map(|s| match s {
                 [a, b] => ((*a as u16) << 8) | (*b as u16),

@@ -60,7 +60,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for BitString<'a> {
         if any.data.is_empty() {
             return Err(Error::InvalidLength);
         }
-        let s = any.data;
+        let s = any.data.as_bytes2();
         let (unused_bits, data) = (s[0], Cow::Borrowed(&s[1..]));
         Ok(BitString { unused_bits, data })
     }
@@ -71,19 +71,20 @@ impl CheckDerConstraints for BitString<'_> {
         // X.690 section 10.2
         any.header.assert_primitive()?;
         // Check that padding bits are all 0 (X.690 section 11.2.1)
-        match any.data.len() {
+        let s = any.data.as_bytes2();
+        match s.len() {
             0 => Err(Error::InvalidLength),
             1 => {
                 // X.690 section 11.2.2 Note 2
-                if any.data[0] == 0 {
+                if s[0] == 0 {
                     Ok(())
                 } else {
                     Err(Error::InvalidLength)
                 }
             }
             len => {
-                let unused_bits = any.data[0];
-                let last_byte = any.data[len - 1];
+                let unused_bits = s[0];
+                let last_byte = s[len - 1];
                 if last_byte.trailing_zeros() < unused_bits as u32 {
                     return Err(Error::DerConstraintFailed(DerConstraint::UnusedBitsNotZero));
                 }

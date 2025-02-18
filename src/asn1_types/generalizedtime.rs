@@ -4,6 +4,7 @@ use alloc::format;
 use alloc::string::String;
 use core::convert::TryFrom;
 use core::fmt;
+use nom::{AsBytes, Input};
 #[cfg(feature = "datetime")]
 use time::OffsetDateTime;
 
@@ -185,14 +186,14 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for GeneralizedTime {
     fn try_from(any: &'b Any<'a>) -> Result<GeneralizedTime> {
         any.tag().assert_eq(Self::TAG)?;
         #[allow(clippy::trivially_copy_pass_by_ref)]
-        fn is_visible(b: &u8) -> bool {
-            0x20 <= *b && *b <= 0x7f
+        fn is_visible(b: u8) -> bool {
+            (0x20..=0x7f).contains(&b)
         }
-        if !any.data.iter().all(is_visible) {
+        if !any.data.iter_elements().all(is_visible) {
             return Err(Error::StringInvalidCharset);
         }
 
-        GeneralizedTime::from_bytes(any.data)
+        GeneralizedTime::from_bytes(any.data.as_bytes())
     }
 }
 
@@ -229,7 +230,7 @@ impl fmt::Display for GeneralizedTime {
 impl CheckDerConstraints for GeneralizedTime {
     fn check_constraints(any: &Any) -> Result<()> {
         // X.690 section 11.7.1: The encoding shall terminate with a "Z"
-        if any.data.last() != Some(&b'Z') {
+        if any.data.as_bytes().last() != Some(&b'Z') {
             return Err(Error::DerConstraintFailed(DerConstraint::MissingTimeZone));
         }
         // X.690 section 11.7.2: The seconds element shall always be present.

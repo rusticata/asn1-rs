@@ -107,9 +107,10 @@ macro_rules! asn1_string {
                 use $crate::Tagged;
                 use alloc::borrow::Cow;
                 any.tag().assert_eq(Self::TAG)?;
-                <$name>::test_valid_charset(any.data)?;
+                let b = any.data.as_bytes2();
+                <$name>::test_valid_charset(b)?;
 
-                let s = alloc::str::from_utf8(any.data)?;
+                let s = alloc::str::from_utf8(b)?;
                 let data = Cow::Borrowed(s);
                 Ok($name { data })
             }

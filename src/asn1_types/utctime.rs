@@ -1,6 +1,7 @@
 use crate::*;
 use core::convert::TryFrom;
 use core::fmt;
+use nom::Input;
 #[cfg(feature = "datetime")]
 use time::OffsetDateTime;
 
@@ -144,14 +145,14 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for UtcTime {
     fn try_from(any: &'b Any<'a>) -> Result<UtcTime> {
         any.tag().assert_eq(Self::TAG)?;
         #[allow(clippy::trivially_copy_pass_by_ref)]
-        fn is_visible(b: &u8) -> bool {
-            0x20 <= *b && *b <= 0x7f
+        fn is_visible(b: u8) -> bool {
+            (0x20..=0x7f).contains(&b)
         }
-        if !any.data.iter().all(is_visible) {
+        if !any.data.iter_elements().all(is_visible) {
             return Err(Error::StringInvalidCharset);
         }
 
-        UtcTime::from_bytes(any.data)
+        UtcTime::from_bytes(any.data.as_bytes2())
     }
 }
 

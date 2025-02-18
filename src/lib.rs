@@ -182,6 +182,9 @@ extern crate core;
 // #[cfg(feature = "alloc")]
 extern crate alloc;
 
+mod input;
+pub use input::*;
+
 mod asn1_types;
 mod ber;
 mod class;

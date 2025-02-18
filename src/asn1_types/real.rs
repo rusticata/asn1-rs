@@ -164,7 +164,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Real {
     fn try_from(any: &'b Any<'a>) -> Result<Self> {
         any.tag().assert_eq(Self::TAG)?;
         any.header.assert_primitive()?;
-        let data = &any.data;
+        let data = any.data.as_bytes2();
         if data.is_empty() {
             return Ok(Real::Zero);
         }
