@@ -119,6 +119,8 @@ macro_rules! impl_int {
             }
         }
 
+        impl DeriveBerParserFromTryFrom for $int {}
+
         impl CheckDerConstraints for $int {
             fn check_constraints(any: &Any) -> Result<()> {
                 check_der_int_constraints(any)
@@ -182,6 +184,9 @@ macro_rules! impl_uint {
                 )
             }
         }
+
+        impl DeriveBerParserFromTryFrom for $ty {}
+
         impl CheckDerConstraints for $ty {
             fn check_constraints(any: &Any) -> Result<()> {
                 check_der_int_constraints(any)
@@ -483,6 +488,8 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Integer<'a> {
         })
     }
 }
+
+impl DeriveBerParserFromTryFrom for Integer<'_> {}
 
 impl CheckDerConstraints for Integer<'_> {
     fn check_constraints(any: &Any) -> Result<()> {

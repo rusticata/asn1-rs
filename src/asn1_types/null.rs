@@ -37,6 +37,8 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Null {
     }
 }
 
+impl DeriveBerParserFromTryFrom for Null {}
+
 impl CheckDerConstraints for Null {
     fn check_constraints(_any: &Any) -> Result<()> {
         Ok(())
@@ -76,6 +78,8 @@ impl<'a> TryFrom<Any<'a>> for () {
         Ok(())
     }
 }
+
+impl DeriveBerParserFromTryFrom for () {}
 
 impl CheckDerConstraints for () {
     fn check_constraints(_any: &Any) -> Result<()> {

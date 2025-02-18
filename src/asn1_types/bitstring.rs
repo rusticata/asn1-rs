@@ -66,6 +66,8 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for BitString<'a> {
     }
 }
 
+impl DeriveBerParserFromTryFrom for BitString<'_> {}
+
 impl CheckDerConstraints for BitString<'_> {
     fn check_constraints(any: &Any) -> Result<()> {
         // X.690 section 10.2

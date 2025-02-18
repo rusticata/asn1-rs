@@ -38,6 +38,8 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Enumerated {
     }
 }
 
+impl DeriveBerParserFromTryFrom for Enumerated {}
+
 impl CheckDerConstraints for Enumerated {
     fn check_constraints(any: &Any) -> Result<()> {
         any.header.length.assert_definite()?;

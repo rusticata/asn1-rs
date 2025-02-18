@@ -61,6 +61,8 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Boolean {
     }
 }
 
+impl DeriveBerParserFromTryFrom for Boolean {}
+
 impl CheckDerConstraints for Boolean {
     fn check_constraints(any: &Any) -> Result<()> {
         let c = any.data.as_bytes()[0];
@@ -129,6 +131,8 @@ impl CheckDerConstraints for bool {
         Ok(())
     }
 }
+
+impl DeriveBerParserFromTryFrom for bool {}
 
 impl DerAutoDerive for bool {}
 
