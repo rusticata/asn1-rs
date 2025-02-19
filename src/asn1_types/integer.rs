@@ -229,11 +229,13 @@ impl_uint!(u16);
 impl_uint!(u32);
 impl_uint!(u64);
 impl_uint!(u128);
+impl_uint!(usize);
 impl_int!(u8 => i8);
 impl_int!(u16 => i16);
 impl_int!(u32 => i32);
 impl_int!(u64 => i64);
 impl_int!(u128 => i128);
+impl_int!(usize => isize);
 
 /// ASN.1 `INTEGER` type
 ///
@@ -457,12 +459,14 @@ impl_from_to!(SIGNED i16, from_i16, as_i16);
 impl_from_to!(SIGNED i32, from_i32, as_i32);
 impl_from_to!(SIGNED i64, from_i64, as_i64);
 impl_from_to!(SIGNED i128, from_i128, as_i128);
+impl_from_to!(SIGNED isize, from_isize, as_isize);
 
 impl_from_to!(UNSIGNED u8, from_u8, as_u8);
 impl_from_to!(UNSIGNED u16, from_u16, as_u16);
 impl_from_to!(UNSIGNED u32, from_u32, as_u32);
 impl_from_to!(UNSIGNED u64, from_u64, as_u64);
 impl_from_to!(UNSIGNED u128, from_u128, as_u128);
+impl_from_to!(UNSIGNED usize, from_usize, as_usize);
 
 impl AsRef<[u8]> for Integer<'_> {
     fn as_ref(&self) -> &[u8] {
@@ -645,6 +649,32 @@ mod tests {
     }
 
     #[test]
+    fn decode_isize() {
+        assert_eq!(0, isize::from_der(I0_BYTES).unwrap().1);
+        assert_eq!(127, isize::from_der(I127_BYTES).unwrap().1);
+        assert_eq!(128, isize::from_der(I128_BYTES).unwrap().1);
+        assert_eq!(255, isize::from_der(I255_BYTES).unwrap().1);
+        assert_eq!(256, isize::from_der(I256_BYTES).unwrap().1);
+        assert_eq!(32767, isize::from_der(I32767_BYTES).unwrap().1);
+        assert_eq!(-128, isize::from_der(INEG128_BYTES).unwrap().1);
+        assert_eq!(-129, isize::from_der(INEG129_BYTES).unwrap().1);
+        assert_eq!(-32768, isize::from_der(INEG32768_BYTES).unwrap().1);
+    }
+
+    #[test]
+    fn encode_isize() {
+        assert_eq!(0isize.to_der_vec().unwrap(), I0_BYTES);
+        assert_eq!(127isize.to_der_vec().unwrap(), I127_BYTES);
+        assert_eq!(128isize.to_der_vec().unwrap(), I128_BYTES);
+        assert_eq!(255isize.to_der_vec().unwrap(), I255_BYTES);
+        assert_eq!(256isize.to_der_vec().unwrap(), I256_BYTES);
+        assert_eq!(32767isize.to_der_vec().unwrap(), I32767_BYTES);
+        assert_eq!((-128isize).to_der_vec().unwrap(), INEG128_BYTES);
+        assert_eq!((-129isize).to_der_vec().unwrap(), INEG129_BYTES);
+        assert_eq!((-32768isize).to_der_vec().unwrap(), INEG32768_BYTES);
+    }
+
+    #[test]
     fn decode_u8() {
         assert_eq!(0, u8::from_der(I0_BYTES).unwrap().1);
         assert_eq!(127, u8::from_der(I127_BYTES).unwrap().1);
@@ -676,6 +706,26 @@ mod tests {
         assert_eq!(256u16.to_der_vec().unwrap(), I256_BYTES);
         assert_eq!(32767u16.to_der_vec().unwrap(), I32767_BYTES);
         assert_eq!(65535u16.to_der_vec().unwrap(), I65535_BYTES);
+    }
+
+    #[test]
+    fn decode_usize() {
+        assert_eq!(0, usize::from_der(I0_BYTES).unwrap().1);
+        assert_eq!(127, usize::from_der(I127_BYTES).unwrap().1);
+        assert_eq!(255, usize::from_der(I255_BYTES).unwrap().1);
+        assert_eq!(256, usize::from_der(I256_BYTES).unwrap().1);
+        assert_eq!(32767, usize::from_der(I32767_BYTES).unwrap().1);
+        assert_eq!(65535, usize::from_der(I65535_BYTES).unwrap().1);
+    }
+
+    #[test]
+    fn encode_usize() {
+        assert_eq!(0usize.to_der_vec().unwrap(), I0_BYTES);
+        assert_eq!(127usize.to_der_vec().unwrap(), I127_BYTES);
+        assert_eq!(255usize.to_der_vec().unwrap(), I255_BYTES);
+        assert_eq!(256usize.to_der_vec().unwrap(), I256_BYTES);
+        assert_eq!(32767usize.to_der_vec().unwrap(), I32767_BYTES);
+        assert_eq!(65535usize.to_der_vec().unwrap(), I65535_BYTES);
     }
 
     /// Integers must be encoded with a minimum number of octets

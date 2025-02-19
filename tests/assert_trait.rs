@@ -28,8 +28,7 @@ fn assert_traits_slice() {
     assert_trait_ber_parser::<Integer>();
     test_assert!(u8, u16, u32, u64, u128);
     test_assert!(i8, i16, i32, i64, i128);
-    // TODO: implement isize, usize
-    // test_assert!(isize, usize);
+    test_assert!(isize, usize);
 
     test_assert!(GeneralizedTime, UtcTime);
 
