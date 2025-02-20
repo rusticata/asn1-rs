@@ -418,34 +418,17 @@ impl<'a> FromBer<'a> for Any<'a> {
     }
 }
 
-// impl<'a, I: Input<Item = u8>> BerParser<'a, I> for Any<'a, I>
-// where
-//     I: 'a,
-// {
-//     type Error = BerError<I>;
-
-//     fn from_any_ber(input: I, header: Header<'a>) -> IResult<I, Self, Self::Error> {
-//         // TODO: handle indefinite
-//         let length = header
-//             .length
-//             .definite_inner()
-//             .map_err(BerError::convert(input.clone()))?;
-//         let (rem, data) = take(length)(input)?;
-//         let any = Any { header, data };
-//         Ok((rem, any))
-//     }
-// }
-
 impl<'i> BerParser<'i> for Any<'i> {
     type Error = BerError<Input<'i>>;
 
     fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        // TODO: handle indefinite
-        let length = header
-            .length
-            .definite_inner()
-            .map_err(BerError::convert(input.clone()))?;
-        let (rem, data) = take(length)(input)?;
+        let (rem, data) = match header.length {
+            Length::Definite(l) => take(l)(input)?,
+            Length::Indefinite => {
+                // assume entire input was parsed
+                take(input.len())(input)?
+            }
+        };
         let any = Any { header, data };
         Ok((rem, any))
     }
@@ -553,5 +536,28 @@ mod tests {
         assert_eq!(<Any as DynTagged>::tag(&any), any.tag());
         let int = any.integer().unwrap();
         assert_eq!(int.as_u16(), Ok(1));
+    }
+
+    #[test]
+    fn parse_ber_indefinite_any() {
+        // Ok: indefinite length, empty object
+        let bytes: &[u8] = &hex!("a3 80 00 00");
+        let (rem, _res) = Any::parse_ber(bytes.into()).expect("parsing failed");
+        assert!(rem.is_empty());
+        // dbg!(&_res);
+
+        // Ok: indefinite length, non-empty object
+        let bytes: &[u8] = &hex!("a3 80 0101ff 00 00");
+        let (rem, _res) = Any::parse_ber(bytes.into()).expect("parsing failed");
+        assert!(rem.is_empty());
+        // dbg!(&_res);
+
+        // Fail: indefinite length should be constructed
+        let bytes: &[u8] = &hex!("03 80 00 00");
+        let _ = Any::parse_ber(bytes.into()).expect_err("Parsing should have failed");
+
+        // Fail: indefinite length but no EndOfContent
+        let bytes: &[u8] = &hex!("03 80 01 02 03 04");
+        let _ = Any::parse_ber(bytes.into()).expect_err("Parsing should have failed");
     }
 }
