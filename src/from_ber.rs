@@ -1,11 +1,11 @@
 use core::convert::{TryFrom, TryInto};
 
-use nom::bytes::streaming::take;
 use nom::error::ParseError;
 use nom::Input as _;
 use nom::{Err, IResult};
 
-use crate::{Any, BerError, Error, Header, Input, ParseResult, Tag, Tagged};
+use crate::ber::{GetObjectContent, MAX_RECURSION};
+use crate::{Any, BerError, BerMode, Error, Header, Input, ParseResult, Tag, Tagged};
 
 /// Base trait for BER object parsers
 ///
@@ -72,18 +72,14 @@ where
     /// Header tag must match expected tag
     fn parse_ber(input: Input<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         let (rem, header) = Header::parse_ber(input.clone()).map_err(Err::convert)?;
-        // TODO: handle indefinite
-        let length = header
-            .length
-            .definite_inner()
-            .map_err(BerError::convert_into(input.clone()))?;
         if !Self::check_tag(header.tag) {
             return Err(Err::Error(
-                // TODO: expected Tag is `None`, so the error will not be helpful
+                // FIXME: expected Tag is `None`, so the error will not be helpful
                 BerError::unexpected_tag(input, None, header.tag).into(),
             ));
         }
-        let (rem, data) = take(length)(rem)?;
+        let (rem, data) =
+            BerMode::get_object_content(rem, &header, MAX_RECURSION).map_err(Err::convert)?;
         let (_, obj) = Self::from_any_ber(data, header).map_err(Err::convert)?;
         Ok((rem, obj))
     }
@@ -111,12 +107,8 @@ where
         if !Self::check_tag(header.tag) {
             return Ok((input, None));
         }
-        // TODO: handle indefinite
-        let length = header
-            .length
-            .definite_inner()
-            .map_err(BerError::convert_into(input.clone()))?;
-        let (rem, data) = take(length)(rem)?;
+        let (rem, data) =
+            BerMode::get_object_content(rem, &header, MAX_RECURSION).map_err(Err::convert)?;
         let (_, obj) = Self::from_any_ber(data, header).map_err(Err::convert)?;
         Ok((rem, Some(obj)))
     }
@@ -161,11 +153,8 @@ where
     }
 
     fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        let length = header
-            .length
-            .definite_inner()
-            .map_err(BerError::convert_into(input.clone()))?;
-        let (rem, data) = take(length)(input)?;
+        let (rem, data) =
+            BerMode::get_object_content(input, &header, MAX_RECURSION).map_err(Err::convert)?;
 
         let any = Any::new(header, data);
         let obj = T::try_from(any).map_err(|e| Err::Error(e))?;
