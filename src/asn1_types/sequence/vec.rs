@@ -119,8 +119,12 @@ where
             core::any::type_name::<Self>(),
             "Sequence::from_der",
             |bytes| {
-                let (rem, any) = trace(core::any::type_name::<Self>(), parse_der_any, bytes)
-                    .map_err(Err::convert)?;
+                let (rem, any) = trace(
+                    core::any::type_name::<Self>(),
+                    wrap_ber_parser(parse_der_any),
+                    bytes,
+                )
+                .map_err(Err::convert)?;
                 any.header
                     .assert_tag(Self::TAG)
                     .map_err(|e| Err::Error(e.into()))?;

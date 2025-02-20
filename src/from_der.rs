@@ -1,8 +1,14 @@
 use core::convert::{TryFrom, TryInto};
 use core::fmt::{Debug, Display};
 
+use nom::bytes::streaming::take;
+use nom::error::ParseError;
+use nom::{Err, IResult, Input as _};
+
 use crate::debug::{trace, trace_generic};
-use crate::{parse_der_any, Any, Error, ParseResult, Result};
+use crate::{
+    parse_der_any, wrap_ber_parser, Any, BerError, Error, Header, Input, ParseResult, Result, Tag,
+};
 
 /// Base trait for DER object parsers
 ///
@@ -91,11 +97,15 @@ where
             core::any::type_name::<T>(),
             "T::from_der",
             |bytes| {
-                let (i, any) = trace(core::any::type_name::<T>(), parse_der_any, bytes)
-                    .map_err(nom::Err::convert)?;
+                let (i, any) = trace(
+                    core::any::type_name::<T>(),
+                    wrap_ber_parser(parse_der_any),
+                    bytes,
+                )
+                .map_err(Err::convert)?;
                 <T as CheckDerConstraints>::check_constraints(&any)
-                    .map_err(|e| nom::Err::Error(e.into()))?;
-                let result = any.try_into().map_err(nom::Err::Error)?;
+                    .map_err(|e| Err::Error(e.into()))?;
+                let result = any.try_into().map_err(Err::Error)?;
                 Ok((i, result))
             },
             bytes,
@@ -106,4 +116,65 @@ where
 /// Verification of DER constraints
 pub trait CheckDerConstraints {
     fn check_constraints(any: &Any) -> Result<()>;
+}
+
+pub trait DerParser<'i>
+where
+    Self: Sized,
+{
+    type Error: ParseError<Input<'i>> + From<BerError<Input<'i>>>;
+
+    /// Attempt to parse a new DER object from data.
+    ///
+    /// Header tag must match expected tag
+    fn parse_der(input: Input<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        let (rem, header) = Header::parse_der(input.clone()).map_err(Err::convert)?;
+        // get length, rejecting indefinite (invalid for DER)
+        let length = header
+            .length
+            .definite_inner()
+            .map_err(BerError::convert_into(input.clone()))?;
+        if !Self::check_tag(header.tag) {
+            return Err(Err::Error(
+                // TODO: expected Tag is `None`, so the error will not be helpful
+                BerError::unexpected_tag(input, None, header.tag).into(),
+            ));
+        }
+        let (rem, data) = take(length)(rem)?;
+        let (_, obj) = Self::from_any_der(data, header).map_err(Err::convert)?;
+        Ok((rem, obj))
+    }
+
+    /// Check if provided tag is acceptable
+    ///
+    /// Return `true` if tag can match current object.
+    fn check_tag(_tag: Tag) -> bool {
+        true
+    }
+
+    /// Parse a new BER object from header and data.
+    ///
+    /// `input` length is guaranteed to match `header` length (definite or indefinite)
+    ///
+    /// Note: in this method, implementers should *not* check header tag (which can be
+    /// different from the usual object tag when using IMPLICIT tagging, for ex.).
+    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error>;
+
+    fn parse_der_optional(input: Input<'i>) -> IResult<Input<'i>, Option<Self>, Self::Error> {
+        if input.input_len() == 0 {
+            return Ok((input, None));
+        }
+        let (rem, header) = Header::parse_der(input.clone()).map_err(Err::convert)?;
+        if !Self::check_tag(header.tag) {
+            return Ok((input, None));
+        }
+        // get length, rejecting indefinite (invalid for DER)
+        let length = header
+            .length
+            .definite_inner()
+            .map_err(BerError::convert_into(input.clone()))?;
+        let (rem, data) = take(length)(rem)?;
+        let (_, obj) = Self::from_any_der(data, header).map_err(Err::convert)?;
+        Ok((rem, Some(obj)))
+    }
 }

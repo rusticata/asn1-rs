@@ -1,6 +1,7 @@
 use crate::ber::*;
 use crate::der_constraint_fail_if;
 use crate::error::*;
+use crate::DerParser;
 #[cfg(feature = "std")]
 use crate::ToDer;
 use crate::{BerMode, Class, DerMode, DynTagged, FromBer, FromDer, Length, Tag, ToStatic};
@@ -167,6 +168,16 @@ impl<'a> Header<'a> {
         }
     }
 
+    /// Return error if object is primitive
+    #[inline]
+    pub const fn assert_constructed_inner(&self) -> Result<(), InnerError> {
+        if !self.is_primitive() {
+            Ok(())
+        } else {
+            Err(InnerError::ConstructExpected)
+        }
+    }
+
     /// Test if object class is Universal
     #[inline]
     pub const fn is_universal(&self) -> bool {
@@ -198,9 +209,24 @@ impl<'a> Header<'a> {
         }
     }
 
+    /// Return error if object length is definite
+    #[inline]
+    pub const fn assert_definite_inner(&self) -> Result<(), InnerError> {
+        if self.length.is_definite() {
+            Ok(())
+        } else {
+            Err(InnerError::DerConstraintFailed(
+                DerConstraint::IndefiniteLength,
+            ))
+        }
+    }
+
     /// Get the content following a BER header
     #[inline]
-    pub fn parse_ber_content<'i>(&'_ self, i: &'i [u8]) -> ParseResult<'i, &'i [u8]> {
+    pub fn parse_ber_content<'i>(
+        &'_ self,
+        i: Input<'i>,
+    ) -> IResult<Input<'i>, Input<'i>, BerError<Input<'i>>> {
         // defaults to maximum depth 8
         // depth is used only if BER, and length is indefinite
         BerMode::get_object_content(i, self, 8)
@@ -208,8 +234,12 @@ impl<'a> Header<'a> {
 
     /// Get the content following a DER header
     #[inline]
-    pub fn parse_der_content<'i>(&'_ self, i: &'i [u8]) -> ParseResult<'i, &'i [u8]> {
-        self.assert_definite()?;
+    pub fn parse_der_content<'i>(
+        &'_ self,
+        i: Input<'i>,
+    ) -> IResult<Input<'i>, Input<'i>, BerError<Input<'i>>> {
+        self.assert_definite_inner()
+            .map_err(BerError::convert(i.clone()))?;
         DerMode::get_object_content(i, self, 8)
     }
 }
@@ -268,6 +298,26 @@ impl<'i> BerParser<'i> for Header<'i> {
     }
 
     fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        Ok((input, header))
+    }
+}
+
+impl<'i> DerParser<'i> for Header<'i> {
+    type Error = BerError<Input<'i>>;
+
+    fn parse_der(input: Input<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        let (rem, header) = parse_header(input.clone())?;
+        // In DER, we reject Indefinite length
+        if !header.length.is_definite() {
+            return Err(Err::Error(BerError::new(
+                input,
+                InnerError::DerConstraintFailed(DerConstraint::IndefiniteLength),
+            )));
+        }
+        Ok((rem, header))
+    }
+
+    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         Ok((input, header))
     }
 }
@@ -607,9 +657,10 @@ mod tests {
 
         // parse_*_content
         let hdr = Header::new_simple(Tag(2)).with_length(Length::Definite(1));
-        let (_, r) = hdr.parse_ber_content(&input[2..]).unwrap();
-        assert_eq!(r, &input[2..]);
-        let (_, r) = hdr.parse_der_content(&input[2..]).unwrap();
-        assert_eq!(r, &input[2..]);
+        let i: Input = (&input[2..]).into();
+        let (_, r) = hdr.parse_ber_content(i.clone()).unwrap();
+        assert_eq!(r.as_bytes2(), &input[2..]);
+        let (_, r) = hdr.parse_der_content(i).unwrap();
+        assert_eq!(r.as_bytes2(), &input[2..]);
     }
 }
