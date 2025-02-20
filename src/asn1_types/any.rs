@@ -142,7 +142,7 @@ impl Any<'_> {
     }
 
     #[inline]
-    pub fn parse_ber<'a, T>(&'a self) -> ParseResult<'a, T>
+    pub fn parse_content_ber<'a, T>(&'a self) -> ParseResult<'a, T>
     where
         T: FromBer<'a>,
     {
@@ -150,7 +150,7 @@ impl Any<'_> {
     }
 
     #[inline]
-    pub fn parse_der<'a, T>(&'a self) -> ParseResult<'a, T>
+    pub fn parse_content_der<'a, T>(&'a self) -> ParseResult<'a, T>
     where
         T: FromDer<'a>,
     {
@@ -532,9 +532,13 @@ mod tests {
         let input = &hex! {"80 03 02 01 01"};
         let (_, any) = Any::from_ber(input).expect("parsing failed");
 
-        let (_, r) = any.parse_ber::<Integer>().expect("parse_ber failed");
+        let (_, r) = any
+            .parse_content_ber::<Integer>()
+            .expect("parse_ber failed");
         assert_eq!(r.as_u32(), Ok(1));
-        let (_, r) = any.parse_der::<Integer>().expect("parse_der failed");
+        let (_, r) = any
+            .parse_content_der::<Integer>()
+            .expect("parse_der failed");
         assert_eq!(r.as_u32(), Ok(1));
 
         let header = &any.header;
