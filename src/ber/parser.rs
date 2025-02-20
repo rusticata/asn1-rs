@@ -1,8 +1,8 @@
 use crate::error::*;
 use crate::header::*;
-use crate::{BerMode, DerMode, FromBer, Length, Tag};
+use crate::{BerMode, BerParser, DerMode, Input, Length, Tag};
 use nom::bytes::streaming::take;
-use nom::{Err, Needed, Offset};
+use nom::{Err, IResult, Input as _, Needed};
 use rusticata_macros::custom_check;
 
 /// Default maximum recursion limit
@@ -16,28 +16,27 @@ pub trait GetObjectContent {
     ///
     /// Note: if using BER and length is indefinite, terminating End-Of-Content is NOT included
     fn get_object_content<'a>(
-        i: &'a [u8],
+        i: Input<'a>,
         hdr: &'_ Header,
         max_depth: usize,
-    ) -> ParseResult<'a, &'a [u8]>;
+    ) -> IResult<Input<'a>, Input<'a>, BerError<Input<'a>>>;
 }
 
 impl GetObjectContent for BerMode {
     fn get_object_content<'a>(
-        i: &'a [u8],
+        i: Input<'a>,
         hdr: &'_ Header,
         max_depth: usize,
-    ) -> ParseResult<'a, &'a [u8]> {
-        let start_i = i;
+    ) -> IResult<Input<'a>, Input<'a>, BerError<Input<'a>>> {
+        let start_i = i.clone();
         let (i, _) = ber_skip_object_content(i, hdr, max_depth)?;
-        let len = start_i.offset(i);
-        let (content, i) = start_i.split_at(len);
-        // if len is indefinite, there are 2 extra bytes for EOC
-        if hdr.length == Length::Indefinite {
-            let len = content.len();
-            assert!(len >= 2);
-            Ok((i, &content[..len - 2]))
+        let len = i.span().start - start_i.span().start;
+        if hdr.length().is_definite() {
+            Ok(start_i.take_split(len))
         } else {
+            assert!(len >= 2);
+            // take content (minus EndOfContent) and return i (after EndOfContent)
+            let content = start_i.take(len - 2);
             Ok((i, content))
         }
     }
@@ -48,14 +47,15 @@ impl GetObjectContent for DerMode {
     ///
     /// This this function is for DER only, it cannot go into recursion (no indefinite length)
     fn get_object_content<'a>(
-        i: &'a [u8],
+        i: Input<'a>,
         hdr: &'_ Header,
         _max_depth: usize,
-    ) -> ParseResult<'a, &'a [u8]> {
+    ) -> IResult<Input<'a>, Input<'a>, BerError<Input<'a>>> {
         match hdr.length {
             Length::Definite(l) => take(l)(i),
-            Length::Indefinite => Err(Err::Error(Error::DerConstraintFailed(
-                DerConstraint::IndefiniteLength,
+            Length::Indefinite => Err(Err::Error(BerError::new(
+                i,
+                InnerError::DerConstraintFailed(DerConstraint::IndefiniteLength),
             ))),
         }
     }
@@ -63,12 +63,12 @@ impl GetObjectContent for DerMode {
 
 /// Skip object content, and return true if object was End-Of-Content
 fn ber_skip_object_content<'a>(
-    i: &'a [u8],
+    i: Input<'a>,
     hdr: &Header,
     max_depth: usize,
-) -> ParseResult<'a, bool> {
+) -> IResult<Input<'a>, bool, BerError<Input<'a>>> {
     if max_depth == 0 {
-        return Err(Err::Error(Error::BerMaxDepth));
+        return Err(Err::Error(BerError::new(i, InnerError::BerMaxDepth)));
     }
     match hdr.length {
         Length::Definite(l) => {
@@ -79,12 +79,13 @@ fn ber_skip_object_content<'a>(
             Ok((i, false))
         }
         Length::Indefinite => {
-            hdr.assert_constructed()?;
+            hdr.assert_constructed_inner()
+                .map_err(BerError::convert(i.clone()))?;
             // read objects until EndOfContent (00 00)
             // this is recursive
             let mut i = i;
             loop {
-                let (i2, header2) = Header::from_ber(i)?;
+                let (i2, header2) = Header::parse_ber(i)?;
                 let (i3, eoc) = ber_skip_object_content(i2, &header2, max_depth - 1)?;
                 if eoc {
                     // return false, since top object was not EndOfContent

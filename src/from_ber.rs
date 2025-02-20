@@ -172,3 +172,17 @@ where
         Ok((rem, obj))
     }
 }
+
+// NOTE: function useful during transition to Input. Remove this after
+pub(crate) fn wrap_ber_parser<'i, F, T>(mut f: F) -> impl FnMut(&'i [u8]) -> ParseResult<'i, T>
+where
+    F: FnMut(Input<'i>) -> IResult<Input<'i>, T, BerError<Input<'i>>>,
+{
+    move |i: &[u8]| {
+        let input = Input::from_slice(i);
+        match f(input) {
+            Ok((rem, res)) => Ok((rem.into_bytes(), res)),
+            Err(e) => Err(Err::convert(e)),
+        }
+    }
+}

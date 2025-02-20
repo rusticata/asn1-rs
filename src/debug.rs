@@ -74,17 +74,17 @@ where
 
 #[cfg(not(feature = "debug"))]
 #[inline]
-pub fn trace<'a, T, E, F>(_msg: &str, f: F, input: &'a [u8]) -> ParseResult<'a, T, E>
+pub fn trace<'a, T, E, F>(_msg: &str, mut f: F, input: &'a [u8]) -> ParseResult<'a, T, E>
 where
-    F: Fn(&'a [u8]) -> ParseResult<'a, T, E>,
+    F: FnMut(&'a [u8]) -> ParseResult<'a, T, E>,
 {
     f(input)
 }
 
 #[cfg(feature = "debug")]
-pub fn trace<'a, T, E, F>(msg: &str, f: F, input: &'a [u8]) -> ParseResult<'a, T, E>
+pub fn trace<'a, T, E, F>(msg: &str, mut f: F, input: &'a [u8]) -> ParseResult<'a, T, E>
 where
-    F: Fn(&'a [u8]) -> ParseResult<'a, T, E>,
+    F: FnMut(&'a [u8]) -> ParseResult<'a, T, E>,
 {
     trace_eprintln!(
         msg,

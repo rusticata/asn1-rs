@@ -161,14 +161,22 @@ impl Any<'_> {
 impl Any<'_> {
     /// Get the content following a BER header
     #[inline]
-    pub fn parse_ber_content<'i>(i: &'i [u8], header: &'_ Header) -> ParseResult<'i, &'i [u8]> {
+    pub fn parse_ber_content<'i>(
+        i: Input<'i>,
+        header: &'_ Header,
+    ) -> IResult<Input<'i>, Input<'i>, BerError<Input<'i>>> {
         header.parse_ber_content(i)
     }
 
     /// Get the content following a DER header
     #[inline]
-    pub fn parse_der_content<'i>(i: &'i [u8], header: &'_ Header) -> ParseResult<'i, &'i [u8]> {
-        header.assert_definite()?;
+    pub fn parse_der_content<'i>(
+        i: Input<'i>,
+        header: &'_ Header,
+    ) -> IResult<Input<'i>, Input<'i>, BerError<Input<'i>>> {
+        header
+            .assert_definite_inner()
+            .map_err(BerError::convert(i.clone()))?;
         DerMode::get_object_content(i, header, 8)
     }
 }
@@ -386,36 +394,27 @@ impl<'a> Any<'a> {
     }
 }
 
-pub(crate) fn parse_ber_any(input: &[u8]) -> ParseResult<Any> {
-    let (i, header) = Header::from_ber(input)?;
+pub(crate) fn parse_ber_any(input: Input) -> IResult<Input, Any, BerError<Input>> {
+    let (i, header) = Header::parse_ber(input)?;
     let (i, data) = BerMode::get_object_content(i, &header, MAX_RECURSION)?;
-    Ok((
-        i,
-        Any {
-            header,
-            data: data.into(),
-        },
-    ))
+    Ok((i, Any { header, data }))
 }
 
-pub(crate) fn parse_der_any(input: &[u8]) -> ParseResult<Any> {
-    let (i, header) = Header::from_der(input)?;
+pub(crate) fn parse_der_any(input: Input) -> IResult<Input, Any, BerError<Input>> {
+    let (i, header) = Header::parse_der(input.clone())?;
     // X.690 section 10.1: The definite form of length encoding shall be used
-    header.length.assert_definite()?;
+    header
+        .length
+        .assert_definite_inner()
+        .map_err(BerError::convert(input))?;
     let (i, data) = DerMode::get_object_content(i, &header, MAX_RECURSION)?;
-    Ok((
-        i,
-        Any {
-            header,
-            data: data.into(),
-        },
-    ))
+    Ok((i, Any { header, data }))
 }
 
 impl<'a> FromBer<'a> for Any<'a> {
     #[inline]
     fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self> {
-        trace("Any", parse_ber_any, bytes)
+        trace("Any", wrap_ber_parser(parse_ber_any), bytes)
     }
 }
 
@@ -455,7 +454,7 @@ impl<'i> BerParser<'i> for Any<'i> {
 impl<'a> FromDer<'a> for Any<'a> {
     #[inline]
     fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
-        trace("Any", parse_der_any, bytes)
+        trace("Any", wrap_ber_parser(parse_der_any), bytes)
     }
 }
 
@@ -539,9 +538,10 @@ mod tests {
         assert_eq!(r.as_u32(), Ok(1));
 
         let header = &any.header;
-        let (_, content) = Any::parse_ber_content(&input[2..], header).unwrap();
+        let i: Input = (&input[2..]).into();
+        let (_, content) = Any::parse_ber_content(i.clone(), header).unwrap();
         assert_eq!(content.len(), 3);
-        let (_, content) = Any::parse_der_content(&input[2..], header).unwrap();
+        let (_, content) = Any::parse_der_content(i.clone(), header).unwrap();
         assert_eq!(content.len(), 3);
 
         let (_, any) = Any::from_der(&input[2..]).unwrap();
