@@ -60,8 +60,6 @@ fn assert_traits_slice() {
     // after migration, this should be empty
     #[allow(dead_code)]
     fn compound_wrapper_requiring_fromber<'a, T: FromBer<'a>>(_: T) {
-        test_assert!(Vec<T>);
-
         test_assert!(SetOf<T>);
 
         // NOTE: trait bounds require the *old* trait FromBer, with specific additional trait bounds
@@ -86,7 +84,7 @@ fn assert_traits_slice() {
     fn compound_wrapper<'a, T: BerParser<'a>>(_: T) {
         test_assert!(Option<T>);
 
-        test_assert!(SequenceOf<T>);
+        test_assert!(Vec<T>, SequenceOf<T>);
 
         // TODO: test for custom error types
         type E<'a> = BerError<Input<'a>>;

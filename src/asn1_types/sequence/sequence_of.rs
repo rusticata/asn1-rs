@@ -5,9 +5,6 @@ use core::convert::TryFrom;
 use core::fmt::{Debug, Display};
 use core::iter::FromIterator;
 use core::ops::{Deref, DerefMut};
-use nom::combinator::{complete, cut};
-use nom::multi::many0;
-use nom::Parser;
 
 use self::debug::{trace, trace_generic};
 
@@ -129,11 +126,7 @@ where
     }
 
     fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        header
-            .assert_constructed_inner()
-            .map_err(BerError::convert_into(input.clone()))?;
-
-        let (rem, items) = many0(complete(cut(T::parse_ber))).parse(input)?;
+        let (rem, items) = <Vec<T>>::from_any_ber(input, header)?;
 
         Ok((rem, SequenceOf::new(items)))
     }
@@ -236,13 +229,17 @@ mod tests {
         assert!(result.as_ref().is_empty());
 
         // Ok: 1 item, correct tag
-        let input = Input::from_slice(&hex!("30 05 02 03 01 00 01"));
+        let input = Input::from_slice(&hex!("30 05 0203010001"));
         let (rem, result) = <SequenceOf<u32>>::parse_ber(input).expect("parsing failed");
         assert!(rem.is_empty());
         assert_eq!(result.as_ref(), &[65537]);
 
         // Fail: 2 items, 1 with incorrect tag
         let input = Input::from_slice(&hex!("30 08 02 03 01 00 01 01 01 ff"));
+        let _ = <SequenceOf<u32>>::parse_ber(input).expect_err("parsing should have failed");
+
+        // Fail: incomplete
+        let input = Input::from_slice(&hex!("30 07 0203010001 0201"));
         let _ = <SequenceOf<u32>>::parse_ber(input).expect_err("parsing should have failed");
     }
 }
