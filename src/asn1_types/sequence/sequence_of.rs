@@ -5,6 +5,9 @@ use core::convert::TryFrom;
 use core::fmt::{Debug, Display};
 use core::iter::FromIterator;
 use core::ops::{Deref, DerefMut};
+use nom::combinator::{complete, cut};
+use nom::multi::many0;
+use nom::Parser;
 
 use self::debug::{trace, trace_generic};
 
@@ -114,7 +117,27 @@ where
     }
 }
 
-impl<T> DeriveBerParserFromTryFrom for SequenceOf<T> {}
+impl<'i, T> BerParser<'i> for SequenceOf<T>
+where
+    T: BerParser<'i>,
+    <T as BerParser<'i>>::Error: From<BerError<Input<'i>>>,
+{
+    type Error = <T as BerParser<'i>>::Error;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Self::TAG
+    }
+
+    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        header
+            .assert_constructed_inner()
+            .map_err(BerError::convert_into(input.clone()))?;
+
+        let (rem, items) = many0(complete(cut(T::parse_ber))).parse(input)?;
+
+        Ok((rem, SequenceOf::new(items)))
+    }
+}
 
 impl<T> CheckDerConstraints for SequenceOf<T>
 where
@@ -185,7 +208,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::SequenceOf;
+    use hex_literal::hex;
+
+    use crate::{BerParser, Input, SequenceOf};
     use core::iter::FromIterator;
 
     /// Test use of object, available methods and syntax for different use cases
@@ -200,5 +225,24 @@ mod tests {
 
         // range operator
         assert_eq!(&set[1..3], &[2, 3]);
+    }
+
+    #[test]
+    fn ber_parser_sequence_of_vec() {
+        // Ok: empty
+        let input = Input::from_slice(&hex!("30 00"));
+        let (rem, result) = <SequenceOf<u32>>::parse_ber(input).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert!(result.as_ref().is_empty());
+
+        // Ok: 1 item, correct tag
+        let input = Input::from_slice(&hex!("30 05 02 03 01 00 01"));
+        let (rem, result) = <SequenceOf<u32>>::parse_ber(input).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert_eq!(result.as_ref(), &[65537]);
+
+        // Fail: 2 items, 1 with incorrect tag
+        let input = Input::from_slice(&hex!("30 08 02 03 01 00 01 01 01 ff"));
+        let _ = <SequenceOf<u32>>::parse_ber(input).expect_err("parsing should have failed");
     }
 }
