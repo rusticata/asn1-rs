@@ -1,4 +1,5 @@
-pub use crate::{Error, SequenceIterator};
+pub use crate::Error;
+use crate::SequenceIterator;
 
 /// An Iterator over binary data, parsing elements of type `T`
 ///

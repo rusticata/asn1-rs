@@ -1,4 +1,4 @@
-use crate::{Error, Result};
+use crate::{Error, InnerError, Result};
 #[cfg(not(feature = "std"))]
 use alloc::string::ToString;
 use rusticata_macros::newtype_enum;
@@ -55,6 +55,17 @@ impl Tag {
             Ok(())
         } else {
             Err(Error::UnexpectedTag {
+                expected: Some(tag),
+                actual: *self,
+            })
+        }
+    }
+
+    pub const fn assert_eq_inner(&self, tag: Tag) -> Result<(), InnerError> {
+        if self.0 == tag.0 {
+            Ok(())
+        } else {
+            Err(InnerError::UnexpectedTag {
                 expected: Some(tag),
                 actual: *self,
             })
