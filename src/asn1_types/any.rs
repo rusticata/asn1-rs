@@ -557,7 +557,7 @@ mod tests {
         let _ = Any::parse_ber(bytes.into()).expect_err("Parsing should have failed");
 
         // Fail: indefinite length but no EndOfContent
-        let bytes: &[u8] = &hex!("03 80 01 02 03 04");
+        let bytes: &[u8] = &hex!("a3 80 01 02 03 04");
         let _ = Any::parse_ber(bytes.into()).expect_err("Parsing should have failed");
     }
 }
