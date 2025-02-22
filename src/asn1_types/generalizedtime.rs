@@ -198,6 +198,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for GeneralizedTime {
 }
 
 impl DeriveBerParserFromTryFrom for GeneralizedTime {}
+impl DeriveDerParserFromTryFrom for GeneralizedTime {}
 
 impl fmt::Display for GeneralizedTime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

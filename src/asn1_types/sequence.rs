@@ -328,6 +328,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Sequence<'a> {
 }
 
 impl DeriveBerParserFromTryFrom for Sequence<'_> {}
+impl DeriveDerParserFromTryFrom for Sequence<'_> {}
 
 impl CheckDerConstraints for Sequence<'_> {
     fn check_constraints(_any: &Any) -> Result<()> {

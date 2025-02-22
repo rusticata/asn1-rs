@@ -117,9 +117,9 @@ fn assert_traits_derparser() {
 
     test_assert!(Header, Any);
 
-    // test_assert!(BitString);
+    test_assert!(BitString);
     test_assert!(Boolean, bool);
-    // test_assert!(Null, ());
+    test_assert!(Null, ());
 
     assert_trait_ber_parser::<EndOfContent>();
     assert_trait_ber_parser::<Enumerated>();
@@ -129,29 +129,29 @@ fn assert_traits_derparser() {
     test_assert!(i8, i16, i32, i64, i128);
     test_assert!(isize, usize);
 
-    // test_assert!(GeneralizedTime, UtcTime);
+    test_assert!(GeneralizedTime, UtcTime);
 
     assert_trait_ber_parser::<Oid>();
 
-    // test_assert!(Real, f32, f64);
+    test_assert!(Real, f32, f64);
 
-    // test_assert!(Sequence, Set);
+    test_assert!(Sequence, Set);
 
-    // test_assert!(&str, String);
-    // test_assert!(
-    //     BmpString,
-    //     GeneralString,
-    //     GraphicString,
-    //     Ia5String,
-    //     NumericString,
-    //     ObjectDescriptor,
-    //     PrintableString,
-    //     TeletexString,
-    //     UniversalString,
-    //     Utf8String,
-    //     VideotexString,
-    //     VisibleString
-    // );
+    test_assert!(&str, String);
+    test_assert!(
+        BmpString,
+        GeneralString,
+        GraphicString,
+        Ia5String,
+        NumericString,
+        ObjectDescriptor,
+        PrintableString,
+        TeletexString,
+        UniversalString,
+        Utf8String,
+        VideotexString,
+        VisibleString
+    );
 
     // //------ compound types
 

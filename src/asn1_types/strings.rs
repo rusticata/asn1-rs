@@ -117,6 +117,7 @@ macro_rules! asn1_string {
         }
 
         impl $crate::DeriveBerParserFromTryFrom for $name<'_> {}
+        impl $crate::DeriveDerParserFromTryFrom for $name<'_> {}
 
         impl<'a> $crate::CheckDerConstraints for $name<'a> {
             fn check_constraints(any: &$crate::Any) -> $crate::Result<()> {

@@ -157,6 +157,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for UtcTime {
 }
 
 impl DeriveBerParserFromTryFrom for UtcTime {}
+impl DeriveDerParserFromTryFrom for UtcTime {}
 
 impl fmt::Display for UtcTime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

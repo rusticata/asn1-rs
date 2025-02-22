@@ -315,6 +315,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Set<'a> {
 }
 
 impl DeriveBerParserFromTryFrom for Set<'_> {}
+impl DeriveDerParserFromTryFrom for Set<'_> {}
 
 impl CheckDerConstraints for Set<'_> {
     fn check_constraints(_any: &Any) -> Result<()> {

@@ -32,6 +32,7 @@ impl CheckDerConstraints for &'_ str {
 }
 
 impl DeriveBerParserFromTryFrom for &'_ str {}
+impl DeriveDerParserFromTryFrom for &'_ str {}
 
 impl DerAutoDerive for &'_ str {}
 

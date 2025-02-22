@@ -30,6 +30,7 @@ impl CheckDerConstraints for String {
 }
 
 impl DeriveBerParserFromTryFrom for String {}
+impl DeriveDerParserFromTryFrom for String {}
 
 impl DerAutoDerive for String {}
 

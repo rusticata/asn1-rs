@@ -94,6 +94,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for UniversalString<'a> {
 }
 
 impl DeriveBerParserFromTryFrom for UniversalString<'_> {}
+impl DeriveDerParserFromTryFrom for UniversalString<'_> {}
 
 impl CheckDerConstraints for UniversalString<'_> {
     fn check_constraints(any: &Any) -> Result<()> {
