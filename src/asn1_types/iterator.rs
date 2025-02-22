@@ -101,6 +101,7 @@ impl<'a> Iterator for AnyIterator<'a, DerMode> {
 
 #[cfg(test)]
 mod tests {
+    use alloc::vec::Vec;
     use hex_literal::hex;
 
     use crate::{Any, BerMode, BerParser, DerMode, DerParser, Input, Tag};
