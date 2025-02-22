@@ -120,6 +120,7 @@ macro_rules! impl_int {
         }
 
         impl DeriveBerParserFromTryFrom for $int {}
+        impl DeriveDerParserFromTryFrom for $int {}
 
         impl CheckDerConstraints for $int {
             fn check_constraints(any: &Any) -> Result<()> {
@@ -186,6 +187,7 @@ macro_rules! impl_uint {
         }
 
         impl DeriveBerParserFromTryFrom for $ty {}
+        impl DeriveDerParserFromTryFrom for $ty {}
 
         impl CheckDerConstraints for $ty {
             fn check_constraints(any: &Any) -> Result<()> {

@@ -132,6 +132,14 @@ impl<'a> Any<'a> {
         let (_, res) = op(any.data.into_bytes())?;
         Ok((rem, res))
     }
+
+    /// Return an iterator over sub-objects
+    ///
+    /// This makes sense only if `Self` is constructed, but the constructed bit is
+    /// _not_ checked by this function.
+    pub fn iter_elements<Mode: ASN1Mode>(&'a self) -> AnyIterator<'a, BerMode> {
+        AnyIterator::<BerMode>::new(self.data.clone())
+    }
 }
 
 impl Any<'_> {
@@ -438,6 +446,15 @@ impl<'a> FromDer<'a> for Any<'a> {
     #[inline]
     fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
         trace("Any", wrap_ber_parser(parse_der_any), bytes)
+    }
+}
+
+impl<'i> DerParser<'i> for Any<'i> {
+    type Error = BerError<Input<'i>>;
+
+    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        let (rem, data) = DerMode::get_object_content(input, &header, MAX_RECURSION)?;
+        Ok((rem, Any { header, data }))
     }
 }
 
