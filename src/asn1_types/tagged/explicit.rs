@@ -75,6 +75,42 @@ where
     }
 }
 
+impl<'a, T, E, const CLASS: u8, const TAG: u32> DerParser<'a>
+    for TaggedValue<T, E, Explicit, CLASS, TAG>
+where
+    // T: Tagged,
+    T: DerParser<'a>,
+    // E: ParseError<Input<'a>> + From<BerError<Input<'a>>>,
+{
+    type Error = T::Error;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Self::TAG
+    }
+
+    fn from_any_der(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+        // Tagged Explicit must be constructed (X.690 8.14.2)
+        if !header.constructed {
+            return Err(Err::Error(
+                BerError::new(input, InnerError::ConstructExpected).into(),
+            ));
+        }
+        // note: we check tag here, because the only way to have a different tag
+        // would be to be IMPLICIT, and we already know we are EXPLICIT
+        // This is an exception!
+        if !Self::check_tag(header.tag) {
+            return Err(Err::Error(
+                BerError::unexpected_tag(input, Some(TAG.into()), header.tag).into(),
+            ));
+        }
+        // calling `parse_ber` will read a new header and parse object `T``
+        // this will also check that T::TAG is expected
+        let (rem, t) = T::parse_der(input)?;
+        let tagged = TaggedValue::explicit(t);
+        Ok((rem, tagged))
+    }
+}
+
 impl<'a, T, E, const CLASS: u8, const TAG: u32> FromDer<'a, E>
     for TaggedValue<T, E, Explicit, CLASS, TAG>
 where

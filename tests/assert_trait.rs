@@ -194,17 +194,17 @@ fn assert_traits_derparser() {
 
         test_assert!(Vec<T>, SequenceOf<T>);
 
-        // // TODO: test for custom error types
-        // type E<'a> = BerError<Input<'a>>;
-        // test_assert!(TaggedExplicit<T, E, 0>);
-        // test_assert!(TaggedValue<T, E, Explicit, {Class::Application as u8}, 0>);
+        // TODO: test for custom error types
+        type E<'a> = BerError<Input<'a>>;
+        test_assert!(TaggedExplicit<T, E, 0>);
+        test_assert!(TaggedValue<T, E, Explicit, {Class::Application as u8}, 0>);
 
-        // #[allow(dead_code)]
-        // fn compound_wrapper_requiring_berparser_tagged<'a, T: DerParser<'a> + Tagged>(_: T) {
-        //     // TODO: test for custom error types
-        //     type E<'a> = BerError<Input<'a>>;
-        //     test_assert!(TaggedImplicit<T, E, 0>);
-        //     test_assert!(TaggedValue<T, E, Implicit, {Class::Application as u8}, 0>);
-        // }
+        #[allow(dead_code)]
+        fn compound_wrapper_requiring_berparser_tagged<'a, T: DerParser<'a> + Tagged>(_: T) {
+            // TODO: test for custom error types
+            type E<'a> = BerError<Input<'a>>;
+            test_assert!(TaggedImplicit<T, E, 0>);
+            test_assert!(TaggedValue<T, E, Implicit, {Class::Application as u8}, 0>);
+        }
     }
 }
