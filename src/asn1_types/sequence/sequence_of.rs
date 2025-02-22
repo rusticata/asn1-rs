@@ -133,6 +133,25 @@ where
     }
 }
 
+impl<'i, T> DerParser<'i> for SequenceOf<T>
+where
+    T: DerParser<'i>,
+    <T as DerParser<'i>>::Error: From<BerError<Input<'i>>>,
+{
+    type Error = <T as DerParser<'i>>::Error;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Self::TAG
+    }
+
+    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        let (rem, items) = <Vec<T>>::from_any_der(input, header)?;
+        // NOTE: can't use SequenceIterator, it does not return `rem`
+
+        Ok((rem, SequenceOf::new(items)))
+    }
+}
+
 impl<T> CheckDerConstraints for SequenceOf<T>
 where
     T: CheckDerConstraints,
