@@ -7,6 +7,7 @@ mod end_of_content;
 mod enumerated;
 mod generalizedtime;
 mod integer;
+mod iterator;
 mod null;
 mod object_descriptor;
 mod octetstring;
@@ -21,6 +22,6 @@ mod utctime;
 
 pub use {
     any::*, bitstring::*, boolean::*, choice::*, embedded_pdv::*, end_of_content::*, enumerated::*,
-    generalizedtime::*, integer::*, null::*, object_descriptor::*, octetstring::*, oid::*, real::*,
-    sequence::*, set::*, strings::*, tagged::*, utctime::*,
+    generalizedtime::*, integer::*, iterator::*, null::*, object_descriptor::*, octetstring::*,
+    oid::*, real::*, sequence::*, set::*, strings::*, tagged::*, utctime::*,
 };

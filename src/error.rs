@@ -170,6 +170,15 @@ impl<I: Input> BerError<I> {
     pub const fn unexpected_tag(input: I, expected: Option<Tag>, actual: Tag) -> Self {
         Self::new(input, InnerError::UnexpectedTag { expected, actual })
     }
+
+    /// Build an `Incomplete` error from the provided parameters
+    #[inline]
+    pub const fn incomplete(input: I, n: nom::Needed) -> Self {
+        Self {
+            input,
+            inner_error: InnerError::Incomplete(n),
+        }
+    }
 }
 
 impl<I: Input> ParseError<I> for BerError<I> {
@@ -183,6 +192,13 @@ impl<I: Input> ParseError<I> for BerError<I> {
     fn append(_: I, _z: ErrorKind, other: Self) -> Self {
         // NOTE: we do not support error stacking, and just use the last one
         other
+    }
+}
+
+impl From<Error> for BerError<crate::Input<'static>> {
+    fn from(value: Error) -> Self {
+        let inner = InnerError::from(value);
+        BerError::new(crate::Input::from_slice(&[]), inner)
     }
 }
 
@@ -241,6 +257,39 @@ pub enum InnerError {
     LifetimeError,
     /// Feature is not yet implemented
     Unsupported,
+
+    /// incomplete data, missing: {0:?}
+    Incomplete(nom::Needed),
+}
+
+impl From<Error> for InnerError {
+    fn from(value: Error) -> Self {
+        match value {
+            Error::BerTypeError => Self::BerTypeError,
+            Error::BerValueError => Self::BerValueError,
+            Error::InvalidLength => Self::InvalidLength,
+            Error::InvalidValue { tag, msg } => Self::InvalidValue { tag, msg },
+            Error::InvalidTag => Self::InvalidTag,
+            Error::UnknownTag(tag) => Self::UnknownTag(tag),
+            Error::UnexpectedTag { expected, actual } => Self::UnexpectedTag { expected, actual },
+            Error::UnexpectedClass { expected, actual } => {
+                Self::UnexpectedClass { expected, actual }
+            }
+            Error::IndefiniteLengthUnexpected => Self::IndefiniteLengthUnexpected,
+            Error::ConstructExpected => Self::ConstructExpected,
+            Error::ConstructUnexpected => Self::ConstructUnexpected,
+            Error::IntegerTooLarge => Self::IntegerTooLarge,
+            Error::IntegerNegative => Self::IntegerNegative,
+            Error::BerMaxDepth => Self::BerMaxDepth,
+            Error::StringInvalidCharset => Self::StringInvalidCharset,
+            Error::InvalidDateTime => Self::InvalidDateTime,
+            Error::DerConstraintFailed(der_constraint) => Self::DerConstraintFailed(der_constraint),
+            Error::LifetimeError => Self::LifetimeError,
+            Error::Unsupported => Self::Unsupported,
+            Error::Incomplete(needed) => Self::Incomplete(needed),
+            Error::NomError(error_kind) => Self::Nom(error_kind),
+        }
+    }
 }
 
 impl Error {
@@ -340,6 +389,7 @@ impl From<InnerError> for Error {
             InnerError::Nom(error_kind) => Self::NomError(error_kind),
             InnerError::LifetimeError => Self::LifetimeError,
             InnerError::Unsupported => Self::Unsupported,
+            InnerError::Incomplete(n) => Self::Incomplete(n),
         }
     }
 }

@@ -127,6 +127,7 @@ where
 
     fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         let (rem, items) = <Vec<T>>::from_any_ber(input, header)?;
+        // NOTE: can't use SequenceIterator, it does not return `rem`
 
         Ok((rem, SequenceOf::new(items)))
     }

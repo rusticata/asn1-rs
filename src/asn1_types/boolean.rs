@@ -62,6 +62,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Boolean {
 }
 
 impl DeriveBerParserFromTryFrom for Boolean {}
+impl DeriveDerParserFromTryFrom for Boolean {}
 
 impl CheckDerConstraints for Boolean {
     fn check_constraints(any: &Any) -> Result<()> {
@@ -133,6 +134,7 @@ impl CheckDerConstraints for bool {
 }
 
 impl DeriveBerParserFromTryFrom for bool {}
+impl DeriveDerParserFromTryFrom for bool {}
 
 impl DerAutoDerive for bool {}
 

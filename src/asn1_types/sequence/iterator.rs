@@ -1,4 +1,7 @@
-use crate::{ASN1Mode, BerMode, DerMode, Error, FromBer, FromDer};
+use crate::{
+    ASN1Mode, AnyIterator, BerError, BerMode, BerParser, DerMode, DerParser, Error, FromBer,
+    FromDer, Input, Tagged,
+};
 use core::marker::PhantomData;
 
 /// An Iterator over binary data, parsing elements of type `T`
@@ -102,5 +105,171 @@ where
                 Some(Err(Error::Incomplete(n).into()))
             }
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct SequenceIteratorInput<'a, T, Mode, E = BerError<Input<'a>>>
+where
+    Mode: ASN1Mode,
+{
+    iter: AnyIterator<'a, Mode>,
+    t: PhantomData<*const T>,
+    e: PhantomData<*const E>,
+}
+
+impl<'a, T, E, Mode> SequenceIteratorInput<'a, T, Mode, E>
+where
+    Mode: ASN1Mode,
+{
+    pub fn new(input: Input<'a>) -> Self {
+        let iter = AnyIterator::new(input);
+        Self {
+            iter,
+            t: PhantomData,
+            e: PhantomData,
+        }
+    }
+}
+
+// Build Iterator, by mapping inner iterator
+impl<'a, T, E> Iterator for SequenceIteratorInput<'a, T, BerMode, E>
+where
+    T: BerParser<'a>,
+    E: From<<T as BerParser<'a>>::Error> + From<BerError<Input<'a>>>,
+{
+    type Item = Result<T, E>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.iter.next() {
+            Some(Ok((_, any))) => match T::from_any_ber(any.data, any.header) {
+                Ok((_, obj)) => Some(Ok(obj)),
+                Err(e) => {
+                    let e = match e {
+                        nom::Err::Error(e) | nom::Err::Failure(e) => e.into(),
+                        nom::Err::Incomplete(n) => {
+                            // we need input to build error, but we don't have it
+                            let input = Input::from_slice(&[]);
+                            BerError::incomplete(input, n).into()
+                        }
+                    };
+                    Some(Err(e))
+                }
+            },
+            Some(Err(e)) => Some(Err(e.into())),
+            None => None,
+        }
+    }
+}
+
+// Build Iterator, by mapping inner iterator
+impl<'a, T, E> Iterator for SequenceIteratorInput<'a, T, DerMode, E>
+where
+    T: Tagged,
+    T: DerParser<'a>,
+    E: From<<T as DerParser<'a>>::Error> + From<BerError<Input<'a>>>,
+{
+    type Item = Result<T, E>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.iter.next() {
+            Some(Ok((_, any))) => match T::from_any_der(any.data, any.header) {
+                Ok((_, obj)) => Some(Ok(obj)),
+                Err(e) => {
+                    let e = match e {
+                        nom::Err::Error(e) | nom::Err::Failure(e) => e.into(),
+                        nom::Err::Incomplete(n) => {
+                            // we need input to build error, but we don't have it
+                            let input = Input::from_slice(&[]);
+                            BerError::incomplete(input, n).into()
+                        }
+                    };
+                    Some(Err(e))
+                }
+            },
+            Some(Err(e)) => Some(Err(e.into())),
+            None => None,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+
+    use crate::{BerMode, DerMode, Input, SequenceIteratorInput};
+
+    #[test]
+    fn sequence_iterator_ber() {
+        // Ok: empty
+        let input = Input::from_slice(&hex!(""));
+        let iter = SequenceIteratorInput::<u32, BerMode>::new(input);
+        assert_eq!(iter.count(), 0);
+
+        // Ok: 1 item
+        let input = Input::from_slice(&hex!("0203010001"));
+        let mut iter = SequenceIteratorInput::<u32, BerMode>::new(input);
+        let obj0 = iter.next().expect("empty iter").expect("subject-object 0");
+        assert_eq!(obj0, 65537);
+        assert_eq!(iter.next(), None);
+
+        // Fail: 2 items, 1 with incorrect tag
+        let input = Input::from_slice(&hex!("0203010001 0101ff"));
+        let mut iter = SequenceIteratorInput::<u32, BerMode>::new(input);
+        let obj0 = iter.next().expect("empty iter").expect("subject-object 0");
+        assert_eq!(obj0, 65537);
+        let _ = iter
+            .next()
+            .expect("empty iter")
+            .expect_err("sub-object 1 should fail");
+        assert_eq!(iter.next(), None);
+
+        // Fail: incomplete
+        let input = Input::from_slice(&hex!("0203010001 0201"));
+        let mut iter = SequenceIteratorInput::<u32, BerMode>::new(input);
+        let obj0 = iter.next().expect("empty iter").expect("subject-object 0");
+        assert_eq!(obj0, 65537);
+        let _ = iter
+            .next()
+            .expect("empty iter")
+            .expect_err("sub-object 1 should fail");
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn sequence_iterator_der() {
+        // Ok: empty
+        let input = Input::from_slice(&hex!(""));
+        let iter = SequenceIteratorInput::<u32, DerMode>::new(input);
+        assert_eq!(iter.count(), 0);
+
+        // Ok: 1 item
+        let input = Input::from_slice(&hex!("0203010001"));
+        let mut iter = SequenceIteratorInput::<u32, DerMode>::new(input);
+        let obj0 = iter.next().expect("empty iter").expect("subject-object 0");
+        assert_eq!(obj0, 65537);
+        assert_eq!(iter.next(), None);
+
+        // Fail: 2 items, 1 with incorrect tag
+        let input = Input::from_slice(&hex!("0203010001 0101ff"));
+        let mut iter = SequenceIteratorInput::<u32, DerMode>::new(input);
+        let obj0 = iter.next().expect("empty iter").expect("subject-object 0");
+        assert_eq!(obj0, 65537);
+        let _ = iter
+            .next()
+            .expect("empty iter")
+            .expect_err("sub-object 1 should fail");
+        assert_eq!(iter.next(), None);
+
+        // Fail: incomplete
+        let input = Input::from_slice(&hex!("0203010001 0201"));
+        let mut iter = SequenceIteratorInput::<u32, DerMode>::new(input);
+        let obj0 = iter.next().expect("empty iter").expect("subject-object 0");
+        assert_eq!(obj0, 65537);
+        let _ = iter
+            .next()
+            .expect("empty iter")
+            .expect_err("sub-object 1 should fail");
+        assert_eq!(iter.next(), None);
     }
 }
