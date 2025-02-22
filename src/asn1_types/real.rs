@@ -277,6 +277,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Real {
 }
 
 impl DeriveBerParserFromTryFrom for Real {}
+impl DeriveDerParserFromTryFrom for Real {}
 
 impl CheckDerConstraints for Real {
     fn check_constraints(any: &Any) -> Result<()> {

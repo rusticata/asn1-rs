@@ -1,6 +1,6 @@
 use crate::{
-    Any, CheckDerConstraints, DerAutoDerive, DeriveBerParserFromTryFrom, Error, Real, Result, Tag,
-    Tagged,
+    Any, CheckDerConstraints, DerAutoDerive, DeriveBerParserFromTryFrom,
+    DeriveDerParserFromTryFrom, Error, Real, Result, Tag, Tagged,
 };
 use core::convert::{TryFrom, TryInto};
 
@@ -16,6 +16,7 @@ impl<'a> TryFrom<Any<'a>> for f64 {
 }
 
 impl DeriveBerParserFromTryFrom for f64 {}
+impl DeriveDerParserFromTryFrom for f64 {}
 
 impl CheckDerConstraints for f64 {
     fn check_constraints(any: &Any) -> Result<()> {

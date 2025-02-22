@@ -75,6 +75,7 @@ impl<'a, 'r> core::convert::TryFrom<&'r Any<'a>> for BmpString<'a> {
 }
 
 impl DeriveBerParserFromTryFrom for BmpString<'_> {}
+impl DeriveDerParserFromTryFrom for BmpString<'_> {}
 
 impl<'a> core::convert::TryFrom<Any<'a>> for BmpString<'a> {
     type Error = Error;
