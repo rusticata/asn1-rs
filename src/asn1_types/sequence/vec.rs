@@ -124,6 +124,55 @@ where
     }
 }
 
+impl<'i, T> DerParser<'i> for Vec<T>
+where
+    T: DerParser<'i>,
+    <T as DerParser<'i>>::Error: From<BerError<Input<'i>>>,
+{
+    type Error = <T as DerParser<'i>>::Error;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Self::TAG
+    }
+
+    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        header
+            .assert_constructed_inner()
+            .map_err(BerError::convert_into(input.clone()))?;
+
+        // NOTE: we cannot use many0 here, it silently converts Error to Ok
+        // let (rem, v) = many0(cut(T::parse_ber)).parse(input)?;
+
+        if input.is_empty() {
+            return Ok((input, Vec::new()));
+        }
+
+        let mut v = Vec::new();
+
+        let mut rem = input;
+        loop {
+            let previous_len = rem.len();
+            match T::parse_der(rem) {
+                Ok((r, any)) => {
+                    // infinite loop check
+                    if r.len() == previous_len {
+                        // FIXME: should be InnerError::InfiniteLoop
+                        return Err(Err::Error(BerError::new(r, InnerError::Unsupported).into()));
+                    }
+                    v.push(any);
+                    rem = r;
+                    if rem.is_empty() {
+                        break;
+                    }
+                }
+                Err(e) => return Err(Err::convert(e)),
+            }
+        }
+
+        Ok((rem, v))
+    }
+}
+
 impl<T> CheckDerConstraints for Vec<T>
 where
     T: CheckDerConstraints,

@@ -192,7 +192,7 @@ fn assert_traits_derparser() {
     fn compound_wrapper<'a, T: DerParser<'a>>(_: T) {
         test_assert!(Option<T>);
 
-        // test_assert!(Vec<T>, SequenceOf<T>);
+        test_assert!(Vec<T>, SequenceOf<T>);
 
         // // TODO: test for custom error types
         // type E<'a> = BerError<Input<'a>>;
