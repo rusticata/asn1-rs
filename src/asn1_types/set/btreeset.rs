@@ -31,8 +31,45 @@ where
     }
 }
 
-impl<T> DeriveBerParserFromTryFrom for BTreeSet<T> {}
-impl<T> DeriveDerParserFromTryFrom for BTreeSet<T> {}
+impl<'a, T> BerParser<'a> for BTreeSet<T>
+where
+    T: BerParser<'a>,
+    T: Ord,
+{
+    type Error = <T as BerParser<'a>>::Error;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Self::TAG
+    }
+
+    fn from_any_ber(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+        header
+            .assert_constructed_inner()
+            .map_err(BerError::convert_into(input.clone()))?;
+
+        AnyIterator::<BerMode>::new(input).try_parse_collect::<Self, T>()
+    }
+}
+
+impl<'a, T> DerParser<'a> for BTreeSet<T>
+where
+    T: DerParser<'a>,
+    T: Ord,
+{
+    type Error = <T as DerParser<'a>>::Error;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Self::TAG
+    }
+
+    fn from_any_der(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+        header
+            .assert_constructed_inner()
+            .map_err(BerError::convert_into(input.clone()))?;
+
+        AnyIterator::<DerMode>::new(input).try_parse_collect::<Self, T>()
+    }
+}
 
 impl<T> CheckDerConstraints for BTreeSet<T>
 where
