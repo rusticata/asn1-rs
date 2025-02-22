@@ -1,6 +1,7 @@
+use core::iter::FromIterator;
 use core::marker::PhantomData;
 
-use nom::{Err, Input as _};
+use nom::{Err, IResult, Input as _};
 
 use crate::{ASN1Mode, BerError, BerMode, BerParser, DerMode, DerParser, InnerError, Input};
 
@@ -42,6 +43,92 @@ where
             has_error: false,
             _mode: PhantomData,
         }
+    }
+}
+
+impl<'a> AnyIterator<'a, BerMode> {
+    /// Try to iterate on sub-objects, returning a collection `B` of elements with type `T`
+    ///
+    /// Similarly to [`Iterator::collect`], this function requires type annotations.
+    ///
+    /// Since it also has to infer the error type, it is often not possible to use the `?`
+    /// operator directly: `.try_parse_collect()?`will cause an error because it cannot infer
+    /// result type. To avoid this, use an itermediate value to store result (or use the
+    /// turbofish `::<>` operator).
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use asn1_rs::{AnyIterator, BerMode, Input};
+    /// use hex_literal::hex;
+    ///
+    /// let input = Input::from_slice(&hex!("0203010001 0203010001"));
+    /// let mut iter = AnyIterator::<BerMode>::new(input);
+    ///
+    /// let r: Result<(Input, Vec<u32>), _> = iter.try_parse_collect();
+    /// let _ = r.expect("parsing failed");
+    ///
+    /// let r = iter.try_parse_collect::<Vec<u32>, _>();
+    /// let _ = r.expect("parsing failed");
+    /// ```
+    pub fn try_parse_collect<B, T>(&mut self) -> IResult<Input<'a>, B, <T as BerParser<'a>>::Error>
+    where
+        B: FromIterator<T>,
+        T: BerParser<'a>,
+        <T as BerParser<'a>>::Error: From<BerError<Input<'a>>>,
+    {
+        let b = <Result<B, Err<T::Error, T::Error>>>::from_iter(self.map(|r| match r {
+            Ok((_, obj)) => {
+                let (_, obj) = T::from_any_ber(obj.data, obj.header)?;
+                Ok(obj)
+            }
+            Err(e) => Err(Err::Error(e.into())),
+        }));
+        // after iteration, self.input points at end of last object content
+        b.map(|obj| (self.input.clone(), obj))
+    }
+}
+
+impl<'a> AnyIterator<'a, DerMode> {
+    /// Try to iterate on sub-objects, returning a collection `B` of elements with type `T`
+    ///
+    /// Similarly to [`Iterator::collect`], this function requires type annotations.
+    ///
+    /// Since it also has to infer the error type, it is often not possible to use the `?`
+    /// operator directly: `.try_parse_collect()?`will cause an error because it cannot infer
+    /// result type. To avoid this, use an itermediate value to store result (or use the
+    /// turbofish `::<>` operator).
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use asn1_rs::{AnyIterator, DerMode, Input};
+    /// use hex_literal::hex;
+    ///
+    /// let input = Input::from_slice(&hex!("0203010001 0203010001"));
+    /// let mut iter = AnyIterator::<DerMode>::new(input);
+    ///
+    /// let r: Result<(Input, Vec<u32>), _> = iter.try_parse_collect();
+    /// let _ = r.expect("parsing failed");
+    ///
+    /// let r = iter.try_parse_collect::<Vec<u32>, _>();
+    /// let _ = r.expect("parsing failed");
+    /// ```
+    pub fn try_parse_collect<B, T>(&mut self) -> IResult<Input<'a>, B, <T as DerParser<'a>>::Error>
+    where
+        B: FromIterator<T>,
+        T: DerParser<'a>,
+        <T as DerParser<'a>>::Error: From<BerError<Input<'a>>>,
+    {
+        let b = <Result<B, Err<T::Error, T::Error>>>::from_iter(self.map(|r| match r {
+            Ok((_, obj)) => {
+                let (_, obj) = T::from_any_der(obj.data, obj.header)?;
+                Ok(obj)
+            }
+            Err(e) => Err(Err::Error(e.into())),
+        }));
+        // after iteration, self.input points at end of last object content
+        b.map(|obj| (self.input.clone(), obj))
     }
 }
 
@@ -105,6 +192,8 @@ mod tests {
     use hex_literal::hex;
 
     use crate::{Any, BerMode, BerParser, DerMode, DerParser, Input, Tag};
+
+    use super::AnyIterator;
 
     #[test]
     fn any_iterator_ber() {
@@ -180,5 +269,30 @@ mod tests {
             .expect("empty iter")
             .expect_err("subject-object 1 should fail");
         assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn any_iterator_try_collect() {
+        let input = Input::from_slice(&hex!("0203010001 0203010000"));
+        let mut iter = AnyIterator::<BerMode>::new(input);
+
+        // let r = iter.try_parse_collect::<Vec<_>, u32>();
+        // let r: Result<(Input, Vec<u32>), _> = iter.try_parse_collect();
+        let (rem, v) = iter.try_parse_collect::<Vec<u32>, _>().unwrap();
+        assert!(rem.is_empty());
+        assert_eq!(&v, &[65537, 65536]);
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn any_iterator_try_collect_std() {
+        use std::collections::HashSet;
+        let input = Input::from_slice(&hex!("0203010001 0203010000"));
+        let mut iter = AnyIterator::<BerMode>::new(input);
+        let (rem, h) = iter.try_parse_collect::<HashSet<u32>, _>().unwrap();
+        assert!(rem.is_empty());
+        assert_eq!(h.len(), 2);
+        assert!(h.contains(&65536));
+        assert!(h.contains(&65537));
     }
 }

@@ -114,8 +114,47 @@ where
     }
 }
 
-impl<T> DeriveBerParserFromTryFrom for SetOf<T> {}
-impl<T> DeriveDerParserFromTryFrom for SetOf<T> {}
+impl<'a, T> BerParser<'a> for SetOf<T>
+where
+    T: BerParser<'a>,
+{
+    type Error = <T as BerParser<'a>>::Error;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Self::TAG
+    }
+
+    fn from_any_ber(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+        header
+            .assert_constructed_inner()
+            .map_err(BerError::convert_into(input.clone()))?;
+
+        let (rem, items) = AnyIterator::<BerMode>::new(input).try_parse_collect::<Vec<_>, T>()?;
+
+        Ok((rem, SetOf::new(items)))
+    }
+}
+
+impl<'a, T> DerParser<'a> for SetOf<T>
+where
+    T: DerParser<'a>,
+{
+    type Error = <T as DerParser<'a>>::Error;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Self::TAG
+    }
+
+    fn from_any_der(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+        header
+            .assert_constructed_inner()
+            .map_err(BerError::convert_into(input.clone()))?;
+
+        let (rem, items) = AnyIterator::<DerMode>::new(input).try_parse_collect::<Vec<_>, T>()?;
+
+        Ok((rem, SetOf::new(items)))
+    }
+}
 
 impl<T> CheckDerConstraints for SetOf<T>
 where

@@ -57,29 +57,6 @@ fn assert_traits_berparser() {
 
     //------ compound types
 
-    // NOTE: trait bounds require the *old* trait FromBer
-    // after migration, this should be empty
-    #[allow(dead_code)]
-    fn compound_wrapper_requiring_fromber<'a, T: FromBer<'a>>(_: T) {
-        test_assert!(SetOf<T>);
-
-        // NOTE: trait bounds require the *old* trait FromBer, with specific additional trait bounds
-        #[cfg(feature = "std")]
-        #[allow(dead_code)]
-        fn compound_wrapper_requiring_fromber_ord<'a, T: FromBer<'a> + Ord>(_: T) {
-            use std::collections::BTreeSet;
-            test_assert!(BTreeSet<T>);
-        }
-        #[cfg(feature = "std")]
-        #[allow(dead_code)]
-        fn compound_wrapper_requiring_fromber_hash_eq<'a, T: FromBer<'a> + std::hash::Hash + Eq>(
-            _: T,
-        ) {
-            use std::collections::HashSet;
-            test_assert!(HashSet<T>);
-        }
-    }
-
     // test traits that should require BerParser
     #[allow(dead_code)]
     fn compound_wrapper<'a, T: BerParser<'a>>(_: T) {
@@ -87,13 +64,29 @@ fn assert_traits_berparser() {
 
         test_assert!(Vec<T>, SequenceOf<T>);
 
+        test_assert!(SetOf<T>);
+
         // TODO: test for custom error types
         type E<'a> = BerError<Input<'a>>;
         test_assert!(TaggedExplicit<T, E, 0>);
         test_assert!(TaggedValue<T, E, Explicit, {Class::Application as u8}, 0>);
 
+        #[cfg(feature = "std")]
         #[allow(dead_code)]
-        fn compound_wrapper_requiring_berparser_tagged<'a, T: BerParser<'a> + Tagged>(_: T) {
+        fn compound_wrapper_requiring_ord<'a, T: BerParser<'a> + Ord>(_: T) {
+            use std::collections::BTreeSet;
+            test_assert!(BTreeSet<T>);
+        }
+
+        #[cfg(feature = "std")]
+        #[allow(dead_code)]
+        fn compound_wrapper_requiring_hash_eq<'a, T: BerParser<'a> + std::hash::Hash + Eq>(_: T) {
+            use std::collections::HashSet;
+            test_assert!(HashSet<T>);
+        }
+
+        #[allow(dead_code)]
+        fn compound_wrapper_requiring_tagged<'a, T: BerParser<'a> + Tagged>(_: T) {
             // TODO: test for custom error types
             type E<'a> = BerError<Input<'a>>;
             test_assert!(TaggedImplicit<T, E, 0>);
@@ -155,44 +148,34 @@ fn assert_traits_derparser() {
 
     //------ compound types
 
-    // NOTE: trait bounds require the *old* trait FromBer
-    // after migration, this should be empty
-    #[allow(dead_code)]
-    fn compound_wrapper_requiring_fromber<'a, T>(_: T)
-    where
-        T: FromDer<'a> + CheckDerConstraints + FromBer<'a>,
-    {
-        test_assert!(SetOf<T>);
-
-        // NOTE: trait bounds require the *old* trait FromBer, with specific additional trait bounds
-        #[cfg(feature = "std")]
-        #[allow(dead_code)]
-        fn compound_wrapper_requiring_fromber_ord<'a, T>(_: T)
-        where
-            T: FromDer<'a> + Ord,
-            T: CheckDerConstraints + FromBer<'a>,
-        {
-            use std::collections::BTreeSet;
-            test_assert!(BTreeSet<T>);
-        }
-        #[cfg(feature = "std")]
-        #[allow(dead_code)]
-        fn compound_wrapper_requiring_fromber_hash_eq<'a, T>(_: T)
-        where
-            T: FromDer<'a> + std::hash::Hash + Eq,
-            T: CheckDerConstraints + FromBer<'a>,
-        {
-            use std::collections::HashSet;
-            test_assert!(HashSet<T>);
-        }
-    }
-
     // test traits that should require BerParser
     #[allow(dead_code)]
     fn compound_wrapper<'a, T: DerParser<'a>>(_: T) {
         test_assert!(Option<T>);
 
         test_assert!(Vec<T>, SequenceOf<T>);
+
+        test_assert!(SetOf<T>);
+
+        #[cfg(feature = "std")]
+        #[allow(dead_code)]
+        fn compound_wrapper_requiring_ord<'a, T>(_: T)
+        where
+            T: DerParser<'a> + Ord,
+        {
+            use std::collections::BTreeSet;
+            test_assert!(BTreeSet<T>);
+        }
+
+        #[cfg(feature = "std")]
+        #[allow(dead_code)]
+        fn compound_wrapper_requiring_hash_eq<'a, T>(_: T)
+        where
+            T: DerParser<'a> + std::hash::Hash + Eq,
+        {
+            use std::collections::HashSet;
+            test_assert!(HashSet<T>);
+        }
 
         // TODO: test for custom error types
         type E<'a> = BerError<Input<'a>>;
