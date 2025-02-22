@@ -1,6 +1,6 @@
-use nom::bytes::streaming::take;
 use nom::error::ParseError;
 
+use crate::ber::{GetObjectContent, MAX_RECURSION};
 use crate::*;
 
 // note: we cannot implement `TryFrom<Any<'a>> with generic errors for Option<T>`,
@@ -57,16 +57,11 @@ where
         if input.is_empty() {
             return Ok((input, None));
         }
-        // FIXME: call default trait impl
+        // FIXME: call default trait impl?
         // FIXME: default trait impl does not work: bytes are consumed even
         // if tag does not match
 
         let (rem, header) = Header::parse_ber(input.clone()).map_err(Err::convert)?;
-        // TODO: handle indefinite
-        let length = header
-            .length
-            .definite_inner()
-            .map_err(BerError::convert_into(input.clone()))?;
         // FIXME: this will not check anything, Option<T>::check_tag always return true
         if !Self::check_tag(header.tag) {
             return Err(Err::Error(
@@ -78,7 +73,8 @@ where
             return Ok((input, None));
         }
         // NOTE: end
-        let (rem, data) = take(length)(rem)?;
+        let (rem, data) =
+            BerMode::get_object_content(rem, &header, MAX_RECURSION).map_err(Err::convert)?;
         let (_, obj) = Self::from_any_ber(data, header).map_err(Err::convert)?;
         Ok((rem, obj))
     }
@@ -90,12 +86,8 @@ where
         if !T::check_tag(header.tag) {
             return Ok((input, None));
         }
-        // TODO: handle indefinite
-        let length = header
-            .length
-            .definite_inner()
-            .map_err(BerError::convert_into(input.clone()))?;
-        let (rem, data) = take(length)(input)?;
+        let (rem, data) =
+            BerMode::get_object_content(input, &header, MAX_RECURSION).map_err(Err::convert)?;
         let (_, obj) = T::from_any_ber(data, header).map_err(Err::convert)?;
         Ok((rem, Some(obj)))
     }
