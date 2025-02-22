@@ -32,6 +32,7 @@ where
 }
 
 impl<T> DeriveBerParserFromTryFrom for BTreeSet<T> {}
+impl<T> DeriveDerParserFromTryFrom for BTreeSet<T> {}
 
 impl<T> CheckDerConstraints for BTreeSet<T>
 where
