@@ -93,6 +93,57 @@ where
     }
 }
 
+impl<'a, T, E> DerParser<'a> for Option<T>
+where
+    T: DerParser<'a, Error = E>,
+    E: ParseError<Input<'a>> + From<BerError<Input<'a>>>,
+{
+    type Error = E;
+
+    fn check_tag(_tag: Tag) -> bool {
+        true
+    }
+
+    fn parse_der(input: Input<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+        if input.is_empty() {
+            return Ok((input, None));
+        }
+        // FIXME: call default trait impl?
+        // FIXME: default trait impl does not work: bytes are consumed even
+        // if tag does not match
+
+        let (rem, header) = Header::parse_der(input.clone()).map_err(Err::convert)?;
+        // FIXME: this will not check anything, Option<T>::check_tag always return true
+        if !Self::check_tag(header.tag) {
+            return Err(Err::Error(
+                BerError::unexpected_tag(input, None, header.tag).into(),
+            ));
+        }
+        // NOTE: we add this to default trait impl
+        if !T::check_tag(header.tag) {
+            return Ok((input, None));
+        }
+        // NOTE: end
+        let (rem, data) =
+            BerMode::get_object_content(rem, &header, MAX_RECURSION).map_err(Err::convert)?;
+        let (_, obj) = Self::from_any_der(data, header).map_err(Err::convert)?;
+        Ok((rem, obj))
+    }
+
+    fn from_any_der(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+        if input.is_empty() {
+            return Ok((input, None));
+        }
+        if !T::check_tag(header.tag) {
+            return Ok((input, None));
+        }
+        let (rem, data) =
+            BerMode::get_object_content(input, &header, MAX_RECURSION).map_err(Err::convert)?;
+        let (_, obj) = T::from_any_der(data, header).map_err(Err::convert)?;
+        Ok((rem, Some(obj)))
+    }
+}
+
 impl<'a, T> FromDer<'a> for Option<T>
 where
     T: FromDer<'a>,

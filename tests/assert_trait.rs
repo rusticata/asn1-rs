@@ -190,7 +190,7 @@ fn assert_traits_derparser() {
     // test traits that should require BerParser
     #[allow(dead_code)]
     fn compound_wrapper<'a, T: DerParser<'a>>(_: T) {
-        // test_assert!(Option<T>);
+        test_assert!(Option<T>);
 
         // test_assert!(Vec<T>, SequenceOf<T>);
 
