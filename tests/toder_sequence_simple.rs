@@ -4,7 +4,7 @@ use asn1_rs::*;
 use hex_literal::hex;
 
 #[derive(Debug, PartialEq, DerSequence, ToDerSequence)]
-#[debug_derive]
+// #[debug_derive]
 pub struct T1 {
     a: u32,
     b: u16,
