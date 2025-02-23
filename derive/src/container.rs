@@ -208,6 +208,18 @@ impl Container {
         }
     }
 
+    pub fn gen_derive_berparser(&self) -> TokenStream {
+        quote! {
+            gen impl<'ber> asn1_rs::DeriveBerParserFromTryFrom for @Self {}
+        }
+    }
+
+    pub fn gen_derive_derparser(&self) -> TokenStream {
+        quote! {
+            gen impl<'ber> asn1_rs::DeriveDerParserFromTryFrom for @Self {}
+        }
+    }
+
     pub fn gen_checkconstraints(&self) -> TokenStream {
         let lifetime = Lifetime::new("'ber", Span::call_site());
         let wh = &self.where_predicates;
