@@ -19,11 +19,13 @@ pub fn derive_ber_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
 
     let impl_tryfrom = container.gen_tryfrom();
     let impl_tagged = container.gen_tagged();
+    let impl_derive_berparser = container.gen_derive_berparser();
     let ts = s.gen_impl(quote! {
         extern crate asn1_rs;
 
         #impl_tryfrom
         #impl_tagged
+        #impl_derive_berparser
     });
     if debug_derive {
         eprintln!("{}", ts);
@@ -48,6 +50,7 @@ pub fn derive_der_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
     let impl_tagged = container.gen_tagged();
     let impl_checkconstraints = container.gen_checkconstraints();
     let impl_fromder = container.gen_fromder();
+    let impl_derive_derparser = container.gen_derive_derparser();
     let ts = s.gen_impl(quote! {
         extern crate asn1_rs;
 
@@ -55,6 +58,7 @@ pub fn derive_der_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
         #impl_tagged
         #impl_checkconstraints
         #impl_fromder
+        #impl_derive_derparser
     });
     if debug_derive {
         eprintln!("{}", ts);
