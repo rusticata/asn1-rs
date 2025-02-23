@@ -98,29 +98,7 @@ where
             return Ok((input, Vec::new()));
         }
 
-        let mut v = Vec::new();
-
-        let mut rem = input;
-        loop {
-            let previous_len = rem.len();
-            match T::parse_ber(rem) {
-                Ok((r, any)) => {
-                    // infinite loop check
-                    if r.len() == previous_len {
-                        // FIXME: should be InnerError::InfiniteLoop
-                        return Err(Err::Error(BerError::new(r, InnerError::Unsupported).into()));
-                    }
-                    v.push(any);
-                    rem = r;
-                    if rem.is_empty() {
-                        break;
-                    }
-                }
-                Err(e) => return Err(Err::convert(e)),
-            }
-        }
-
-        Ok((rem, v))
+        AnyIterator::<BerMode>::new(input).try_parse_collect::<Vec<_>, T>()
     }
 }
 
@@ -147,29 +125,7 @@ where
             return Ok((input, Vec::new()));
         }
 
-        let mut v = Vec::new();
-
-        let mut rem = input;
-        loop {
-            let previous_len = rem.len();
-            match T::parse_der(rem) {
-                Ok((r, any)) => {
-                    // infinite loop check
-                    if r.len() == previous_len {
-                        // FIXME: should be InnerError::InfiniteLoop
-                        return Err(Err::Error(BerError::new(r, InnerError::Unsupported).into()));
-                    }
-                    v.push(any);
-                    rem = r;
-                    if rem.is_empty() {
-                        break;
-                    }
-                }
-                Err(e) => return Err(Err::convert(e)),
-            }
-        }
-
-        Ok((rem, v))
+        AnyIterator::<DerMode>::new(input).try_parse_collect::<Vec<_>, T>()
     }
 }
 
