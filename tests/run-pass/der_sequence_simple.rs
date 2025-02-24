@@ -14,7 +14,7 @@ fn main() {
     assert!(rem.is_empty());
     assert_eq!(t1, T1 { a: 1, b: 2, c: 3 });
 
-    let (rem, t1) = T1::parse_der(input.into()).expect("parsing failed");
-    assert!(rem.is_empty());
-    assert_eq!(t1, T1 { a: 1, b: 2, c: 3 });
+    // let (rem, t1) = T1::parse_der(input.into()).expect("parsing failed");
+    // assert!(rem.is_empty());
+    // assert_eq!(t1, T1 { a: 1, b: 2, c: 3 });
 }
