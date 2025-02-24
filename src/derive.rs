@@ -280,6 +280,9 @@ pub use asn1_rs_derive::DerSet;
 /// ```
 pub use asn1_rs_derive::BerAlias;
 
+// FIXME: add doc!
+pub use asn1_rs_derive::BerParserAlias;
+
 /// # DerAlias custom derive
 ///
 /// `DerAlias` is a custom derive attribute, to derive a DER object parser automatically from the structure definition.
@@ -326,6 +329,9 @@ pub use asn1_rs_derive::BerAlias;
 /// struct S(pub u32);
 /// ```
 pub use asn1_rs_derive::DerAlias;
+
+// FIXME: add doc!
+pub use asn1_rs_derive::DerParserAlias;
 
 /// # ToStatic custom derive
 ///

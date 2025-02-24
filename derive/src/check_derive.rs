@@ -46,6 +46,8 @@ const PATTERNS: &[&str] = &[
     "DerSequence",
     "BerParserSequence",
     "DerParserSequence",
+    "BerParserAlias",
+    "DerParserAlias",
 ];
 
 impl PartialEq<IdentStartsWithOtherDerive> for Ident {
