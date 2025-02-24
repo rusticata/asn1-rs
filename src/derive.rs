@@ -114,6 +114,9 @@ pub use asn1_rs_derive::BerParserSequence;
 /// ```
 pub use asn1_rs_derive::DerSequence;
 
+// FIXME: add doc!
+pub use asn1_rs_derive::DerParserSequence;
+
 /// # BerSet custom derive
 ///
 /// `BerSet` is a custom derive attribute, to derive a BER [`Set`](super::Set) parser automatically from the structure definition.

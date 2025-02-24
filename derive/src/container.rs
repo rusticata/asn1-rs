@@ -211,8 +211,6 @@ impl Container {
     /// Generate blanked implementation of BerParser
     ///
     /// `Self` must be `Tagged`
-    ///
-    /// This method should not be called if [`Self::gen_derive_berparser`] is called
     pub fn gen_berparser(&self) -> TokenStream {
         let lft = Lifetime::new("'ber", Span::call_site());
 
@@ -261,10 +259,55 @@ impl Container {
         tokens
     }
 
-    pub fn gen_derive_derparser(&self) -> TokenStream {
-        quote! {
-            gen impl<'ber> asn1_rs::DeriveDerParserFromTryFrom for @Self {}
-        }
+    /// Generate blanked implementation of DerParser
+    ///
+    /// `Self` must be `Tagged`
+    pub fn gen_derparser(&self) -> TokenStream {
+        let lft = Lifetime::new("'ber", Span::call_site());
+
+        // error type
+        let error = if let Some(attr) = &self.error {
+            get_attribute_meta(attr).expect("Invalid error attribute format")
+        } else {
+            quote! { asn1_rs::BerError<asn1_rs::Input<#lft>> }
+        };
+
+        let field_names = &self.fields.iter().map(|f| &f.name).collect::<Vec<_>>();
+
+        let parse_content = derive_berparser_sequence_content(&self.fields, Asn1Type::Der);
+
+        // Note: if Self has lifetime bounds, then a new bound must be added to the implementation
+        // For ex: `pub struct AA<'a>` will require a bound `impl[..] DerParser[..] where 'i: 'a`
+        // Container::from_datastruct takes care of this.
+        let wh = &self.where_predicates;
+
+        // TODO: assert constructed (only for Sequence/Set)
+
+        // note: other lifetimes will automatically be added by gen_impl
+        let tokens = quote! {
+            use asn1_rs::DerParser;
+
+            gen impl<#lft> DerParser<#lft> for @Self where #(#wh)+* {
+                type Error = #error;
+
+                fn check_tag(tag: asn1_rs::Tag) -> bool {
+                    tag == Self::TAG // requires Self::Tagged
+                }
+
+                fn from_any_der(input: Input<#lft>, header: Header<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
+                    let rem = input;
+                    //
+                    #parse_content
+                    //
+                    Ok((
+                        rem,
+                        Self{#(#field_names),*}
+                    ))
+                }
+            }
+        };
+
+        tokens
     }
 
     pub fn gen_checkconstraints(&self) -> TokenStream {
