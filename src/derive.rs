@@ -54,6 +54,9 @@
 /// ```
 pub use asn1_rs_derive::BerSequence;
 
+// FIXME: add doc!
+pub use asn1_rs_derive::BerParserSequence;
+
 /// # DerSequence custom derive
 ///
 /// `DerSequence` is a custom derive attribute, to derive both BER and DER [`Sequence`](super::Sequence) parsers automatically from the structure definition.

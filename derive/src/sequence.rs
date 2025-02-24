@@ -33,6 +33,34 @@ pub fn derive_ber_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
     ts
 }
 
+pub fn derive_berparser_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
+    let ast = s.ast();
+
+    let container = match &ast.data {
+        Data::Struct(ds) => Container::from_datastruct(ds, ast, ContainerType::Sequence),
+        _ => panic!("Unsupported type, cannot derive"),
+    };
+
+    let debug_derive = ast.attrs.iter().any(|attr| {
+        attr.meta
+            .path()
+            .is_ident(&Ident::new("debug_derive", Span::call_site()))
+    });
+
+    let impl_tagged = container.gen_tagged();
+    let impl_berparser = container.gen_berparser();
+    let ts = s.gen_impl(quote! {
+        extern crate asn1_rs;
+
+        #impl_tagged
+        #impl_berparser
+    });
+    if debug_derive {
+        eprintln!("{}", ts);
+    }
+    ts
+}
+
 pub fn derive_der_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
     let ast = s.ast();
 

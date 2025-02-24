@@ -208,6 +208,58 @@ impl Container {
         }
     }
 
+    /// Generate blanked implementation of BerParser
+    ///
+    /// `Self` must be `Tagged`
+    ///
+    /// This method should not be called if [`Self::gen_derive_berparser`] is called
+    pub fn gen_berparser(&self) -> TokenStream {
+        let lft = Lifetime::new("'ber", Span::call_site());
+
+        // error type
+        let error = if let Some(attr) = &self.error {
+            get_attribute_meta(attr).expect("Invalid error attribute format")
+        } else {
+            quote! { asn1_rs::BerError<asn1_rs::Input<#lft>> }
+        };
+
+        let field_names = &self.fields.iter().map(|f| &f.name).collect::<Vec<_>>();
+
+        let parse_content = derive_berparser_sequence_content(&self.fields, Asn1Type::Ber);
+
+        // Note: if Self has lifetime bounds, then a new bound must be added to the implementation
+        // For ex: `pub struct AA<'a>` will require a bound `impl[..] BerParser[..] where 'i: 'a`
+        // Container::from_datastruct takes care of this.
+        let wh = &self.where_predicates;
+
+        // TODO: assert constructed (only for Sequence/Set)
+
+        // note: other lifetimes will automatically be added by gen_impl
+        let tokens = quote! {
+            use asn1_rs::BerParser;
+
+            gen impl<#lft> BerParser<#lft> for @Self where #(#wh)+* {
+                type Error = #error;
+
+                fn from_any_ber(input: Input<#lft>, header: Header<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
+                    let rem = input;
+                    //
+                    #parse_content
+                    //
+                    Ok((
+                        rem,
+                        Self{#(#field_names),*}
+                    ))
+                }
+            }
+        };
+
+        tokens
+    }
+
+    /// Derive BerParser from TryFrom
+    ///
+    /// This method should not be called if [`Self::gen_berparser`] is called
     pub fn gen_derive_berparser(&self) -> TokenStream {
         quote! {
             gen impl<'ber> asn1_rs::DeriveBerParserFromTryFrom for @Self {}
@@ -544,6 +596,97 @@ fn get_field_parser(f: &FieldInfo, asn1_type: Asn1Type, custom_errors: bool) -> 
         // neither tagged nor optional
         quote! {
             let (i, #name) = #from(i)#map_err?;
+            #default
+        }
+    }
+}
+
+fn derive_berparser_sequence_content(fields: &[FieldInfo], asn1_type: Asn1Type) -> TokenStream {
+    let field_parsers: Vec<_> = fields
+        .iter()
+        .map(|f| get_field_berparser(f, asn1_type))
+        .collect();
+
+    quote! {
+        #(#field_parsers)*
+    }
+}
+
+// This is an adapted version of `get_field_parser` to use types related to `BerParser`
+fn get_field_berparser(f: &FieldInfo, asn1_type: Asn1Type) -> TokenStream {
+    // eprintln!("{:?}", f);
+    let name = &f.name;
+    let from = match asn1_type {
+        Asn1Type::Ber => quote! {BerParser::parse_ber},
+        Asn1Type::Der => quote! {DerParser::parse_der},
+    };
+
+    let default = f
+        .default
+        .as_ref()
+        // use a type hint, otherwise compiler will not know what type provides .unwrap_or
+        .map(|x| quote! {let #name: Option<_> = #name; let #name = #name.unwrap_or(#x);});
+
+    // no need to check for custom errors, this should be transparent using `.into()`
+    let map_err = if let Some(tt) = f.map_err.as_ref() {
+        quote! { .map_err(|err| err.map(#tt)) }
+    } else {
+        quote! { .map_err(|e| e.map(|e| (rem, e).into())) }
+    };
+
+    if let Some((tag_kind, class, n)) = f.tag {
+        let tag = Literal::u16_unsuffixed(n);
+
+        // test if tagged + optional
+        if f.optional {
+            // Tagged + optional
+            let f_ty = &f.type_;
+            quote! {
+                let (rem, #name) = {
+                    if rem.is_empty() {
+                        (rem, None)
+                    } else {
+                        // clone rem, #map_err may consume it
+                        let rem_copy = rem.clone();
+                        let (_, obj_header): (_, asn1_rs::Header) = #from(rem_copy.clone())#map_err?;
+                        let rem = rem_copy;
+                        if obj_header.tag().0 == #tag {
+                            let (rem, t): (_, asn1_rs::TaggedValue::<
+                                _,
+                                <#f_ty as asn1_rs::BerParser>::Error,
+                                #tag_kind,
+                                {#class},
+                                #tag>
+                            ) = #from(rem.clone())#map_err?;
+                            (rem, Some(t.into_inner()))
+                        } else {
+                            (rem, None)
+                        }
+                    }
+                };
+                #default
+            }
+        } else {
+            // tagged, but not Optional
+            let f_ty = &f.type_;
+            quote! {
+                let (rem, #name) = {
+                    let (rem, t): (_, asn1_rs::TaggedValue::<
+                        _,
+                        <#f_ty as asn1_rs::BerParser>::Error,
+                        #tag_kind,
+                        {#class},
+                        #tag>
+                    ) = #from(rem.clone())#map_err?;
+                    (rem, t.into_inner())
+                };
+                #default
+            }
+        }
+    } else {
+        // not tagged
+        quote! {
+            let (rem, #name) = #from(rem.clone())#map_err?;
             #default
         }
     }

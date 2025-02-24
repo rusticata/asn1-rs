@@ -72,3 +72,15 @@ synstructure::decl_derive!([ToStatic, attributes(
 synstructure::decl_derive!([ToDerSequence, attributes(
     debug_derive,
 )] => derive_toder_sequence);
+
+//----------- new BerParser
+
+synstructure::decl_derive!([BerParserSequence, attributes(
+    debug_derive,
+    default,
+    optional,
+    tag_explicit,
+    tag_implicit,
+    error,
+    map_err
+)] => derive_berparser_sequence);
