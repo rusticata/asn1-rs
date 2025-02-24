@@ -25,13 +25,11 @@ pub fn derive_ber_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
     } else {
         quote! {}
     };
-    let impl_derive_berparser = container.gen_derive_berparser();
     let ts = s.gen_impl(quote! {
         extern crate asn1_rs;
 
         #impl_tryfrom
         #impl_tagged
-        #impl_derive_berparser
     });
     if debug_derive {
         eprintln!("{}", ts);

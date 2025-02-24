@@ -257,15 +257,6 @@ impl Container {
         tokens
     }
 
-    /// Derive BerParser from TryFrom
-    ///
-    /// This method should not be called if [`Self::gen_berparser`] is called
-    pub fn gen_derive_berparser(&self) -> TokenStream {
-        quote! {
-            gen impl<'ber> asn1_rs::DeriveBerParserFromTryFrom for @Self {}
-        }
-    }
-
     pub fn gen_derive_derparser(&self) -> TokenStream {
         quote! {
             gen impl<'ber> asn1_rs::DeriveDerParserFromTryFrom for @Self {}
