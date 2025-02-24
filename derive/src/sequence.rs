@@ -1,13 +1,33 @@
-use crate::{check_derive::check_lastderive_fromber, container::*};
+use crate::check_derive::check_lastderive_fromber;
+use crate::container::*;
 use proc_macro2::Span;
 use quote::quote;
 use syn::{Data, Ident, WherePredicate};
 
 pub fn derive_ber_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
+    derive_ber_container(s, ContainerType::Sequence)
+}
+
+pub fn derive_berparser_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
+    derive_berparser_container(s, ContainerType::Sequence)
+}
+
+pub fn derive_der_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
+    derive_der_container(s, ContainerType::Sequence)
+}
+
+pub fn derive_derparser_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
+    derive_derparser_container(s, ContainerType::Sequence)
+}
+
+pub(crate) fn derive_ber_container(
+    s: synstructure::Structure,
+    container_type: ContainerType,
+) -> proc_macro2::TokenStream {
     let ast = s.ast();
 
     let container = match &ast.data {
-        Data::Struct(ds) => Container::from_datastruct(ds, ast, ContainerType::Sequence),
+        Data::Struct(ds) => Container::from_datastruct(ds, ast, container_type),
         _ => panic!("Unsupported type, cannot derive"),
     };
 
@@ -37,11 +57,14 @@ pub fn derive_ber_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
     ts
 }
 
-pub fn derive_berparser_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
+pub(crate) fn derive_berparser_container(
+    s: synstructure::Structure,
+    container_type: ContainerType,
+) -> proc_macro2::TokenStream {
     let ast = s.ast();
 
     let container = match &ast.data {
-        Data::Struct(ds) => Container::from_datastruct(ds, ast, ContainerType::Sequence),
+        Data::Struct(ds) => Container::from_datastruct(ds, ast, container_type),
         _ => panic!("Unsupported type, cannot derive"),
     };
 
@@ -71,11 +94,14 @@ pub fn derive_berparser_sequence(s: synstructure::Structure) -> proc_macro2::Tok
     ts
 }
 
-pub fn derive_der_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
+pub fn derive_der_container(
+    s: synstructure::Structure,
+    container_type: ContainerType,
+) -> proc_macro2::TokenStream {
     let ast = s.ast();
 
     let container = match &ast.data {
-        Data::Struct(ds) => Container::from_datastruct(ds, ast, ContainerType::Sequence),
+        Data::Struct(ds) => Container::from_datastruct(ds, ast, container_type),
         _ => panic!("Unsupported type, cannot derive"),
     };
 
@@ -108,11 +134,14 @@ pub fn derive_der_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
     ts
 }
 
-pub fn derive_derparser_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
+pub(crate) fn derive_derparser_container(
+    s: synstructure::Structure,
+    container_type: ContainerType,
+) -> proc_macro2::TokenStream {
     let ast = s.ast();
 
     let container = match &ast.data {
-        Data::Struct(ds) => Container::from_datastruct(ds, ast, ContainerType::Sequence),
+        Data::Struct(ds) => Container::from_datastruct(ds, ast, container_type),
         _ => panic!("Unsupported type, cannot derive"),
     };
 
