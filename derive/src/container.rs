@@ -273,9 +273,13 @@ impl Container {
                 }
             }
         } else {
-            quote! {
+            // assert constructed (only for Sequence/Set)
+            let assert_constructed = self.gen_assert_constructed();
+
+            quote! (
                 let rem = input;
                 //
+                #assert_constructed
                 #parse_content
                 //
                 // XXX check if rem empty?
@@ -283,7 +287,7 @@ impl Container {
                     rem,
                     Self{#(#field_names),*}
                 ))
-            }
+            )
         };
 
         // note: other lifetimes will automatically be added by gen_impl
@@ -341,8 +345,6 @@ impl Container {
             }
         };
 
-        // TODO: assert constructed (only for Sequence/Set)
-
         let fn_content = if self.container_type == ContainerType::Alias {
             // special case: is this an alias for Any
             if self.is_any {
@@ -369,9 +371,13 @@ impl Container {
                 }
             }
         } else {
+            // assert constructed (only for Sequence/Set)
+            let assert_constructed = self.gen_assert_constructed();
+
             quote! {
                 let rem = input;
                 //
+                #assert_constructed
                 #parse_content
                 //
                 // XXX check if rem empty?
@@ -398,6 +404,22 @@ impl Container {
         };
 
         tokens
+    }
+
+    fn gen_assert_constructed(&self) -> TokenStream {
+        if self.container_type == ContainerType::Alias {
+            // do nothing - this should be handled by inner type parser
+            quote! {}
+        } else {
+            quote!(
+                // Tagged Explicit must be constructed (X.690 8.14.2)
+                if !header.constructed() {
+                    return Err(Err::Error(
+                        BerError::new(rem, InnerError::ConstructExpected).into(),
+                    ));
+                }
+            )
+        }
     }
 
     pub fn gen_checkconstraints(&self) -> TokenStream {
