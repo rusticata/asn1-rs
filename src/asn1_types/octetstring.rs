@@ -61,6 +61,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for OctetString<'a> {
 }
 
 impl DeriveBerParserFromTryFrom for OctetString<'_> {}
+impl DeriveDerParserFromTryFrom for OctetString<'_> {}
 
 impl CheckDerConstraints for OctetString<'_> {
     fn check_constraints(any: &Any) -> Result<()> {
@@ -117,6 +118,9 @@ impl<'a> TryFrom<Any<'a>> for &'a [u8] {
         }
     }
 }
+
+impl DeriveBerParserFromTryFrom for &'_ [u8] {}
+impl DeriveDerParserFromTryFrom for &'_ [u8] {}
 
 impl CheckDerConstraints for &'_ [u8] {
     fn check_constraints(any: &Any) -> Result<()> {

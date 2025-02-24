@@ -35,6 +35,8 @@ fn assert_traits_berparser() {
 
     assert_trait_ber_parser::<Oid>();
 
+    test_assert!(OctetString, &[u8]);
+
     test_assert!(Real, f32, f64);
 
     test_assert!(Sequence, Set);
@@ -123,6 +125,8 @@ fn assert_traits_derparser() {
     test_assert!(isize, usize);
 
     test_assert!(GeneralizedTime, UtcTime);
+
+    test_assert!(OctetString, &[u8]);
 
     assert_trait_ber_parser::<Oid>();
 
