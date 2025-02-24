@@ -241,6 +241,10 @@ impl Container {
             gen impl<#lft> BerParser<#lft> for @Self where #(#wh)+* {
                 type Error = #error;
 
+                fn check_tag(tag: asn1_rs::Tag) -> bool {
+                    tag == Self::TAG // requires Self::Tagged
+                }
+
                 fn from_any_ber(input: Input<#lft>, header: Header<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
                     let rem = input;
                     //
