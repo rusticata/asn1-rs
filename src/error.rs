@@ -195,10 +195,36 @@ impl<I: Input> ParseError<I> for BerError<I> {
     }
 }
 
-impl From<Error> for BerError<crate::Input<'static>> {
+impl From<Error> for BerError<crate::Input<'_>> {
     fn from(value: Error) -> Self {
         let inner = InnerError::from(value);
         BerError::new(crate::Input::from_slice(&[]), inner)
+    }
+}
+
+impl<'a, 'b> From<(crate::Input<'b>, Error)> for BerError<crate::Input<'a>>
+where
+    'b: 'a,
+{
+    fn from(value: (crate::Input<'b>, Error)) -> Self {
+        Self {
+            input: value.0,
+            inner_error: InnerError::from(value.1),
+        }
+    }
+}
+
+impl<'a, 'b> From<(crate::Input<'b>, BerError<crate::Input<'b>>)> for BerError<crate::Input<'a>>
+where
+    'b: 'a,
+{
+    fn from(value: (crate::Input<'b>, BerError<crate::Input<'b>>)) -> Self {
+        // ignore new input, assume error input is already set
+        value.1
+        // Self {
+        //     input: value.0,
+        //     inner_error: value.1.inner_error,
+        // }
     }
 }
 
@@ -407,6 +433,19 @@ where
 {
     match e {
         nom::Err::Error(e) | nom::Err::Failure(e) => F::from(e),
+        nom::Err::Incomplete(n) => F::from(Error::Incomplete(n)),
+    }
+}
+
+/// Flatten all `nom::Err` variants error into a single error type
+///
+/// Note: used in custom derive
+pub fn from_nom_bererror<'a, E, F>(input: crate::Input<'a>, e: nom::Err<E>) -> F
+where
+    F: Sized + From<(crate::Input<'a>, E)> + From<Error>,
+{
+    match e {
+        nom::Err::Error(e) | nom::Err::Failure(e) => F::from((input, e)),
         nom::Err::Incomplete(n) => F::from(Error::Incomplete(n)),
     }
 }
