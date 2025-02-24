@@ -215,7 +215,7 @@ impl Container {
         let lft = Lifetime::new("'ber", Span::call_site());
 
         // error type
-        let error = if let Some(attr) = &self.error {
+        let mut error = if let Some(attr) = &self.error {
             get_attribute_meta(attr).expect("Invalid error attribute format")
         } else {
             quote! { asn1_rs::BerError<asn1_rs::Input<#lft>> }
@@ -230,7 +230,61 @@ impl Container {
         // Container::from_datastruct takes care of this.
         let wh = &self.where_predicates;
 
+        // If Self is an alias, check for special case Any
+        let impl_checktag = if self.container_type == ContainerType::Alias && self.is_any {
+            quote! {
+                fn check_tag(tag: asn1_rs::Tag) -> bool {
+                    true // Any accepts all tags
+                }
+            }
+        } else {
+            quote! {
+                fn check_tag(tag: asn1_rs::Tag) -> bool {
+                    tag == Self::TAG // requires Self::Tagged
+                }
+            }
+        };
+
         // TODO: assert constructed (only for Sequence/Set)
+
+        let fn_content = if self.container_type == ContainerType::Alias {
+            // special case: is this an alias for Any
+            if self.is_any {
+                quote! {
+                    use asn1_rs::BerParser;
+                    let (rem, any) = asn1_rs::Any::from_any_ber(input, header)?;
+                    Ok((rem, Self(any)))
+                }
+            } else {
+                // we support only 1 unnamed field
+                assert_eq!(self.fields.len(), 1);
+                let f_ty = &self
+                    .fields
+                    .first()
+                    .expect("Tuple struct without fields")
+                    .type_;
+                error = quote! {
+                    <#f_ty as BerParser<#lft>>::Error
+                };
+                quote! {
+                    use asn1_rs::BerParser;
+                    let (rem, any) = BerParser::from_any_ber(input, header)?;
+                    Ok((rem, Self(any)))
+                }
+            }
+        } else {
+            quote! {
+                let rem = input;
+                //
+                #parse_content
+                //
+                // XXX check if rem empty?
+                Ok((
+                    rem,
+                    Self{#(#field_names),*}
+                ))
+            }
+        };
 
         // note: other lifetimes will automatically be added by gen_impl
         let tokens = quote! {
@@ -239,19 +293,10 @@ impl Container {
             gen impl<#lft> BerParser<#lft> for @Self where #(#wh)+* {
                 type Error = #error;
 
-                fn check_tag(tag: asn1_rs::Tag) -> bool {
-                    tag == Self::TAG // requires Self::Tagged
-                }
+                #impl_checktag
 
                 fn from_any_ber(input: Input<#lft>, header: Header<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
-                    let rem = input;
-                    //
-                    #parse_content
-                    //
-                    Ok((
-                        rem,
-                        Self{#(#field_names),*}
-                    ))
+                    #fn_content
                 }
             }
         };
@@ -266,7 +311,7 @@ impl Container {
         let lft = Lifetime::new("'ber", Span::call_site());
 
         // error type
-        let error = if let Some(attr) = &self.error {
+        let mut error = if let Some(attr) = &self.error {
             get_attribute_meta(attr).expect("Invalid error attribute format")
         } else {
             quote! { asn1_rs::BerError<asn1_rs::Input<#lft>> }
@@ -281,7 +326,61 @@ impl Container {
         // Container::from_datastruct takes care of this.
         let wh = &self.where_predicates;
 
+        // If Self is an alias, check for special case Any
+        let impl_checktag = if self.container_type == ContainerType::Alias && self.is_any {
+            quote! {
+                fn check_tag(tag: asn1_rs::Tag) -> bool {
+                    true // Any accepts all tags
+                }
+            }
+        } else {
+            quote! {
+                fn check_tag(tag: asn1_rs::Tag) -> bool {
+                    tag == Self::TAG // requires Self::Tagged
+                }
+            }
+        };
+
         // TODO: assert constructed (only for Sequence/Set)
+
+        let fn_content = if self.container_type == ContainerType::Alias {
+            // special case: is this an alias for Any
+            if self.is_any {
+                quote! {
+                    use asn1_rs::DerParser;
+                    let (rem, any) = asn1_rs::Any::from_any_der(input, header)?;
+                    Ok((rem, Self(any)))
+                }
+            } else {
+                // we support only 1 unnamed field
+                assert_eq!(self.fields.len(), 1);
+                let f_ty = &self
+                    .fields
+                    .first()
+                    .expect("Tuple struct without fields")
+                    .type_;
+                error = quote! {
+                    <#f_ty as DerParser<#lft>>::Error
+                };
+                quote! {
+                    use asn1_rs::DerParser;
+                    let (rem, any) = DerParser::from_any_der(input, header)?;
+                    Ok((rem, Self(any)))
+                }
+            }
+        } else {
+            quote! {
+                let rem = input;
+                //
+                #parse_content
+                //
+                // XXX check if rem empty?
+                Ok((
+                    rem,
+                    Self{#(#field_names),*}
+                ))
+            }
+        };
 
         // note: other lifetimes will automatically be added by gen_impl
         let tokens = quote! {
@@ -290,19 +389,10 @@ impl Container {
             gen impl<#lft> DerParser<#lft> for @Self where #(#wh)+* {
                 type Error = #error;
 
-                fn check_tag(tag: asn1_rs::Tag) -> bool {
-                    tag == Self::TAG // requires Self::Tagged
-                }
+                #impl_checktag
 
                 fn from_any_der(input: Input<#lft>, header: Header<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
-                    let rem = input;
-                    //
-                    #parse_content
-                    //
-                    Ok((
-                        rem,
-                        Self{#(#field_names),*}
-                    ))
+                    #fn_content
                 }
             }
         };

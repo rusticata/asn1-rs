@@ -95,3 +95,11 @@ synstructure::decl_derive!([DerParserSequence, attributes(
     error,
     map_err
 )] => derive_derparser_sequence);
+
+synstructure::decl_derive!([BerParserAlias, attributes(
+    debug_derive
+)] => derive_berparser_alias);
+
+synstructure::decl_derive!([DerParserAlias, attributes(
+    debug_derive
+)] => derive_derparser_alias);
