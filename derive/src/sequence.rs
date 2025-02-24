@@ -1,4 +1,4 @@
-use crate::container::*;
+use crate::{check_derive::check_lastderive_fromber, container::*};
 use proc_macro2::Span;
 use quote::quote;
 use syn::{Data, Ident, WherePredicate};
@@ -17,8 +17,14 @@ pub fn derive_ber_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
             .is_ident(&Ident::new("debug_derive", Span::call_site()))
     });
 
+    let last_berderive = check_lastderive_fromber(ast);
+
     let impl_tryfrom = container.gen_tryfrom();
-    let impl_tagged = container.gen_tagged();
+    let impl_tagged = if last_berderive {
+        container.gen_tagged()
+    } else {
+        quote! {}
+    };
     let impl_derive_berparser = container.gen_derive_berparser();
     let ts = s.gen_impl(quote! {
         extern crate asn1_rs;
@@ -47,7 +53,13 @@ pub fn derive_berparser_sequence(s: synstructure::Structure) -> proc_macro2::Tok
             .is_ident(&Ident::new("debug_derive", Span::call_site()))
     });
 
-    let impl_tagged = container.gen_tagged();
+    let last_berderive = check_lastderive_fromber(ast);
+
+    let impl_tagged = if last_berderive {
+        container.gen_tagged()
+    } else {
+        quote! {}
+    };
     let impl_berparser = container.gen_berparser();
     let ts = s.gen_impl(quote! {
         extern crate asn1_rs;

@@ -1,4 +1,5 @@
 mod alias;
+mod check_derive;
 mod container;
 mod sequence;
 mod set;
