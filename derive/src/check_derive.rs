@@ -46,6 +46,10 @@ const PATTERNS: &[&str] = &[
     "DerSequence",
     "BerParserSequence",
     "DerParserSequence",
+    "BerSet",
+    "DerSet",
+    "BerParserSet",
+    "DerParserSet",
     "BerParserAlias",
     "DerParserAlias",
 ];

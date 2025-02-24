@@ -173,6 +173,9 @@ pub use asn1_rs_derive::DerParserSequence;
 /// ```
 pub use asn1_rs_derive::BerSet;
 
+// FIXME: add doc!
+pub use asn1_rs_derive::BerParserSet;
+
 /// # DerSet custom derive
 ///
 /// `DerSet` is a custom derive attribute, to derive both BER and DER [`Set`](super::Set) parsers automatically from the structure definition.
@@ -229,6 +232,9 @@ pub use asn1_rs_derive::BerSet;
 /// }
 /// ```
 pub use asn1_rs_derive::DerSet;
+
+// FIXME: add doc!
+pub use asn1_rs_derive::DerParserSet;
 
 /// # BerAlias custom derive
 ///
