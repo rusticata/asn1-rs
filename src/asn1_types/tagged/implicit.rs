@@ -206,7 +206,7 @@ where
 
 #[cfg(feature = "std")]
 const _: () = {
-    use crate::{BerGenericEncoder, BerTagEncoder, Class, DynTagged, Length, Tag, ToBer};
+    use crate::{BerGenericEncoder, BerTagEncoder, Class, DynTagged, Length, ToBer};
 
     impl<T, E, const CLASS: u8, const TAG: u32> BerTagEncoder
         for TaggedValue<T, E, Implicit, CLASS, TAG>
@@ -219,10 +219,14 @@ const _: () = {
         ) -> Result<usize, std::io::Error> {
             let class = Class::ContextSpecific as u8;
 
-            // FIXME: if inner value is constructed, then set constructed flag
+            // if inner value is constructed, then set constructed flag
             const CONSTRUCTED_BIT: u8 = 0b0010_0000;
-            let is_constructed = matches!(self.inner.tag(), Tag::Sequence | Tag::Set);
-            let cs = if is_constructed { CONSTRUCTED_BIT } else { 0 };
+            // let is_constructed = matches!(self.inner.tag(), Tag::Sequence | Tag::Set);
+            let cs = if self.inner.constructed() {
+                CONSTRUCTED_BIT
+            } else {
+                0
+            };
 
             // write tag
             let tag = TAG;

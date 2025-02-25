@@ -1,4 +1,4 @@
-use crate::{Error, InnerError, Result};
+use crate::{Class, Error, InnerError, Result};
 #[cfg(not(feature = "std"))]
 use alloc::string::ToString;
 use rusticata_macros::newtype_enum;
@@ -87,6 +87,10 @@ impl From<u32> for Tag {
 }
 
 pub trait Tagged {
+    const CLASS: Class = Class::Universal;
+
+    const CONSTRUCTED: bool = false;
+
     const TAG: Tag;
 }
 
@@ -94,10 +98,20 @@ impl<T> Tagged for &'_ T
 where
     T: Tagged,
 {
+    const CLASS: Class = T::CLASS;
+    const CONSTRUCTED: bool = T::CONSTRUCTED;
     const TAG: Tag = T::TAG;
 }
 
 pub trait DynTagged {
+    fn class(&self) -> Class {
+        Class::Universal
+    }
+
+    fn constructed(&self) -> bool {
+        false
+    }
+
     fn tag(&self) -> Tag;
 }
 
@@ -105,6 +119,14 @@ impl<T> DynTagged for T
 where
     T: Tagged,
 {
+    fn class(&self) -> Class {
+        T::CLASS
+    }
+
+    fn constructed(&self) -> bool {
+        T::CONSTRUCTED
+    }
+
     fn tag(&self) -> Tag {
         T::TAG
     }

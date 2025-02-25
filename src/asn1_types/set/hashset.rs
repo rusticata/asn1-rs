@@ -8,6 +8,7 @@ use std::hash::Hash;
 use self::debug::{trace, trace_generic};
 
 impl<T> Tagged for HashSet<T> {
+    const CONSTRUCTED: bool = true;
     const TAG: Tag = Tag::Set;
 }
 

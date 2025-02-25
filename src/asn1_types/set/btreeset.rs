@@ -5,6 +5,7 @@ use core::{convert::TryFrom, fmt::Debug};
 use self::debug::{trace, trace_generic};
 
 impl<T> Tagged for BTreeSet<T> {
+    const CONSTRUCTED: bool = true;
     const TAG: Tag = Tag::Set;
 }
 

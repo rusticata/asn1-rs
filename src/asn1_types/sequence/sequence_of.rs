@@ -204,6 +204,7 @@ where
 }
 
 impl<T> Tagged for SequenceOf<T> {
+    const CONSTRUCTED: bool = true;
     const TAG: Tag = Tag::Sequence;
 }
 

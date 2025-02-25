@@ -395,6 +395,7 @@ impl CheckDerConstraints for Sequence<'_> {
 impl DerAutoDerive for Sequence<'_> {}
 
 impl Tagged for Sequence<'_> {
+    const CONSTRUCTED: bool = true;
     const TAG: Tag = Tag::Sequence;
 }
 

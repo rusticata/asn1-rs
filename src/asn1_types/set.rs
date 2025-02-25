@@ -378,6 +378,7 @@ impl CheckDerConstraints for Set<'_> {
 impl DerAutoDerive for Set<'_> {}
 
 impl Tagged for Set<'_> {
+    const CONSTRUCTED: bool = true;
     const TAG: Tag = Tag::Set;
 }
 

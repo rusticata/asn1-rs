@@ -153,6 +153,7 @@ where
 }
 
 impl<T> Tagged for Vec<T> {
+    const CONSTRUCTED: bool = true;
     const TAG: Tag = Tag::Sequence;
 }
 
