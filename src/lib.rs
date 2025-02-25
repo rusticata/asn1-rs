@@ -197,6 +197,8 @@ mod from_der;
 mod header;
 mod length;
 mod tag;
+mod to_ber;
+mod to_der;
 mod tostatic;
 mod traits;
 
@@ -211,6 +213,7 @@ pub use from_der::*;
 pub use header::*;
 pub use length::*;
 pub use tag::*;
+pub use to_ber::*;
 pub use traits::*;
 
 pub use nom;

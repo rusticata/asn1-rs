@@ -229,3 +229,44 @@ where
         Ok(sz)
     }
 }
+
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    use crate::{ber_header_length, Constructed, DynTagged, Length, ToBer};
+
+    // NOTE: we need T::DynTagged (T can be a CHOICE)
+    impl<T> ToBer for Vec<T>
+    where
+        T: ToBer,
+        T: DynTagged,
+        // Vec<T>: DynTagged,
+    {
+        type Encoder = Constructed<Vec<T>>;
+
+        fn content_len(&self) -> Length {
+            // content_len returns only the length of *content*, so we need header length for
+            // every object here
+            let len = self.iter().fold(Length::Definite(0), |acc, t| {
+                let content_length = t.content_len();
+                match (acc, content_length) {
+                    (Length::Definite(a), Length::Definite(b)) => {
+                        let header_length = ber_header_length(t.tag(), content_length).unwrap_or(0);
+                        Length::Definite(a + header_length + b)
+                    }
+                    _ => Length::Indefinite,
+                }
+            });
+            len
+        }
+
+        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+            self.iter().try_fold(0, |acc, t| {
+                let sz = t.encode(target)?;
+                Ok::<_, io::Error>(acc + sz)
+            })
+        }
+    }
+};

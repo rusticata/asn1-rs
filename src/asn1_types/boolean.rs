@@ -184,6 +184,27 @@ impl ToDer for bool {
     }
 }
 
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    use crate::{Length, Primitive, Tag, ToBer};
+
+    impl ToBer for bool {
+        type Encoder = Primitive<bool, { Tag::Boolean.0 }>;
+
+        fn content_len(&self) -> Length {
+            Length::Definite(1)
+        }
+
+        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+            let value = if *self { 0xff } else { 0x00 };
+            target.write(&[value])
+        }
+    }
+};
+
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
