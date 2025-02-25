@@ -93,6 +93,17 @@ impl ops::Add<usize> for Length {
     }
 }
 
+impl ops::Add<Length> for usize {
+    type Output = Length;
+
+    fn add(self, rhs: Length) -> Self::Output {
+        match rhs {
+            Length::Definite(l) => Length::Definite(self + l),
+            Length::Indefinite => rhs,
+        }
+    }
+}
+
 impl ops::AddAssign<usize> for Length {
     fn add_assign(&mut self, rhs: usize) {
         match self {

@@ -201,6 +201,56 @@ where
     }
 }
 
+#[cfg(feature = "std")]
+const _: () = {
+    use crate::{
+        ber_header_length, BerGenericEncoder, BerTagEncoder, Class, DynTagged, Length, ToBer,
+    };
+
+    impl<T, E, const CLASS: u8, const TAG: u32> BerTagEncoder
+        for TaggedValue<T, E, Explicit, CLASS, TAG>
+    {
+        fn write_tag_info<W: std::io::Write>(
+            &self,
+            target: &mut W,
+        ) -> Result<usize, std::io::Error> {
+            let class = Class::ContextSpecific as u8;
+
+            const CONSTRUCTED_BIT: u8 = 0b0010_0000;
+            // write tag
+            let tag = TAG;
+            if tag < 31 {
+                // tag is primitive, and uses one byte
+                let b0 = (class << 6) | CONSTRUCTED_BIT | (tag as u8);
+                target.write(&[b0])
+            } else {
+                todo!();
+            }
+        }
+    }
+
+    impl<T, E, const CLASS: u8, const TAG: u32> ToBer for TaggedValue<T, E, Explicit, CLASS, TAG>
+    where
+        T: ToBer,
+        T: DynTagged,
+    {
+        type Encoder = BerGenericEncoder<TaggedValue<T, E, Explicit, CLASS, TAG>>;
+
+        fn content_len(&self) -> Length {
+            let content_len = self.inner.content_len();
+            let header_len = ber_header_length(self.inner.tag(), content_len).unwrap_or(0);
+            header_len + content_len
+        }
+
+        fn write_content<W: std::io::Write>(
+            &self,
+            target: &mut W,
+        ) -> Result<usize, std::io::Error> {
+            self.inner.encode(target)
+        }
+    }
+};
+
 /// A helper object to parse `[ n ] EXPLICIT T`
 ///
 /// A helper object implementing [`FromBer`] and [`FromDer`], to parse tagged
@@ -429,5 +479,24 @@ mod tests {
         // tagged value, correct tag and invalid content -> Fail
         let input: &[u8] = &hex! {"a0 03 0102ffff"};
         let _res = T2::parse_ber(input.into()).expect_err("parsing should have failed");
+    }
+}
+
+#[cfg(feature = "std")]
+#[cfg(test)]
+mod std_tests {
+    use hex_literal::hex;
+
+    use crate::{BerError, Input, TaggedExplicit, ToBer};
+
+    #[test]
+    fn tober_tagged_explicit() {
+        let mut v: Vec<u8> = Vec::new();
+
+        type T<'a> = TaggedExplicit<bool, BerError<Input<'a>>, 0>;
+        let t = T::explicit(true);
+        v.clear();
+        t.encode(&mut v).expect("serialization failed");
+        assert_eq!(&v, &hex! {"a0 03 0101ff"});
     }
 }
