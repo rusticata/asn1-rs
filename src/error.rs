@@ -301,6 +301,33 @@ pub enum InnerError {
     Incomplete(nom::Needed),
 }
 
+impl InnerError {
+    pub fn invalid_value(tag: Tag, msg: &str) -> Self {
+        Self::InvalidValue {
+            tag,
+            msg: msg.to_string(),
+        }
+    }
+}
+
+impl From<str::Utf8Error> for InnerError {
+    fn from(_: str::Utf8Error) -> Self {
+        InnerError::StringInvalidCharset
+    }
+}
+
+impl From<string::FromUtf8Error> for InnerError {
+    fn from(_: string::FromUtf8Error) -> Self {
+        InnerError::StringInvalidCharset
+    }
+}
+
+impl From<string::FromUtf16Error> for InnerError {
+    fn from(_: string::FromUtf16Error) -> Self {
+        InnerError::StringInvalidCharset
+    }
+}
+
 impl From<Error> for InnerError {
     fn from(value: Error) -> Self {
         match value {

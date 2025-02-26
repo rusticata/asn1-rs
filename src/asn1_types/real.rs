@@ -1,6 +1,7 @@
 use crate::*;
 use alloc::format;
 use core::convert::TryFrom;
+use nom::Input as _;
 
 mod f32;
 mod f64;
@@ -164,120 +165,42 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Real {
     fn try_from(any: &'b Any<'a>) -> Result<Self> {
         any.tag().assert_eq(Self::TAG)?;
         any.header.assert_primitive()?;
-        let data = any.data.as_bytes2();
-        if data.is_empty() {
-            return Ok(Real::Zero);
-        }
-        // code inspired from pyasn1
-        let first = data[0];
-        let rem = &data[1..];
-        if first & 0x80 != 0 {
-            // binary encoding (X.690 section 8.5.6)
-            // format of exponent
-            let (n, rem) = match first & 0x03 {
-                4 => {
-                    let (b, rem) = rem
-                        .split_first()
-                        .ok_or_else(|| Error::Incomplete(Needed::new(1)))?;
-                    (*b as usize, rem)
-                }
-                b => (b as usize + 1, rem),
-            };
-            if n >= rem.len() {
-                return Err(any.tag().invalid_value("Invalid float value(exponent)"));
-            }
-            // n cannot be 0 (see the +1 above)
-            let (eo, rem) = rem.split_at(n);
-            // so 'eo' cannot be empty
-            let mut e = if eo[0] & 0x80 != 0 { -1 } else { 0 };
-            // safety check: 'eo' length must be <= container type for 'e'
-            if eo.len() > 4 {
-                return Err(any.tag().invalid_value("Exponent too large (REAL)"));
-            }
-            for b in eo {
-                e = (e << 8) | (*b as i32);
-            }
-            // base bits
-            let b = (first >> 4) & 0x03;
-            let _enc_base = match b {
-                0 => 2,
-                1 => 8,
-                2 => 16,
-                _ => return Err(any.tag().invalid_value("Illegal REAL encoding base")),
-            };
-            let e = match b {
-                // base 2
-                0 => e,
-                // base 8
-                1 => e * 3,
-                // base 16
-                2 => e * 4,
-                _ => return Err(any.tag().invalid_value("Illegal REAL base")),
-            };
-            if rem.len() > 8 {
-                return Err(any.tag().invalid_value("Mantissa too large (REAL)"));
-            }
-            let mut p = 0;
-            for b in rem {
-                p = (p << 8) | (*b as i64);
-            }
-            // sign bit
-            let p = if first & 0x40 != 0 { -p } else { p };
-            // scale bits
-            let sf = (first >> 2) & 0x03;
-            let p = match sf {
-                0 => p as f64,
-                sf => {
-                    // 2^sf: cannot overflow, sf is between 0 and 3
-                    let scale = 2_f64.powi(sf as _);
-                    (p as f64) * scale
-                }
-            };
-            Ok(Real::Binary {
-                mantissa: p,
-                base: 2,
-                exponent: e,
-                enc_base: _enc_base,
-            })
-        } else if first & 0x40 != 0 {
-            // special real value (X.690 section 8.5.8)
-            // there shall be only one contents octet,
-            if any.header.length != Length::Definite(1) {
-                return Err(Error::InvalidLength);
-            }
-            // with values as follows
-            match first {
-                0x40 => Ok(Real::Infinity),
-                0x41 => Ok(Real::NegInfinity),
-                _ => Err(any.tag().invalid_value("Invalid float special value")),
-            }
-        } else {
-            // decimal encoding (X.690 section 8.5.7)
-            let s = alloc::str::from_utf8(rem)?;
-            match first & 0x03 {
-                0x1 => {
-                    // NR1
-                    match s.parse::<u32>() {
-                        Err(_) => Err(any.tag().invalid_value("Invalid float string encoding")),
-                        Ok(v) => Ok(Real::new(v.into())),
-                    }
-                }
-                0x2 /* NR2 */ | 0x3 /* NR3 */=> {
-                    match s.parse::<f64>() {
-                        Err(_) => Err(any.tag().invalid_value("Invalid float string encoding")),
-                        Ok(v) => Ok(Real::new(v)),
-                    }
-                        }
-                c => {
-                    Err(any.tag().invalid_value(&format!("Invalid NR ({})", c)))
-                }
-            }
-        }
+        let bytes = any.data.as_bytes2();
+
+        decode_real(&any.header, bytes).map_err(Into::into)
     }
 }
 
-impl DeriveBerParserFromTryFrom for Real {}
-impl DeriveDerParserFromTryFrom for Real {}
+impl<'i> BerParser<'i> for Real {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::RealType
+    }
+
+    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Encoding shall be primitive (X.690: 8.5.1)
+        header.assert_primitive_input(&input).map_err(Err::Error)?;
+
+        let r = decode_real(&header, input.as_bytes2())
+            .map_err(|e| BerError::nom_err_input(&input, e))?;
+
+        // decode_real consumes all bytes
+        Ok((input.take_from(input.len()), r))
+    }
+}
+
+impl<'i> DerParser<'i> for Real {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::RealType
+    }
+
+    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        Self::from_any_ber(input, header)
+    }
+}
 
 impl CheckDerConstraints for Real {
     fn check_constraints(any: &Any) -> Result<()> {
@@ -292,6 +215,135 @@ impl DerAutoDerive for Real {}
 
 impl Tagged for Real {
     const TAG: Tag = Tag::RealType;
+}
+
+fn decode_real(header: &Header, bytes: &[u8]) -> Result<Real, InnerError> {
+    if bytes.is_empty() {
+        return Ok(Real::Zero);
+    }
+    // code inspired from pyasn1
+    let first = bytes[0];
+    let rem = &bytes[1..];
+
+    if first & 0x80 != 0 {
+        // binary encoding (X.690 section 8.5.6)
+        // format of exponent
+        let (n, rem) = match first & 0x03 {
+            4 => {
+                let (b, rem) = rem
+                    .split_first()
+                    .ok_or_else(|| Error::Incomplete(Needed::new(1)))?;
+                (*b as usize, rem)
+            }
+            b => (b as usize + 1, rem),
+        };
+        if n >= rem.len() {
+            return Err(InnerError::invalid_value(
+                header.tag,
+                "Invalid float value(exponent)",
+            ));
+        }
+        // n cannot be 0 (see the +1 above)
+        let (eo, rem) = rem.split_at(n);
+        // so 'eo' cannot be empty
+        let mut e = if eo[0] & 0x80 != 0 { -1 } else { 0 };
+        // safety check: 'eo' length must be <= container type for 'e'
+        if eo.len() > 4 {
+            return Err(InnerError::invalid_value(
+                header.tag,
+                "Exponent too large (REAL)",
+            ));
+        }
+        for b in eo {
+            e = (e << 8) | (*b as i32);
+        }
+        // base bits
+        let b = (first >> 4) & 0x03;
+        let _enc_base = match b {
+            0 => 2,
+            1 => 8,
+            2 => 16,
+            _ => {
+                return Err(InnerError::invalid_value(
+                    header.tag,
+                    "Illegal REAL encoding base",
+                ))
+            }
+        };
+        let e = match b {
+            // base 2
+            0 => e,
+            // base 8
+            1 => e * 3,
+            // base 16
+            2 => e * 4,
+            _ => return Err(InnerError::invalid_value(header.tag, "Illegal REAL base")),
+        };
+        if rem.len() > 8 {
+            return Err(InnerError::invalid_value(
+                header.tag,
+                "Mantissa too large (REAL)",
+            ));
+        }
+        let mut p = 0;
+        for b in rem {
+            p = (p << 8) | (*b as i64);
+        }
+        // sign bit
+        let p = if first & 0x40 != 0 { -p } else { p };
+        // scale bits
+        let sf = (first >> 2) & 0x03;
+        let p = match sf {
+            0 => p as f64,
+            sf => {
+                // 2^sf: cannot overflow, sf is between 0 and 3
+                let scale = 2_f64.powi(sf as _);
+                (p as f64) * scale
+            }
+        };
+        Ok(Real::Binary {
+            mantissa: p,
+            base: 2,
+            exponent: e,
+            enc_base: _enc_base,
+        })
+    } else if first & 0x40 != 0 {
+        // special real value (X.690 section 8.5.8)
+        // there shall be only one contents octet,
+        if header.length != Length::Definite(1) {
+            return Err(InnerError::InvalidLength);
+        }
+        // with values as follows
+        match first {
+            0x40 => Ok(Real::Infinity),
+            0x41 => Ok(Real::NegInfinity),
+            _ => Err(InnerError::invalid_value(
+                header.tag,
+                "Invalid float special value",
+            )),
+        }
+    } else {
+        // decimal encoding (X.690 section 8.5.7)
+        let s = alloc::str::from_utf8(rem)?;
+        match first & 0x03 {
+            0x1 => {
+                // NR1
+                match s.parse::<u32>() {
+                    Err(_) => Err(InnerError::invalid_value(header.tag,"Invalid float string encoding")),
+                    Ok(v) => Ok(Real::new(v.into())),
+                }
+            }
+            0x2 /* NR2 */ | 0x3 /* NR3 */=> {
+                match s.parse::<f64>() {
+                    Err(_) => Err(InnerError::invalid_value(header.tag,"Invalid float string encoding")),
+                    Ok(v) => Ok(Real::new(v)),
+                }
+                    }
+            c => {
+                Err(InnerError::invalid_value(header.tag,&format!("Invalid NR ({})", c)))
+            }
+        }
+    }
 }
 
 #[cfg(feature = "std")]
@@ -466,4 +518,76 @@ fn drop_floating_point(m: f64, b: u8, e: i32) -> (i8, u64, u8, i32) {
         }
     }
     (ms, m as u64, b, e)
+}
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+
+    use crate::{BerParser, Input, Real};
+
+    #[test]
+    fn parse_ber_real_binary() {
+        const EPSILON: f32 = 0.00001;
+        // binary, base = 2
+        let input = Input::from(&hex!("09 03 80 ff 01 ff ff"));
+        let (rem, result) = Real::parse_ber(input).expect("parsing failed");
+        assert_eq!(result, Real::binary(1.0, 2, -1));
+        assert!((result.f32() - 0.5).abs() < EPSILON);
+        assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
+        // binary, base = 2 and scale factor
+        let input = Input::from(&hex!("09 03 94 ff 0d ff ff"));
+        let (rem, result) = Real::parse_ber(input).expect("parsing failed");
+        assert_eq!(result, Real::binary(26.0, 2, -3).with_enc_base(8));
+        assert!((result.f32() - 3.25).abs() < EPSILON);
+        assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
+        // binary, base = 16
+        let input = Input::from(&hex!("09 03 a0 fe 01 ff ff"));
+        let (rem, result) = Real::parse_ber(input).expect("parsing failed");
+        assert_eq!(result, Real::binary(1.0, 2, -8).with_enc_base(16));
+        assert!((result.f32() - 0.00390625).abs() < EPSILON);
+        assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
+        // binary, exponent = 0
+        let input = Input::from(&hex!("09 03 80 00 01 ff ff"));
+        let (rem, result) = Real::parse_ber(input).expect("parsing failed");
+        assert_eq!(result, Real::binary(1.0, 2, 0));
+        assert!((result.f32() - 1.0).abs() < EPSILON);
+        assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
+        // 2 octets for exponent and negative exponent
+        let input = Input::from(&hex!("09 04 a1 ff 01 03 ff ff"));
+        let (rem, result) = Real::parse_ber(input).expect("parsing failed");
+        assert_eq!(result, Real::binary(3.0, 2, -1020).with_enc_base(16));
+        let epsilon = 1e-311_f64;
+        assert!((result.f64() - 2.67e-307).abs() < epsilon);
+        assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
+    }
+
+    #[test]
+    fn parse_ber_real_special() {
+        // 0
+        let input = Input::from(&hex!("09 00 ff ff"));
+        let (rem, result) = Real::parse_ber(input).expect("parsing failed");
+        assert_eq!(result, Real::from(0.0));
+        assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
+        // infinity
+        let input = Input::from(&hex!("09 01 40 ff ff"));
+        let (rem, result) = Real::parse_ber(input).expect("parsing failed");
+        assert_eq!(result, Real::Infinity);
+        assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
+        // negative infinity
+        let input = Input::from(&hex!("09 01 41 ff ff"));
+        let (rem, result) = Real::parse_ber(input).expect("parsing failed");
+        assert_eq!(result, Real::NegInfinity);
+        assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
+    }
+
+    #[test]
+    #[allow(clippy::approx_constant)]
+    fn parse_ber_real_string() {
+        // text representation, NR3
+        let input = Input::from(&hex!("09 07 03 33 31 34 45 2D 32 ff ff"));
+        let (rem, result) = Real::parse_ber(input).expect("parsing failed");
+        assert_eq!(result, Real::from(3.14));
+        assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
+    }
 }
