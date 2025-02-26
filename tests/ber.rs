@@ -19,26 +19,25 @@ fn from_ber_bitstring() {
     // correct DER encoding
     //
     let input = &hex!("03 04 06 6e 5d c0");
-    let (rem, result) = BitString::from_ber(input).expect("parsing failed");
+    let (rem, b) = BitString::from_ber(input).expect("parsing failed");
     assert!(rem.is_empty());
-    assert_eq!(result.unused_bits, 6);
-    assert_eq!(&result.data[..], &input[3..]);
+    // compare bitvector length to bitstring bytes, minus ignored bits
+    assert_eq!(b.len(), input[3..].len() * 8 - usize::from(input[2]));
+
     //
     // correct encoding, but wrong padding bits (not all set to 0)
     //
     let input = &hex!("03 04 06 6e 5d e0");
-    let (rem, result) = BitString::from_ber(input).expect("parsing failed");
+    let (rem, b) = BitString::from_ber(input).expect("parsing failed");
     assert!(rem.is_empty());
-    assert_eq!(result.unused_bits, 6);
-    assert_eq!(&result.data[..], &input[3..]);
+    assert_eq!(b.len(), input[3..].len() * 8 - usize::from(input[2]));
     //
     // long form of length (invalid, < 127)
     //
     let input = &hex!("03 81 04 06 6e 5d c0");
-    let (rem, result) = BitString::from_ber(input).expect("parsing failed");
+    let (rem, b) = BitString::from_ber(input).expect("parsing failed");
     assert!(rem.is_empty());
-    assert_eq!(result.unused_bits, 6);
-    assert_eq!(&result.data[..], &input[4..]);
+    assert_eq!(b.len(), input[4..].len() * 8 - usize::from(input[3]));
 }
 
 #[test]

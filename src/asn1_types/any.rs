@@ -225,7 +225,7 @@ macro_rules! impl_any_as {
 }
 
 impl<'a> Any<'a> {
-    impl_any_into!(bitstring => BitString<'a>, "BIT STRING");
+    impl_any_into!(bitstring => BitString, "BIT STRING");
     impl_any_into!(bmpstring => BmpString<'a>, "BMPString");
     impl_any_into!(bool => bool, "BOOLEAN");
     impl_any_into!(boolean => Boolean, "BOOLEAN");
