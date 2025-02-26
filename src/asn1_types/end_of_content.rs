@@ -1,4 +1,8 @@
-use crate::{Any, DeriveBerParserFromTryFrom, Error, Result, Tag, Tagged};
+use nom::{Err, IResult};
+
+use crate::{
+    Any, BerError, BerParser, DerParser, Error, Header, InnerError, Input, Result, Tag, Tagged,
+};
 use core::convert::TryFrom;
 
 /// End-of-contents octets
@@ -42,7 +46,35 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for EndOfContent {
     }
 }
 
-impl DeriveBerParserFromTryFrom for EndOfContent {}
+impl<'i> BerParser<'i> for EndOfContent {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::EndOfContent
+    }
+
+    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        if !header.length.is_null() {
+            return Err(Err::Error(BerError::new(input, InnerError::InvalidLength)));
+        }
+        Ok((input, EndOfContent {}))
+    }
+}
+
+impl<'i> DerParser<'i> for EndOfContent {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::EndOfContent
+    }
+
+    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        if !header.length.is_null() {
+            return Err(Err::Error(BerError::new(input, InnerError::InvalidLength)));
+        }
+        Ok((input, EndOfContent {}))
+    }
+}
 
 impl Tagged for EndOfContent {
     const TAG: Tag = Tag::EndOfContent;

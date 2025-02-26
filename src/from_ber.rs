@@ -61,10 +61,16 @@ where
     }
 }
 
+/// Base trait for BER object parsers
+///
+/// Implementers should provide a definition (or validate the default one) for the following methods:
+/// - [`from_any_ber`](BerParser::from_any_ber): Parse BER content, given a header and data
+/// - [`check_tag`](BerParser::check_tag): check if a tag is acceptable for this object (default: all tags are accepted)
 pub trait BerParser<'i>
 where
     Self: Sized,
 {
+    /// The Error type for parsing errors.
     type Error: ParseError<Input<'i>> + From<BerError<Input<'i>>>;
 
     /// Attempt to parse a new BER object from data.
@@ -87,7 +93,8 @@ where
     /// Check if provided tag is acceptable
     ///
     /// Return `true` if tag can match current object.
-    fn check_tag(_tag: Tag) -> bool {
+    fn check_tag(tag: Tag) -> bool {
+        let _ = tag;
         true
     }
 

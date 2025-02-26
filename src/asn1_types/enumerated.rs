@@ -38,7 +38,55 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Enumerated {
     }
 }
 
-impl DeriveBerParserFromTryFrom for Enumerated {}
+impl<'i> BerParser<'i> for Enumerated {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::Enumerated
+    }
+
+    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        let orig_input = input.const_clone();
+        // Encoding shall be primitive (X.690: 8.4)
+        header
+            .assert_primitive_input(&orig_input)
+            .map_err(Err::Error)?;
+        let (rem, data) = ber_get_content(&header, input)?;
+        let res_u64 = bytes_to_u64_g(data).map_err(|e| BerError::nom_err_input(&orig_input, e))?;
+        if res_u64 > (<u32>::MAX as u64) {
+            return Err(Err::Error(BerError::new(
+                orig_input,
+                InnerError::IntegerTooLarge,
+            )));
+        }
+        Ok((rem, Enumerated(res_u64 as u32)))
+    }
+}
+
+impl<'i> DerParser<'i> for Enumerated {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::Enumerated
+    }
+
+    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        let orig_input = input.const_clone();
+        // Encoding shall be primitive (X.690: 8.4)
+        header
+            .assert_primitive_input(&orig_input)
+            .map_err(Err::Error)?;
+        let (rem, data) = der_get_content(&header, input)?;
+        let res_u64 = bytes_to_u64_g(data).map_err(|e| BerError::nom_err_input(&orig_input, e))?;
+        if res_u64 > (<u32>::MAX as u64) {
+            return Err(Err::Error(BerError::new(
+                orig_input,
+                InnerError::IntegerTooLarge,
+            )));
+        }
+        Ok((rem, Enumerated(res_u64 as u32)))
+    }
+}
 
 impl CheckDerConstraints for Enumerated {
     fn check_constraints(any: &Any) -> Result<()> {

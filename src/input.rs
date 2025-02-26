@@ -28,6 +28,17 @@ impl<'a> Input<'a> {
     }
 
     #[inline]
+    pub const fn const_clone(&self) -> Self {
+        Self {
+            data: self.data,
+            span: Range {
+                start: self.span.start,
+                end: self.span.end,
+            },
+        }
+    }
+
+    #[inline]
     pub const fn span(&self) -> &Range<usize> {
         &self.span
     }

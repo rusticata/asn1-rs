@@ -120,15 +120,21 @@ pub trait CheckDerConstraints {
     fn check_constraints(any: &Any) -> Result<()>;
 }
 
+/// Base trait for DER object parsers
+///
+/// Implementers should provide a definition (or validate the default one) for the following methods:
+/// - [`from_any_der`](DerParser::from_any_der): Parse DER content, given a header and data
+/// - [`check_tag`](DerParser::check_tag): check if a tag is acceptable for this object (default: all tags are accepted)
 pub trait DerParser<'i>
 where
     Self: Sized,
 {
+    /// The Error type for parsing errors.
     type Error: ParseError<Input<'i>> + From<BerError<Input<'i>>>;
 
     /// Attempt to parse a new DER object from data.
     ///
-    /// Header tag must match expected tag
+    /// Header tag must match expected tag, and length must be definite.
     fn parse_der(input: Input<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         let (rem, header) = Header::parse_der(input.clone()).map_err(Err::convert)?;
         // get length, rejecting indefinite (invalid for DER)
@@ -150,13 +156,20 @@ where
     /// Check if provided tag is acceptable
     ///
     /// Return `true` if tag can match current object.
-    fn check_tag(_tag: Tag) -> bool {
+    fn check_tag(tag: Tag) -> bool {
+        let _ = tag;
         true
     }
 
-    /// Parse a new BER object from header and data.
+    /// Parse a new DER object from header and data.
     ///
-    /// `input` length is guaranteed to match `header` length (definite or indefinite)
+    /// `input` length is (supposed to be) guaranteed to match `header` length (definite)
+    ///
+    /// This function also checks DER-related constraints.
+    /// Relevant sections in specifications:
+    /// - Canonical encoding rules (X.690: 9)
+    /// - Distinguished encoding rules (X.690: 10)
+    /// - Restrictions on BER employed by both CER and DER (X.690: 11)
     ///
     /// Note: in this method, implementers should *not* check header tag (which can be
     /// different from the usual object tag when using IMPLICIT tagging, for ex.).

@@ -61,6 +61,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Oid<'a> {
 }
 
 impl DeriveBerParserFromTryFrom for Oid<'_> {}
+impl DeriveDerParserFromTryFrom for Oid<'_> {}
 
 impl CheckDerConstraints for Oid<'_> {
     fn check_constraints(any: &Any) -> Result<()> {

@@ -138,7 +138,7 @@ impl<'a> Header<'a> {
         self.tag.assert_eq(tag)
     }
 
-    /// Return error if object is not primitive
+    /// Return error if object is not primitive (returning an `Error`)
     #[inline]
     pub const fn assert_primitive(&self) -> Result<()> {
         if self.is_primitive() {
@@ -148,13 +148,29 @@ impl<'a> Header<'a> {
         }
     }
 
-    /// Return error if object is not primitive
+    /// Return error if object is not primitive (returning an `InnerError`)
     #[inline]
     pub const fn assert_primitive_inner(&self) -> Result<(), InnerError> {
         if self.is_primitive() {
             Ok(())
         } else {
             Err(InnerError::ConstructUnexpected)
+        }
+    }
+
+    /// Return error if object is not primitive (returning a `BerError`)
+    #[inline]
+    pub const fn assert_primitive_input<'i>(
+        &'_ self,
+        input: &'_ Input<'i>,
+    ) -> Result<(), BerError<Input<'i>>> {
+        if self.is_primitive() {
+            Ok(())
+        } else {
+            Err(BerError::new(
+                input.const_clone(),
+                InnerError::ConstructUnexpected,
+            ))
         }
     }
 

@@ -42,6 +42,17 @@ impl GetObjectContent for BerMode {
     }
 }
 
+/// Read the content bytes matching length defined in `header` (BER)
+///
+/// This function is an alias to [`BerMode::get_object_content`],
+/// with default parameters (including recursing limit)
+pub fn ber_get_content<'i>(
+    header: &Header,
+    input: Input<'i>,
+) -> IResult<Input<'i>, Input<'i>, BerError<Input<'i>>> {
+    BerMode::get_object_content(input, header, MAX_RECURSION)
+}
+
 impl GetObjectContent for DerMode {
     /// Skip object content, accepting only DER
     ///
@@ -59,6 +70,17 @@ impl GetObjectContent for DerMode {
             ))),
         }
     }
+}
+
+/// Read the content bytes matching length defined in `header` (BER)
+///
+/// This function is an alias to [`DerMode::get_object_content`],
+/// with default parameters.
+pub fn der_get_content<'i>(
+    header: &Header,
+    input: Input<'i>,
+) -> IResult<Input<'i>, Input<'i>, BerError<Input<'i>>> {
+    DerMode::get_object_content(input, header, MAX_RECURSION)
 }
 
 /// Skip object content, and return true if object was End-Of-Content

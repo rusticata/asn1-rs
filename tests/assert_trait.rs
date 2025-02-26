@@ -116,10 +116,10 @@ fn assert_traits_derparser() {
     test_assert!(Boolean, bool);
     test_assert!(Null, ());
 
-    assert_trait_ber_parser::<EndOfContent>();
-    assert_trait_ber_parser::<Enumerated>();
+    assert_trait_der_parser::<EndOfContent>();
+    assert_trait_der_parser::<Enumerated>();
 
-    assert_trait_ber_parser::<Integer>();
+    assert_trait_der_parser::<Integer>();
     test_assert!(u8, u16, u32, u64, u128);
     test_assert!(i8, i16, i32, i64, i128);
     test_assert!(isize, usize);
@@ -128,7 +128,7 @@ fn assert_traits_derparser() {
 
     test_assert!(OctetString, &[u8]);
 
-    assert_trait_ber_parser::<Oid>();
+    assert_trait_der_parser::<Oid>();
 
     test_assert!(Real, f32, f64);
 

@@ -201,6 +201,7 @@ mod tostatic;
 mod traits;
 
 pub use asn1_types::*;
+pub use ber::*;
 pub use class::*;
 pub use datetime::*;
 pub use derive::*;

@@ -496,6 +496,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Integer<'a> {
 }
 
 impl DeriveBerParserFromTryFrom for Integer<'_> {}
+impl DeriveDerParserFromTryFrom for Integer<'_> {}
 
 impl CheckDerConstraints for Integer<'_> {
     fn check_constraints(any: &Any) -> Result<()> {

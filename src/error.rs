@@ -181,6 +181,19 @@ impl<I: Input> BerError<I> {
     }
 }
 
+impl<'i> BerError<crate::Input<'i>> {
+    pub const fn err_input<'a: 'i, 'r>(input: &'r crate::Input<'a>, inner: InnerError) -> Self {
+        BerError::new(input.const_clone(), inner)
+    }
+
+    pub const fn nom_err_input<'a: 'i, 'r>(
+        input: &'r crate::Input<'a>,
+        inner: InnerError,
+    ) -> nom::Err<Self> {
+        nom::Err::Error(BerError::new(input.const_clone(), inner))
+    }
+}
+
 impl<I: Input> ParseError<I> for BerError<I> {
     fn from_error_kind(input: I, kind: ErrorKind) -> Self {
         Self {
