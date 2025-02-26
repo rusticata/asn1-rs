@@ -2,9 +2,19 @@ use crate::*;
 use alloc::borrow::Cow;
 use core::convert::TryFrom;
 use core::fmt::Debug;
+use nom::Input as _;
+
+const OCTETSTRING_MAX_RECURSION: usize = 5;
 
 /// ASN.1 `OCTETSTRING` type
-#[derive(Debug, PartialEq, Eq)]
+///
+/// This objects implements Copy-On-Write over data:
+/// - when parsing primitive form, parser will return a shared object
+/// - when parsing primitive form, parser must allocate memory
+///
+/// This type supports constructed objects, but all data segments are appended during parsing
+/// (_i.e_ object structure is not kept after parsing).
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct OctetString<'a> {
     data: Cow<'a, [u8]>,
 }
@@ -60,8 +70,43 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for OctetString<'a> {
     }
 }
 
-impl DeriveBerParserFromTryFrom for OctetString<'_> {}
-impl DeriveDerParserFromTryFrom for OctetString<'_> {}
+impl<'i> BerParser<'i> for OctetString<'i> {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::OctetString
+    }
+
+    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Encoding shall either be primitive or constructed (X.690: 8.6.1)
+        if !header.constructed() {
+            let (rem, data) = input.take_split(input.len());
+            Ok((
+                rem,
+                OctetString {
+                    data: Cow::Borrowed(data.as_bytes2()),
+                },
+            ))
+        } else {
+            parse_ber_segmented(header, input, OCTETSTRING_MAX_RECURSION)
+        }
+    }
+}
+
+impl<'i> DerParser<'i> for OctetString<'i> {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::OctetString
+    }
+
+    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Encoding shall be primitive (X.690: 10.2)
+        header.assert_primitive_input(&input).map_err(Err::Error)?;
+
+        <OctetString>::from_any_ber(input, header)
+    }
+}
 
 impl CheckDerConstraints for OctetString<'_> {
     fn check_constraints(any: &Any) -> Result<()> {
@@ -75,6 +120,19 @@ impl DerAutoDerive for OctetString<'_> {}
 
 impl Tagged for OctetString<'_> {
     const TAG: Tag = Tag::OctetString;
+}
+
+impl Appendable for OctetString<'_> {
+    fn append(&mut self, other: &mut Self) {
+        match &mut self.data {
+            Cow::Borrowed(data) => {
+                let mut v = data.to_vec();
+                v.extend_from_slice(&other.data);
+                self.data = Cow::Owned(v);
+            }
+            Cow::Owned(s) => s.extend_from_slice(&other.data),
+        };
+    }
 }
 
 #[cfg(feature = "std")]
@@ -119,8 +177,38 @@ impl<'a> TryFrom<Any<'a>> for &'a [u8] {
     }
 }
 
-impl DeriveBerParserFromTryFrom for &'_ [u8] {}
-impl DeriveDerParserFromTryFrom for &'_ [u8] {}
+impl<'i> BerParser<'i> for &'i [u8] {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::OctetString
+    }
+
+    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Encoding shall either be primitive or constructed (X.690: 8.6.1)
+        // However, we are implementing for a shared slice, so it cannot use constructed form
+        // (which requires allocation)
+        header.assert_primitive_input(&input).map_err(Err::Error)?;
+
+        let (rem, data) = input.take_split(input.len());
+        Ok((rem, data.as_bytes2()))
+    }
+}
+
+impl<'i> DerParser<'i> for &'i [u8] {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::OctetString
+    }
+
+    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Encoding shall be primitive (X.690: 10.2)
+        header.assert_primitive_input(&input).map_err(Err::Error)?;
+
+        Self::from_any_ber(input, header)
+    }
+}
 
 impl CheckDerConstraints for &'_ [u8] {
     fn check_constraints(any: &Any) -> Result<()> {
