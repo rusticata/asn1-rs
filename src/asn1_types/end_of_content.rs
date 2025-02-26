@@ -1,8 +1,6 @@
 use nom::{Err, IResult};
 
-use crate::{
-    Any, BerError, BerParser, DerParser, Error, Header, InnerError, Input, Result, Tag, Tagged,
-};
+use crate::{Any, BerError, BerParser, Error, Header, InnerError, Input, Result, Tag, Tagged};
 use core::convert::TryFrom;
 
 /// End-of-contents octets
@@ -10,7 +8,7 @@ use core::convert::TryFrom;
 /// `EndOfContent` is not a BER type, but represents a marked to indicate the end of contents
 /// of an object, when the length is `Indefinite` (see X.690 section 8.1.5).
 ///
-/// This type cannot exist in DER, and so provides no `FromDer`/`ToDer` implementation.
+/// This type cannot exist in DER, and so provides no `DerParser / FromDer`/`ToDer` implementation.
 #[derive(Debug)]
 pub struct EndOfContent {}
 
@@ -54,21 +52,6 @@ impl<'i> BerParser<'i> for EndOfContent {
     }
 
     fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        if !header.length.is_null() {
-            return Err(Err::Error(BerError::new(input, InnerError::InvalidLength)));
-        }
-        Ok((input, EndOfContent {}))
-    }
-}
-
-impl<'i> DerParser<'i> for EndOfContent {
-    type Error = BerError<Input<'i>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::EndOfContent
-    }
-
-    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         if !header.length.is_null() {
             return Err(Err::Error(BerError::new(input, InnerError::InvalidLength)));
         }

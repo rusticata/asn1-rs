@@ -2,26 +2,25 @@ use crate::*;
 use alloc::borrow::Cow;
 use alloc::vec;
 use core::convert::{TryFrom, TryInto};
+use nom::Input as _;
 
 #[cfg(feature = "bigint")]
 #[cfg_attr(docsrs, doc(cfg(feature = "bigint")))]
 pub use num_bigint::{BigInt, BigUint, Sign};
 
 /// Decode an unsigned integer into a big endian byte slice with all leading
-/// zeroes removed (if positive) and extra 0xff remove (if negative)
-fn trim_slice<'a>(any: &'a Any<'_>) -> Result<&'a [u8]> {
-    let bytes = any.data.as_bytes2();
-
+/// zeroes removed (if positive) and extra 0xff removed (if negative)
+fn trim_slice(bytes: &[u8]) -> &[u8] {
     if bytes.is_empty() || (bytes[0] != 0x00 && bytes[0] != 0xff) {
-        return Ok(bytes);
+        return bytes;
     }
 
     match bytes.iter().position(|&b| b != 0) {
         // first byte is not 0
         Some(0) => (),
         // all bytes are 0
-        None => return Ok(&bytes[bytes.len() - 1..]),
-        Some(first) => return Ok(&bytes[first..]),
+        None => return &bytes[bytes.len() - 1..],
+        Some(first) => return &bytes[first..],
     }
 
     // same for negative integers : skip byte 0->n if byte 0->n = 0xff AND byte n+1 >= 0x80
@@ -32,20 +31,20 @@ fn trim_slice<'a>(any: &'a Any<'_>) -> Result<&'a [u8]> {
         // first byte is not 0xff
         Some(0) => (),
         // all bytes are 0xff
-        None => return Ok(&bytes[bytes.len() - 1..]),
-        Some(first) => return Ok(&bytes[first..]),
+        None => return &bytes[bytes.len() - 1..],
+        Some(first) => return &bytes[first..],
     }
 
-    Ok(bytes)
+    bytes
 }
 
 /// Decode an unsigned integer into a byte array of the requested size
 /// containing a big endian integer.
-fn decode_array_uint<const N: usize>(any: &Any<'_>) -> Result<[u8; N]> {
-    if is_highest_bit_set(any.data.as_bytes2()) {
+fn decode_array_uint<const N: usize>(bytes: &[u8]) -> Result<[u8; N]> {
+    if is_highest_bit_set(bytes) {
         return Err(Error::IntegerNegative);
     }
-    let input = trim_slice(any)?;
+    let input = trim_slice(bytes);
 
     if input.len() > N {
         return Err(Error::IntegerTooLarge);
@@ -61,15 +60,15 @@ fn decode_array_uint<const N: usize>(any: &Any<'_>) -> Result<[u8; N]> {
 /// Decode an unsigned integer of the specified size.
 ///
 /// Returns a byte array of the requested size containing a big endian integer.
-fn decode_array_int<const N: usize>(any: &Any<'_>) -> Result<[u8; N]> {
-    if any.data.len() > N {
+fn decode_array_int<const N: usize>(bytes: &[u8]) -> Result<[u8; N]> {
+    if bytes.len() > N {
         return Err(Error::IntegerTooLarge);
     }
 
     // any.tag().assert_eq(Tag::Integer)?;
     let mut output = [0xFFu8; N];
-    let offset = N.saturating_sub(any.as_bytes().len());
-    output[offset..].copy_from_slice(any.as_bytes());
+    let offset = N.saturating_sub(bytes.len());
+    output[offset..].copy_from_slice(bytes);
     Ok(output)
 }
 
@@ -103,10 +102,11 @@ macro_rules! impl_int {
                         any.tag().assert_eq(Self::TAG)?;
                         any.header.assert_primitive()?;
                         let uint = if is_highest_bit_set(any.as_bytes()) {
-                            <$uint>::from_be_bytes(decode_array_int(&any)?)
+                            <$uint>::from_be_bytes(decode_array_int(any.data.as_bytes2())?)
                         } else {
                             // read as uint, but check if the value will fit in a signed integer
-                            let u = <$uint>::from_be_bytes(decode_array_uint(&any)?);
+                            let u =
+                                <$uint>::from_be_bytes(decode_array_uint(any.data.as_bytes2())?);
                             if u > <$int>::MAX as $uint {
                                 return Err(Error::IntegerTooLarge);
                             }
@@ -119,8 +119,58 @@ macro_rules! impl_int {
             }
         }
 
-        impl DeriveBerParserFromTryFrom for $int {}
-        impl DeriveDerParserFromTryFrom for $int {}
+        impl<'i> BerParser<'i> for $int {
+            type Error = BerError<Input<'i>>;
+
+            fn check_tag(tag: Tag) -> bool {
+                tag == Tag::Integer
+            }
+
+            fn from_any_ber(
+                input: Input<'i>,
+                header: Header<'i>,
+            ) -> IResult<Input<'i>, Self, Self::Error> {
+                // Encoding shall be primitive (X.690: 8.3.1)
+                header.assert_primitive_input(&input).map_err(Err::Error)?;
+
+                let uint = if is_highest_bit_set(input.as_bytes2()) {
+                    let ar = decode_array_int(input.as_bytes2())
+                        .map_err(|e| BerError::nom_err_input(&input, e.into()))?;
+                    <$uint>::from_be_bytes(ar)
+                } else {
+                    // read as uint, but check if the value will fit in a signed integer
+                    let ar = decode_array_uint(input.as_bytes2())
+                        .map_err(|e| BerError::nom_err_input(&input, e.into()))?;
+                    let u = <$uint>::from_be_bytes(ar);
+                    if u > <$int>::MAX as $uint {
+                        return Err(BerError::nom_err_input(&input, InnerError::IntegerTooLarge));
+                    }
+                    u
+                };
+                // decode_array_* consume all bytes, so return empty input with result
+                Ok((input.take_from(input.len()), uint as $int))
+            }
+        }
+
+        impl<'i> DerParser<'i> for $int {
+            type Error = BerError<Input<'i>>;
+
+            fn check_tag(tag: Tag) -> bool {
+                tag == Tag::Integer
+            }
+
+            fn from_any_der(
+                input: Input<'i>,
+                header: Header<'i>,
+            ) -> IResult<Input<'i>, Self, Self::Error> {
+                // Note: should we relax this constraint (leading 00 or ff)?
+                check_der_int_constraints_input(&input).map_err(|e| {
+                    BerError::nom_err_input(&input, InnerError::DerConstraintFailed(e))
+                })?;
+
+                Self::from_any_ber(input, header)
+            }
+        }
 
         impl CheckDerConstraints for $int {
             fn check_constraints(any: &Any) -> Result<()> {
@@ -178,7 +228,7 @@ macro_rules! impl_uint {
                     |any| {
                         any.tag().assert_eq(Self::TAG)?;
                         any.header.assert_primitive()?;
-                        let result = Self::from_be_bytes(decode_array_uint(any)?);
+                        let result = Self::from_be_bytes(decode_array_uint(any.data.as_bytes2())?);
                         Ok(result)
                     },
                     any,
@@ -186,8 +236,48 @@ macro_rules! impl_uint {
             }
         }
 
-        impl DeriveBerParserFromTryFrom for $ty {}
-        impl DeriveDerParserFromTryFrom for $ty {}
+        impl<'i> BerParser<'i> for $ty {
+            type Error = BerError<Input<'i>>;
+
+            fn check_tag(tag: Tag) -> bool {
+                tag == Tag::Integer
+            }
+
+            fn from_any_ber(
+                input: Input<'i>,
+                header: Header<'i>,
+            ) -> IResult<Input<'i>, Self, Self::Error> {
+                // Encoding shall be primitive (X.690: 8.3.1)
+                header.assert_primitive_input(&input).map_err(Err::Error)?;
+
+                let ar = decode_array_uint(input.as_bytes2())
+                    .map_err(|e| BerError::nom_err_input(&input, e.into()))?;
+                let uint = Self::from_be_bytes(ar);
+
+                // decode_array_* consume all bytes, so return empty input with result
+                Ok((input.take_from(input.len()), uint))
+            }
+        }
+
+        impl<'i> DerParser<'i> for $ty {
+            type Error = BerError<Input<'i>>;
+
+            fn check_tag(tag: Tag) -> bool {
+                tag == Tag::Integer
+            }
+
+            fn from_any_der(
+                input: Input<'i>,
+                header: Header<'i>,
+            ) -> IResult<Input<'i>, Self, Self::Error> {
+                // Note: should we relax this constraint (leading 00 or ff)?
+                check_der_int_constraints_input(&input).map_err(|e| {
+                    BerError::nom_err_input(&input, InnerError::DerConstraintFailed(e))
+                })?;
+
+                Self::from_any_ber(input, header)
+            }
+        }
 
         impl CheckDerConstraints for $ty {
             fn check_constraints(any: &Any) -> Result<()> {
@@ -495,8 +585,50 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Integer<'a> {
     }
 }
 
-impl DeriveBerParserFromTryFrom for Integer<'_> {}
-impl DeriveDerParserFromTryFrom for Integer<'_> {}
+impl<'i> BerParser<'i> for Integer<'i> {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::Integer
+    }
+
+    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Encoding shall be primitive (X.690: 8.3.1)
+        header.assert_primitive_input(&input).map_err(Err::Error)?;
+
+        // since encoding must be primitive, indefinite length is not allowed
+        // so we use `der_get_content`
+        let (rem, content) = der_get_content(&header, input)?;
+
+        // The contents octets shall consist of one or more octets (X.690: 8.3.2)
+        if content.is_empty() {
+            return Err(BerError::nom_err(content, InnerError::InvalidLength));
+        }
+
+        Ok((
+            rem,
+            Integer {
+                data: Cow::Borrowed(content.as_bytes2()),
+            },
+        ))
+    }
+}
+
+impl<'i> DerParser<'i> for Integer<'i> {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::Integer
+    }
+
+    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Note: should we relax this constraint (leading 00 or ff)?
+        check_der_int_constraints_input(&input)
+            .map_err(|e| BerError::nom_err_input(&input, InnerError::DerConstraintFailed(e)))?;
+
+        Self::from_any_ber(input, header)
+    }
+}
 
 impl CheckDerConstraints for Integer<'_> {
     fn check_constraints(any: &Any) -> Result<()> {
@@ -518,6 +650,18 @@ fn check_der_int_constraints(any: &Any) -> Result<()> {
         [0xff, byte, ..] if *byte >= 0x80 => {
             Err(Error::DerConstraintFailed(DerConstraint::IntegerLeadingFF))
         }
+        _ => Ok(()),
+    }
+}
+
+fn check_der_int_constraints_input(input: &Input) -> Result<(), DerConstraint> {
+    match input.as_bytes2() {
+        [] => Err(DerConstraint::IntegerEmpty),
+        [0] => Ok(()),
+        // leading zeroes
+        [0, byte, ..] if *byte < 0x80 => Err(DerConstraint::IntegerLeadingZeroes),
+        // negative integer with non-minimal encoding
+        [0xff, byte, ..] if *byte >= 0x80 => Err(DerConstraint::IntegerLeadingFF),
         _ => Ok(()),
     }
 }
@@ -593,7 +737,7 @@ macro_rules! int {
 
 #[cfg(all(test, feature = "std"))]
 mod tests {
-    use crate::{Any, FromDer, Header, Tag, ToDer};
+    use crate::{BerParser, DerParser, FromDer, Input, ToDer};
     use std::convert::TryInto;
 
     // Vectors from Section 5.7 of:
@@ -616,6 +760,15 @@ mod tests {
         assert_eq!(0, i8::from_der(I0_BYTES).unwrap().1);
         assert_eq!(127, i8::from_der(I127_BYTES).unwrap().1);
         assert_eq!(-128, i8::from_der(INEG128_BYTES).unwrap().1);
+
+        type T = i8;
+        const TEST_VECTORS: &[(T, &[u8])] =
+            &[(0, I0_BYTES), (127, I127_BYTES), (-128, INEG128_BYTES)];
+
+        for (expected, bytes) in TEST_VECTORS {
+            assert_eq!(*expected, <T>::parse_ber((*bytes).into()).unwrap().1);
+            assert_eq!(*expected, <T>::parse_der((*bytes).into()).unwrap().1);
+        }
     }
 
     #[test]
@@ -636,6 +789,24 @@ mod tests {
         assert_eq!(-128, i16::from_der(INEG128_BYTES).unwrap().1);
         assert_eq!(-129, i16::from_der(INEG129_BYTES).unwrap().1);
         assert_eq!(-32768, i16::from_der(INEG32768_BYTES).unwrap().1);
+
+        type T = i16;
+        const TEST_VECTORS: &[(T, &[u8])] = &[
+            (0, I0_BYTES),
+            (127, I127_BYTES),
+            (128, I128_BYTES),
+            (255, I255_BYTES),
+            (256, I256_BYTES),
+            (32767, I32767_BYTES),
+            (-128, INEG128_BYTES),
+            (-129, INEG129_BYTES),
+            (-32768, INEG32768_BYTES),
+        ];
+
+        for (expected, bytes) in TEST_VECTORS {
+            assert_eq!(*expected, <T>::parse_ber((*bytes).into()).unwrap().1);
+            assert_eq!(*expected, <T>::parse_der((*bytes).into()).unwrap().1);
+        }
     }
 
     #[test]
@@ -662,6 +833,24 @@ mod tests {
         assert_eq!(-128, isize::from_der(INEG128_BYTES).unwrap().1);
         assert_eq!(-129, isize::from_der(INEG129_BYTES).unwrap().1);
         assert_eq!(-32768, isize::from_der(INEG32768_BYTES).unwrap().1);
+
+        type T = isize;
+        const TEST_VECTORS: &[(T, &[u8])] = &[
+            (0, I0_BYTES),
+            (127, I127_BYTES),
+            (128, I128_BYTES),
+            (255, I255_BYTES),
+            (256, I256_BYTES),
+            (32767, I32767_BYTES),
+            (-128, INEG128_BYTES),
+            (-129, INEG129_BYTES),
+            (-32768, INEG32768_BYTES),
+        ];
+
+        for (expected, bytes) in TEST_VECTORS {
+            assert_eq!(*expected, <T>::parse_ber((*bytes).into()).unwrap().1);
+            assert_eq!(*expected, <T>::parse_der((*bytes).into()).unwrap().1);
+        }
     }
 
     #[test]
@@ -682,6 +871,19 @@ mod tests {
         assert_eq!(0, u8::from_der(I0_BYTES).unwrap().1);
         assert_eq!(127, u8::from_der(I127_BYTES).unwrap().1);
         assert_eq!(255, u8::from_der(I255_BYTES).unwrap().1);
+
+        type T = u8;
+        const TEST_VECTORS: &[(T, &[u8])] = &[
+            (0, I0_BYTES),
+            (127, I127_BYTES),
+            (128, I128_BYTES),
+            (255, I255_BYTES),
+        ];
+
+        for (expected, bytes) in TEST_VECTORS {
+            assert_eq!(*expected, <T>::parse_ber((*bytes).into()).unwrap().1);
+            assert_eq!(*expected, <T>::parse_der((*bytes).into()).unwrap().1);
+        }
     }
 
     #[test]
@@ -699,6 +901,22 @@ mod tests {
         assert_eq!(256, u16::from_der(I256_BYTES).unwrap().1);
         assert_eq!(32767, u16::from_der(I32767_BYTES).unwrap().1);
         assert_eq!(65535, u16::from_der(I65535_BYTES).unwrap().1);
+
+        type T = u16;
+        const TEST_VECTORS: &[(T, &[u8])] = &[
+            (0, I0_BYTES),
+            (127, I127_BYTES),
+            (128, I128_BYTES),
+            (255, I255_BYTES),
+            (256, I256_BYTES),
+            (32767, I32767_BYTES),
+            (65535, I65535_BYTES),
+        ];
+
+        for (expected, bytes) in TEST_VECTORS {
+            assert_eq!(*expected, <T>::parse_ber((*bytes).into()).unwrap().1);
+            assert_eq!(*expected, <T>::parse_der((*bytes).into()).unwrap().1);
+        }
     }
 
     #[test]
@@ -719,6 +937,22 @@ mod tests {
         assert_eq!(256, usize::from_der(I256_BYTES).unwrap().1);
         assert_eq!(32767, usize::from_der(I32767_BYTES).unwrap().1);
         assert_eq!(65535, usize::from_der(I65535_BYTES).unwrap().1);
+
+        type T = usize;
+        const TEST_VECTORS: &[(T, &[u8])] = &[
+            (0, I0_BYTES),
+            (127, I127_BYTES),
+            (128, I128_BYTES),
+            (255, I255_BYTES),
+            (256, I256_BYTES),
+            (32767, I32767_BYTES),
+            (65535, I65535_BYTES),
+        ];
+
+        for (expected, bytes) in TEST_VECTORS {
+            assert_eq!(*expected, <T>::parse_ber((*bytes).into()).unwrap().1);
+            assert_eq!(*expected, <T>::parse_der((*bytes).into()).unwrap().1);
+        }
     }
 
     #[test]
@@ -738,6 +972,14 @@ mod tests {
         assert!(i16::from_der(&[0x02, 0x02, 0x00, 0x00]).is_err());
         assert!(u8::from_der(&[0x02, 0x02, 0x00, 0x00]).is_err());
         assert!(u16::from_der(&[0x02, 0x02, 0x00, 0x00]).is_err());
+
+        assert!(i8::parse_der(Input::from(&[0x02, 0x02, 0x00, 0x00])).is_err());
+        assert!(i16::parse_der(Input::from(&[0x02, 0x02, 0x00, 0x00])).is_err());
+        assert!(i8::parse_der(Input::from(&[0x02, 0x02, 0xff, 0xff])).is_err());
+        assert!(i16::parse_der(Input::from(&[0x02, 0x02, 0xff, 0xff])).is_err());
+
+        assert!(u8::parse_der(Input::from(&[0x02, 0x02, 0x00, 0x00])).is_err());
+        assert!(u16::parse_der(Input::from(&[0x02, 0x02, 0x00, 0x00])).is_err());
     }
 
     #[test]
@@ -749,66 +991,38 @@ mod tests {
     #[test]
     fn trim_slice() {
         use super::trim_slice;
-        let h = Header::new_simple(Tag(0));
         // no zero nor ff - nothing to remove
         let input: &[u8] = &[0x7f, 0xff, 0x00, 0x02];
-        assert_eq!(
-            Ok(input),
-            trim_slice(&Any::from_header_and_data(h.clone(), input))
-        );
+        assert_eq!(input, trim_slice(input));
         //
         // 0x00
         //
         // empty - nothing to remove
         let input: &[u8] = &[];
-        assert_eq!(
-            Ok(input),
-            trim_slice(&Any::from_header_and_data(h.clone(), input))
-        );
+        assert_eq!(input, trim_slice(input));
         // one zero - nothing to remove
         let input: &[u8] = &[0];
-        assert_eq!(
-            Ok(input),
-            trim_slice(&Any::from_header_and_data(h.clone(), input))
-        );
+        assert_eq!(input, trim_slice(input));
         // all zeroes - keep only one
         let input: &[u8] = &[0, 0, 0];
-        assert_eq!(
-            Ok(&input[2..]),
-            trim_slice(&Any::from_header_and_data(h.clone(), input))
-        );
+        assert_eq!(&input[2..], trim_slice(input));
         // some zeroes - keep only the non-zero part
         let input: &[u8] = &[0, 0, 1];
-        assert_eq!(
-            Ok(&input[2..]),
-            trim_slice(&Any::from_header_and_data(h.clone(), input))
-        );
+        assert_eq!(&input[2..], trim_slice(input));
         //
         // 0xff
         //
         // one ff - nothing to remove
         let input: &[u8] = &[0xff];
-        assert_eq!(
-            Ok(input),
-            trim_slice(&Any::from_header_and_data(h.clone(), input))
-        );
+        assert_eq!(input, trim_slice(input));
         // all ff - keep only one
         let input: &[u8] = &[0xff, 0xff, 0xff];
-        assert_eq!(
-            Ok(&input[2..]),
-            trim_slice(&Any::from_header_and_data(h.clone(), input))
-        );
+        assert_eq!(&input[2..], trim_slice(input));
         // some ff - keep only the non-zero part
         let input: &[u8] = &[0xff, 0xff, 1];
-        assert_eq!(
-            Ok(&input[1..]),
-            trim_slice(&Any::from_header_and_data(h.clone(), input))
-        );
+        assert_eq!(&input[1..], trim_slice(input));
         // some ff and a MSB 1 - keep only the non-zero part
         let input: &[u8] = &[0xff, 0xff, 0x80, 1];
-        assert_eq!(
-            Ok(&input[2..]),
-            trim_slice(&Any::from_header_and_data(h.clone(), input))
-        );
+        assert_eq!(&input[2..], trim_slice(input));
     }
 }

@@ -116,7 +116,6 @@ fn assert_traits_derparser() {
     test_assert!(Boolean, bool);
     test_assert!(Null, ());
 
-    assert_trait_der_parser::<EndOfContent>();
     assert_trait_der_parser::<Enumerated>();
 
     assert_trait_der_parser::<Integer>();
