@@ -46,20 +46,11 @@ impl<'i> BerParser<'i> for Enumerated {
     }
 
     fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        let orig_input = input.const_clone();
         // Encoding shall be primitive (X.690: 8.4)
-        header
-            .assert_primitive_input(&orig_input)
-            .map_err(Err::Error)?;
-        let (rem, data) = ber_get_content(&header, input)?;
-        let res_u64 = bytes_to_u64_g(data).map_err(|e| BerError::nom_err_input(&orig_input, e))?;
-        if res_u64 > (<u32>::MAX as u64) {
-            return Err(Err::Error(BerError::new(
-                orig_input,
-                InnerError::IntegerTooLarge,
-            )));
-        }
-        Ok((rem, Enumerated(res_u64 as u32)))
+        header.assert_primitive_input(&input).map_err(Err::Error)?;
+        // The encoding of an enumerated value shall be that of the integer value with which it is associated.
+        let (rem, res) = <u32>::from_any_ber(input, header)?;
+        Ok((rem, Enumerated(res)))
     }
 }
 
@@ -71,20 +62,11 @@ impl<'i> DerParser<'i> for Enumerated {
     }
 
     fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        let orig_input = input.const_clone();
         // Encoding shall be primitive (X.690: 8.4)
-        header
-            .assert_primitive_input(&orig_input)
-            .map_err(Err::Error)?;
-        let (rem, data) = der_get_content(&header, input)?;
-        let res_u64 = bytes_to_u64_g(data).map_err(|e| BerError::nom_err_input(&orig_input, e))?;
-        if res_u64 > (<u32>::MAX as u64) {
-            return Err(Err::Error(BerError::new(
-                orig_input,
-                InnerError::IntegerTooLarge,
-            )));
-        }
-        Ok((rem, Enumerated(res_u64 as u32)))
+        header.assert_primitive_input(&input).map_err(Err::Error)?;
+        // The encoding of an enumerated value shall be that of the integer value with which it is associated.
+        let (rem, res) = <u32>::from_any_der(input, header)?;
+        Ok((rem, Enumerated(res)))
     }
 }
 
@@ -117,5 +99,42 @@ impl ToDer for Enumerated {
     fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         let int = Integer::from(self.0);
         int.write_der_content(writer)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+
+    use crate::{BerParser, DerParser, Enumerated, Input};
+
+    #[test]
+    fn parse_ber_enum() {
+        // Ok: expected data
+        let input = Input::from_slice(&hex!("0a0102"));
+        let (rem, res) = <Enumerated>::parse_ber(input).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert_eq!(res.0, 2);
+
+        // Fail: wrong tag
+        let input = Input::from_slice(&hex!("0400"));
+        let _ = <Enumerated>::parse_ber(input).expect_err("wrong tag");
+    }
+
+    #[test]
+    fn parse_der_enum() {
+        // Ok: expected data
+        let input = Input::from_slice(&hex!("0a0102"));
+        let (rem, res) = <Enumerated>::parse_der(input).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert_eq!(res.0, 2);
+
+        // Fail: wrong tag
+        let input = Input::from_slice(&hex!("0400"));
+        let _ = <Enumerated>::parse_der(input).expect_err("wrong tag");
+
+        // Fail: non-canonical encoding of integer
+        let input = Input::from_slice(&hex!("0a02ffff"));
+        let _ = <Enumerated>::parse_ber(input).expect_err("non-canonical encoding");
     }
 }
