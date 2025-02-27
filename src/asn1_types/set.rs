@@ -322,7 +322,7 @@ impl<'i> BerParser<'i> for Set<'i> {
     }
 
     fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        // Encoding shall be constructed (X.690: 8.9.1)
+        // Encoding shall be constructed (X.690: 8.11.1)
         header
             .assert_constructed_input(&input)
             .map_err(Err::Error)?;
@@ -345,7 +345,7 @@ impl<'i> DerParser<'i> for Set<'i> {
     }
 
     fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        // Encoding shall be constructed (X.690: 8.9.1)
+        // Encoding shall be constructed (X.690: 8.11.1)
         header
             .assert_constructed_input(&input)
             .map_err(Err::Error)?;

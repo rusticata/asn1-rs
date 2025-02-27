@@ -125,9 +125,10 @@ where
     }
 
     fn from_any_ber(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+        // Encoding shall be constructed (X.690: 8.12.1)
         header
-            .assert_constructed_inner()
-            .map_err(BerError::convert_into(input.clone()))?;
+            .assert_constructed_input(&input)
+            .map_err(|e| Err::Error(e.into()))?;
 
         let (rem, items) = AnyIterator::<BerMode>::new(input).try_parse_collect::<Vec<_>, T>()?;
 
@@ -146,9 +147,10 @@ where
     }
 
     fn from_any_der(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+        // Encoding shall be constructed (X.690: 8.12.1)
         header
-            .assert_constructed_inner()
-            .map_err(BerError::convert_into(input.clone()))?;
+            .assert_constructed_input(&input)
+            .map_err(|e| Err::Error(e.into()))?;
 
         let (rem, items) = AnyIterator::<DerMode>::new(input).try_parse_collect::<Vec<_>, T>()?;
 

@@ -87,9 +87,10 @@ where
     }
 
     fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Encoding shall be constructed (X.690: 8.10.1)
         header
-            .assert_constructed_inner()
-            .map_err(BerError::convert_into(input.clone()))?;
+            .assert_constructed_input(&input)
+            .map_err(|e| Err::Error(e.into()))?;
 
         // NOTE: we cannot use many0 here, it silently converts Error to Ok
         // let (rem, v) = many0(cut(T::parse_ber)).parse(input)?;
@@ -114,9 +115,10 @@ where
     }
 
     fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Encoding shall be constructed (X.690: 8.10.1)
         header
-            .assert_constructed_inner()
-            .map_err(BerError::convert_into(input.clone()))?;
+            .assert_constructed_input(&input)
+            .map_err(|e| Err::Error(e.into()))?;
 
         // NOTE: we cannot use many0 here, it silently converts Error to Ok
         // let (rem, v) = many0(cut(T::parse_ber)).parse(input)?;
