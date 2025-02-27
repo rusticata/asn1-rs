@@ -1,6 +1,8 @@
+use nom::IResult;
+
 use crate::{
-    Any, CheckDerConstraints, DerAutoDerive, DeriveBerParserFromTryFrom,
-    DeriveDerParserFromTryFrom, Error, Real, Result, Tag, Tagged,
+    Any, BerError, BerParser, CheckDerConstraints, DerAutoDerive, DerParser, Error, Header, Input,
+    Real, Result, Tag, Tagged,
 };
 use core::convert::{TryFrom, TryInto};
 
@@ -15,8 +17,33 @@ impl<'a> TryFrom<Any<'a>> for f64 {
     }
 }
 
-impl DeriveBerParserFromTryFrom for f64 {}
-impl DeriveDerParserFromTryFrom for f64 {}
+impl<'i> BerParser<'i> for f64 {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::RealType
+    }
+
+    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        let (rem, real) = Real::from_any_ber(input, header)?;
+
+        Ok((rem, real.f64()))
+    }
+}
+
+impl<'i> DerParser<'i> for f64 {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::RealType
+    }
+
+    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        let (rem, real) = Real::from_any_der(input, header)?;
+
+        Ok((rem, real.f64()))
+    }
+}
 
 impl CheckDerConstraints for f64 {
     fn check_constraints(any: &Any) -> Result<()> {
