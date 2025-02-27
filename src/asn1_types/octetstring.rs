@@ -262,7 +262,6 @@ mod tests {
     #[test]
     fn parse_ber_octetstring() {
         // coverage
-        use std::borrow::Cow;
         let s = OctetString::new(b"1234");
         assert_eq!(s.as_cow().len(), 4);
         assert_eq!(s.into_cow(), Cow::Borrowed(b"1234"));
