@@ -216,6 +216,8 @@ pub use traits::*;
 pub use nom;
 pub use nom::{Err, IResult, Needed};
 
+pub use bitvec;
+
 #[doc(hidden)]
 pub mod exports {
     pub use alloc::borrow;

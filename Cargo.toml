@@ -71,7 +71,10 @@ allowed_external_types = [
     "nom",
     "nom::*",
     "asn1_rs_derive",
-    "asn1_rs_derive::*"
+    "asn1_rs_derive::*",
+    "bitvec",
+    "bitvec::order::Msb0",
+    "bitvec::slice::BitSlice"
 ]
 
 # TODO: remove this before release
