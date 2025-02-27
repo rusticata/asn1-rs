@@ -194,6 +194,22 @@ impl<'a> Header<'a> {
         }
     }
 
+    /// Return error if object is primitive (returning a `BerError`)
+    #[inline]
+    pub const fn assert_constructed_input<'i>(
+        &'_ self,
+        input: &'_ Input<'i>,
+    ) -> Result<(), BerError<Input<'i>>> {
+        if !self.is_primitive() {
+            Ok(())
+        } else {
+            Err(BerError::new(
+                input.const_clone(),
+                InnerError::ConstructExpected,
+            ))
+        }
+    }
+
     /// Test if object class is Universal
     #[inline]
     pub const fn is_universal(&self) -> bool {

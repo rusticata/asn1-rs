@@ -3,7 +3,7 @@ use alloc::borrow::Cow;
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
 use core::convert::TryFrom;
-use nom::Parser;
+use nom::{Input as _, Parser};
 
 mod btreeset;
 mod hashset;
@@ -314,8 +314,51 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Set<'a> {
     }
 }
 
-impl DeriveBerParserFromTryFrom for Set<'_> {}
-impl DeriveDerParserFromTryFrom for Set<'_> {}
+impl<'i> BerParser<'i> for Set<'i> {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::Set
+    }
+
+    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Encoding shall be constructed (X.690: 8.9.1)
+        header
+            .assert_constructed_input(&input)
+            .map_err(Err::Error)?;
+        // NOTE: the content is not validated (even the structure)
+        let (rem, data) = input.take_split(input.len());
+        Ok((
+            rem,
+            Set {
+                content: Cow::Borrowed(data.as_bytes2()),
+            },
+        ))
+    }
+}
+
+impl<'i> DerParser<'i> for Set<'i> {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::Set
+    }
+
+    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Encoding shall be constructed (X.690: 8.9.1)
+        header
+            .assert_constructed_input(&input)
+            .map_err(Err::Error)?;
+        // NOTE: the content is not validated (even the structure)
+        let (rem, data) = input.take_split(input.len());
+        Ok((
+            rem,
+            Set {
+                content: Cow::Borrowed(data.as_bytes2()),
+            },
+        ))
+    }
+}
 
 impl CheckDerConstraints for Set<'_> {
     fn check_constraints(_any: &Any) -> Result<()> {
