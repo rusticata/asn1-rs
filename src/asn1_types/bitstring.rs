@@ -131,7 +131,7 @@ impl<'i> BerParser<'i> for BitString {
             // handle unused bits
             // safety: we have split at index 1
             match ignored[0] {
-                ignored @ 0..8 => {
+                ignored @ 0..=7 => {
                     let mut bitvec = BitVec::from_slice(bytes);
                     let new_len = bitvec
                         .len()
