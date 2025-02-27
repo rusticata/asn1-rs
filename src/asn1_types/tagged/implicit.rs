@@ -50,7 +50,6 @@ where
 impl<'a, T, E, const CLASS: u8, const TAG: u32> BerParser<'a>
     for TaggedValue<T, E, Implicit, CLASS, TAG>
 where
-    T: Tagged,
     T: BerParser<'a>,
     // E: ParseError<Input<'a>> + From<BerError<Input<'a>>>,
 {
@@ -65,14 +64,6 @@ where
         // note: we *know* that header.tag is most probably different from t::tag,
         // so the tag is not checked here
 
-        // FIXME: when BerParser is derived from TryFrom<Any>, the tag is checked inside.
-        // To work around this, we clone the header and fake the tag
-        // TODO: This can be removed after migration to BerParser, as well as the T:Tagged requirement!
-        let header = Header {
-            tag: T::TAG,
-            ..header
-        };
-        // FIXME: end
         let (rem, t) = T::from_any_ber(input, header)?;
         let tagged = TaggedValue::implicit(t);
         Ok((rem, tagged))
@@ -82,7 +73,6 @@ where
 impl<'a, T, E, const CLASS: u8, const TAG: u32> DerParser<'a>
     for TaggedValue<T, E, Implicit, CLASS, TAG>
 where
-    T: Tagged,
     T: DerParser<'a>,
     // E: ParseError<Input<'a>> + From<BerError<Input<'a>>>,
 {
@@ -97,14 +87,6 @@ where
         // note: we *know* that header.tag is most probably different from t::tag,
         // so the tag is not checked here
 
-        // FIXME: when BerParser is derived from TryFrom<Any>, the tag is checked inside.
-        // To work around this, we clone the header and fake the tag
-        // TODO: This can be removed after migration to BerParser, as well as the T:Tagged requirement!
-        let header = Header {
-            tag: T::TAG,
-            ..header
-        };
-        // FIXME: end
         let (rem, t) = T::from_any_der(input, header)?;
         let tagged = TaggedValue::implicit(t);
         Ok((rem, tagged))
