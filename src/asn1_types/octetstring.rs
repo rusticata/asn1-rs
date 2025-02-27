@@ -250,3 +250,50 @@ impl ToDer for &'_ [u8] {
         writer.write(self).map_err(Into::into)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use alloc::borrow::Cow;
+
+    use hex_literal::hex;
+
+    use crate::{BerParser, Input, OctetString};
+
+    #[test]
+    fn parse_ber_octetstring() {
+        // coverage
+        use std::borrow::Cow;
+        let s = OctetString::new(b"1234");
+        assert_eq!(s.as_cow().len(), 4);
+        assert_eq!(s.into_cow(), Cow::Borrowed(b"1234"));
+        //
+        let input = &hex!("04 05 41 41 41 41 41");
+        let (rem, result) = OctetString::parse_ber(Input::from(input)).expect("parsing failed");
+        assert_eq!(result.as_ref(), b"AAAAA");
+        assert!(rem.is_empty());
+        //
+        let (rem, result) = <&[u8]>::parse_ber(Input::from(input)).expect("parsing failed");
+        assert_eq!(result, b"AAAAA");
+        assert!(rem.is_empty());
+    }
+
+    #[test]
+    fn parse_ber_octetstring_constructed() {
+        let bytes = &hex!(
+            "24 80\
+   04 08 0011223344556677\
+   04 08 8899AABBCCDDEEFF\
+00 00"
+        );
+        let expected = &hex!("00112233445566778899AABBCCDDEEFF");
+
+        let (rem, res) =
+            OctetString::parse_ber(Input::from(bytes)).expect("parsing as OctetString");
+        assert!(rem.is_empty());
+        assert!(matches!(res.data, Cow::Owned(_)));
+        assert_eq!(res.as_ref(), expected);
+
+        // Fail: parsing as &[u8] can't be done, it would require an allocation
+        let _ = <&[u8]>::parse_ber(Input::from(bytes)).expect_err("parsing as slice");
+    }
+}
