@@ -17,3 +17,32 @@ impl TestValidCharset for VisibleString<'_> {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+
+    use crate::{BerParser, DerParser, Input, VisibleString};
+
+    #[test]
+    fn parse_ber_visiblestring() {
+        let input = &hex!("1a 03 31 32 33");
+        let (rem, result) = VisibleString::parse_ber(Input::from(input)).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert_eq!(result.as_ref(), "123");
+        // wrong charset
+        let input = &hex!("1a 03 41 00 D8"); // 0x00d8 is the encoding of 'Ø'
+        let _ = VisibleString::parse_ber(Input::from(input)).expect_err("parsing should fail");
+    }
+
+    #[test]
+    fn parse_der_visiblestring() {
+        let input = &hex!("1a 03 31 32 33");
+        let (rem, result) = VisibleString::parse_der(Input::from(input)).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert_eq!(result.as_ref(), "123");
+        // wrong charset
+        let input = &hex!("1a 03 41 00 D8"); // 0x00d8 is the encoding of 'Ø'
+        let _ = VisibleString::parse_der(Input::from(input)).expect_err("parsing should fail");
+    }
+}

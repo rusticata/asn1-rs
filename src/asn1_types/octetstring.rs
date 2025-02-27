@@ -188,8 +188,9 @@ impl<'i> BerParser<'i> for &'i [u8] {
         // Encoding shall either be primitive or constructed (X.690: 8.6.1)
         // However, we are implementing for a shared slice, so it cannot use constructed form
         // (which requires allocation)
-        header.assert_primitive_input(&input).map_err(Err::Error)?;
-
+        if header.is_constructed() {
+            return Err(BerError::nom_err_input(&input, InnerError::LifetimeError))?;
+        }
         let (rem, data) = input.take_split(input.len());
         Ok((rem, data.as_bytes2()))
     }

@@ -7,6 +7,7 @@ use alloc::borrow::Cow;
 use alloc::string::{String, ToString};
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
+use nom::Input as _;
 
 /// ASN.1 `BMPSTRING` type
 ///
@@ -74,8 +75,55 @@ impl<'a, 'r> core::convert::TryFrom<&'r Any<'a>> for BmpString<'a> {
     }
 }
 
-impl DeriveBerParserFromTryFrom for BmpString<'_> {}
-impl DeriveDerParserFromTryFrom for BmpString<'_> {}
+impl<'i> BerParser<'i> for BmpString<'i> {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::BmpString
+    }
+
+    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Encoding shall either be primitive or constructed (X.690: 8.20)
+        // TODO:  constructed strings not supported
+        if header.is_constructed() {
+            Err(BerError::nom_err_input(&input, InnerError::Unsupported))
+        } else {
+            let (rem, data) = input.take_split(input.len());
+
+            // read slice as big-endian UTF-16 string
+            let v = data
+                .as_bytes2()
+                .chunks(2)
+                .map(|s| match s {
+                    [a, b] => ((*a as u16) << 8) | (*b as u16),
+                    [a] => *a as u16,
+                    _ => unreachable!(),
+                })
+                .collect::<Vec<_>>();
+
+            let s = String::from_utf16(&v)
+                .map_err(|_| BerError::nom_err_input(&data, InnerError::StringInvalidCharset))?;
+            let data = Cow::Owned(s);
+
+            Ok((rem, BmpString { data }))
+        }
+    }
+}
+
+impl<'i> DerParser<'i> for BmpString<'i> {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::BmpString
+    }
+
+    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Encoding shall be primitive (X.690: 10.2)
+        header.assert_primitive_input(&input).map_err(Err::Error)?;
+
+        Self::from_any_ber(input, header)
+    }
+}
 
 impl<'a> core::convert::TryFrom<Any<'a>> for BmpString<'a> {
     type Error = Error;
@@ -143,5 +191,30 @@ impl ToDer for BmpString<'_> {
             v.push((u & 0xff) as u8);
         }
         writer.write(&v).map_err(Into::into)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+
+    use crate::{BerParser, BmpString, DerParser};
+
+    #[test]
+    fn parse_ber_bmpstring() {
+        // taken from https://docs.microsoft.com/en-us/windows/win32/seccertenroll/about-bmpstring
+        let input = &hex!("1e 08 00 55 00 73 00 65 00 72");
+        let (rem, result) = BmpString::parse_ber(input.into()).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert_eq!(result.as_ref(), "User");
+    }
+
+    #[test]
+    fn parse_der_bmpstring() {
+        // taken from https://docs.microsoft.com/en-us/windows/win32/seccertenroll/about-bmpstring
+        let input = &hex!("1e 08 00 55 00 73 00 65 00 72");
+        let (rem, result) = BmpString::parse_der(input.into()).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert_eq!(result.as_ref(), "User");
     }
 }

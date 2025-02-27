@@ -1,7 +1,8 @@
 use crate::*;
 #[cfg(not(feature = "std"))]
-use alloc::string::String;
+use alloc::string::{String, ToString};
 use core::convert::TryFrom;
+use nom::Input as _;
 
 impl<'a> TryFrom<Any<'a>> for String {
     type Error = Error;
@@ -29,8 +30,54 @@ impl CheckDerConstraints for String {
     }
 }
 
-impl DeriveBerParserFromTryFrom for String {}
-impl DeriveDerParserFromTryFrom for String {}
+impl<'i> BerParser<'i> for String {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::Utf8String
+    }
+
+    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Encoding shall either be primitive or constructed (X.690: 8.20)
+        // TODO:  constructed strings not supported
+        if header.is_constructed() {
+            return Err(BerError::nom_err_input(&input, InnerError::Unsupported))?;
+        }
+
+        let (rem, data) = input.take_split(input.len());
+
+        match core::str::from_utf8(data.as_bytes2()) {
+            Ok(s) => Ok((rem, s.to_string())),
+            Err(_) => Err(BerError::nom_err_input(
+                &rem,
+                InnerError::StringInvalidCharset,
+            )),
+        }
+    }
+}
+
+impl<'i> DerParser<'i> for String {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::Utf8String
+    }
+
+    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Encoding shall be primitive (X.690: 10.2)
+        header.assert_primitive_input(&input).map_err(Err::Error)?;
+
+        let (rem, data) = input.take_split(input.len());
+
+        match core::str::from_utf8(data.as_bytes2()) {
+            Ok(s) => Ok((rem, s.to_string())),
+            Err(_) => Err(BerError::nom_err_input(
+                &rem,
+                InnerError::StringInvalidCharset,
+            )),
+        }
+    }
+}
 
 impl DerAutoDerive for String {}
 
@@ -64,5 +111,39 @@ impl ToDer for String {
 
     fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
         writer.write(self.as_ref()).map_err(Into::into)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use alloc::string::String;
+    use hex_literal::hex;
+
+    use crate::{BerParser, DerParser, Input};
+
+    #[test]
+    fn parse_ber_string() {
+        // Ok: valid input
+        let input = &hex!("0c 03 31 32 33");
+        let (rem, result) = <String>::parse_ber(Input::from(input)).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert_eq!(result, "123");
+
+        // Fail: wrong charset
+        let input = &hex!("1C 10 00000061 00000062 00000063 00000064"); // this is UCS-4
+        let _ = <String>::parse_ber(Input::from(input)).expect_err("parsing should fail");
+    }
+
+    #[test]
+    fn parse_der_string() {
+        // Ok: valid input
+        let input = &hex!("0c 03 31 32 33");
+        let (rem, result) = <String>::parse_der(Input::from(input)).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert_eq!(result, "123");
+
+        // Fail: wrong charset
+        let input = &hex!("1C 10 00000061 00000062 00000063 00000064"); // this is UCS-4
+        let _ = <String>::parse_der(Input::from(input)).expect_err("parsing should fail");
     }
 }

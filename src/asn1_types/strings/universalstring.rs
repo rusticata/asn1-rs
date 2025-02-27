@@ -9,6 +9,7 @@ use alloc::string::{String, ToString};
 use alloc::vec::Vec;
 use core::convert::TryFrom;
 use core::iter::FromIterator;
+use nom::Input as _;
 
 /// ASN.1 `UniversalString` type
 ///
@@ -93,8 +94,67 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for UniversalString<'a> {
     }
 }
 
-impl DeriveBerParserFromTryFrom for UniversalString<'_> {}
-impl DeriveDerParserFromTryFrom for UniversalString<'_> {}
+impl<'i> BerParser<'i> for UniversalString<'i> {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::UniversalString
+    }
+
+    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Encoding shall either be primitive or constructed (X.690: 8.20)
+        // TODO:  constructed strings not supported
+        if header.is_constructed() {
+            Err(BerError::nom_err_input(&input, InnerError::Unsupported))
+        } else {
+            let (rem, data) = input.take_split(input.len());
+
+            if data.len() % 4 != 0 {
+                return Err(BerError::nom_err_input(
+                    &input,
+                    InnerError::StringInvalidCharset,
+                ));
+            }
+
+            // read slice as big-endian UCS-4 string
+            let v = data
+                .as_bytes2()
+                .chunks(4)
+                .map(|s| match s {
+                    [a, b, c, d] => {
+                        let u32_val = ((*a as u32) << 24)
+                            | ((*b as u32) << 16)
+                            | ((*c as u32) << 8)
+                            | (*d as u32);
+                        char::from_u32(u32_val)
+                    }
+                    _ => unreachable!(),
+                })
+                .collect::<Option<Vec<_>>>()
+                .ok_or_else(|| BerError::nom_err_input(&input, InnerError::StringInvalidCharset))?;
+
+            let s = String::from_iter(v);
+            let data = Cow::Owned(s);
+
+            Ok((rem, UniversalString { data }))
+        }
+    }
+}
+
+impl<'i> DerParser<'i> for UniversalString<'i> {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::UniversalString
+    }
+
+    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Encoding shall be primitive (X.690: 10.2)
+        header.assert_primitive_input(&input).map_err(Err::Error)?;
+
+        Self::from_any_ber(input, header)
+    }
+}
 
 impl CheckDerConstraints for UniversalString<'_> {
     fn check_constraints(any: &Any) -> Result<()> {
@@ -139,5 +199,28 @@ impl ToDer for UniversalString<'_> {
             .chars()
             .try_for_each(|c| writer.write(&(c as u32).to_be_bytes()[..]).map(|_| ()))?;
         Ok(self.data.len() * 4)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+
+    use crate::{BerParser, DerParser, UniversalString};
+
+    #[test]
+    fn parse_ber_universalstring() {
+        let input = &hex!("1C 10 00000061 00000062 00000063 00000064");
+        let (rem, result) = UniversalString::parse_ber(input.into()).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert_eq!(result.as_ref(), "abcd");
+    }
+
+    #[test]
+    fn parse_der_universalstring() {
+        let input = &hex!("1C 10 00000061 00000062 00000063 00000064");
+        let (rem, result) = UniversalString::parse_der(input.into()).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert_eq!(result.as_ref(), "abcd");
     }
 }

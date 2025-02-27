@@ -116,8 +116,52 @@ macro_rules! asn1_string {
             }
         }
 
-        impl $crate::DeriveBerParserFromTryFrom for $name<'_> {}
-        impl $crate::DeriveDerParserFromTryFrom for $name<'_> {}
+        impl<'i> $crate::BerParser<'i> for $name<'i> {
+            type Error = $crate::BerError<$crate::Input<'i>>;
+
+            fn check_tag(tag: $crate::Tag) -> bool {
+                use $crate::Tagged;
+                tag == Self::TAG
+            }
+
+            fn from_any_ber(input: $crate::Input<'i>, header: $crate::Header<'i>) -> $crate::nom::IResult<$crate::Input<'i>, Self, Self::Error> {
+                // Encoding shall either be primitive or constructed (X.690: 8.20)
+                if !header.constructed() {
+                    use alloc::borrow::Cow;
+                    use $crate::nom::Input as _;
+
+                    let (rem, data) = input.take_split(input.len());
+                    let b = data.as_bytes2();
+                    <$name>::test_valid_charset(b).map_err(|e|
+                        $crate::BerError::nom_err_input(&data, e.into()))?;
+
+                    let s = alloc::str::from_utf8(b).map_err(|e|
+                        $crate::BerError::nom_err_input(&data, e.into()))?;
+                    let data = Cow::Borrowed(s);
+                    Ok((rem, $name { data }))
+                } else {
+                    return Err($crate::BerError::nom_err_input(&input, $crate::InnerError::Unsupported));
+                }
+            }
+        }
+
+        impl<'i> $crate::DerParser<'i> for $name<'i> {
+            type Error = $crate::BerError<$crate::Input<'i>>;
+
+            fn check_tag(tag: $crate::Tag) -> bool {
+                use $crate::Tagged;
+                tag == Self::TAG
+            }
+
+            fn from_any_der(input: $crate::Input<'i>, header: $crate::Header<'i>) -> $crate::nom::IResult<$crate::Input<'i>, Self, Self::Error> {
+                use $crate::BerParser;
+
+                // Encoding shall be primitive (X.690: 10.2)
+                header.assert_primitive_input(&input).map_err($crate::nom::Err::Error)?;
+
+                Self::from_any_ber(input, header)
+            }
+        }
 
         impl<'a> $crate::CheckDerConstraints for $name<'a> {
             fn check_constraints(any: &$crate::Any) -> $crate::Result<()> {
