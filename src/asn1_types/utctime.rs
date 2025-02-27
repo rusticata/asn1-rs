@@ -1,7 +1,7 @@
 use crate::*;
 use core::convert::TryFrom;
 use core::fmt;
-use nom::Input;
+use nom::Input as _;
 #[cfg(feature = "datetime")]
 use time::OffsetDateTime;
 
@@ -144,7 +144,6 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for UtcTime {
 
     fn try_from(any: &'b Any<'a>) -> Result<UtcTime> {
         any.tag().assert_eq(Self::TAG)?;
-        #[allow(clippy::trivially_copy_pass_by_ref)]
         fn is_visible(b: u8) -> bool {
             (0x20..=0x7f).contains(&b)
         }
@@ -156,8 +155,65 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for UtcTime {
     }
 }
 
-impl DeriveBerParserFromTryFrom for UtcTime {}
-impl DeriveDerParserFromTryFrom for UtcTime {}
+impl<'i> BerParser<'i> for UtcTime {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::UtcTime
+    }
+
+    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // UtcTime is encoded as a VisibleString (X.680: 43.3) and can be constructed
+        // TODO: constructed UtcTime not supported
+        if header.is_constructed() {
+            return Err(BerError::nom_err_input(&input, InnerError::Unsupported));
+        }
+
+        fn is_visible(b: u8) -> bool {
+            (0x20..=0x7f).contains(&b)
+        }
+        if !input.iter_elements().all(is_visible) {
+            return Err(BerError::nom_err_input(
+                &input,
+                InnerError::StringInvalidCharset,
+            ));
+        }
+
+        let (rem, data) = input.take_split(input.len());
+        let time = UtcTime::from_bytes(data.as_bytes2())
+            .map_err(|e| BerError::nom_err_input(&data, e.into()))?;
+        Ok((rem, time))
+    }
+}
+
+impl<'i> DerParser<'i> for UtcTime {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::UtcTime
+    }
+
+    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Encoding shall be primitive (X.690: 10.2)
+        header.assert_primitive_input(&input).map_err(Err::Error)?;
+
+        fn is_visible(b: u8) -> bool {
+            (0x20..=0x7f).contains(&b)
+        }
+        if !input.iter_elements().all(is_visible) {
+            return Err(BerError::nom_err_input(
+                &input,
+                InnerError::StringInvalidCharset,
+            ));
+        }
+
+        let (rem, data) = input.take_split(input.len());
+
+        let time = UtcTime::from_bytes(data.as_bytes2())
+            .map_err(|e| BerError::nom_err_input(&data, e.into()))?;
+        Ok((rem, time))
+    }
+}
 
 impl fmt::Display for UtcTime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -221,5 +277,57 @@ impl ToDer for UtcTime {
         )?;
         // write_fmt returns (), see above for length value
         Ok(13)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+
+    use crate::{DerParser, Input, UtcTime};
+
+    #[test]
+    fn parse_der_utctime() {
+        let input = &hex!("17 0D 30 32 31 32 31 33 31 34 32 39 32 33 5A FF");
+        let (rem, result) = UtcTime::parse_der(Input::from(input)).expect("parsing failed");
+        assert_eq!(rem.as_bytes2(), &[0xff]);
+        #[cfg(feature = "datetime")]
+        {
+            use time::macros::datetime;
+            let datetime = datetime! {2-12-13 14:29:23 UTC};
+
+            assert_eq!(result.utc_datetime(), Ok(datetime));
+        }
+        #[cfg(feature = "std")]
+        let _ = result.to_string();
+        let _ = result;
+        //
+        let input = &hex!("17 11 30 32 31 32 31 33 31 34 32 39 32 33 2b 30 33 30 30 FF");
+        let (rem, result) = UtcTime::parse_der(Input::from(input)).expect("parsing failed");
+        assert_eq!(rem.as_bytes2(), &[0xff]);
+        #[cfg(feature = "datetime")]
+        {
+            use time::macros::datetime;
+            let datetime = datetime! {2-12-13 14:29:23 +03:00};
+
+            assert_eq!(result.utc_datetime(), Ok(datetime));
+        }
+        #[cfg(feature = "std")]
+        let _ = result.to_string();
+        let _ = result;
+        //
+        let input = &hex!("17 11 30 32 31 32 31 33 31 34 32 39 32 33 2d 30 33 30 30 FF");
+        let (rem, result) = UtcTime::parse_der(Input::from(input)).expect("parsing failed");
+        assert_eq!(rem.as_bytes2(), &[0xff]);
+        #[cfg(feature = "datetime")]
+        {
+            use time::macros::datetime;
+            let datetime = datetime! {2-12-13 14:29:23 -03:00};
+
+            assert_eq!(result.utc_datetime(), Ok(datetime));
+        }
+        #[cfg(feature = "std")]
+        let _ = result.to_string();
+        let _ = result;
     }
 }

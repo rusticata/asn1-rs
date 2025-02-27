@@ -4,7 +4,7 @@ use alloc::format;
 use alloc::string::String;
 use core::convert::TryFrom;
 use core::fmt;
-use nom::{AsBytes, Input};
+use nom::{AsBytes, Input as _};
 #[cfg(feature = "datetime")]
 use time::OffsetDateTime;
 
@@ -185,7 +185,6 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for GeneralizedTime {
 
     fn try_from(any: &'b Any<'a>) -> Result<GeneralizedTime> {
         any.tag().assert_eq(Self::TAG)?;
-        #[allow(clippy::trivially_copy_pass_by_ref)]
         fn is_visible(b: u8) -> bool {
             (0x20..=0x7f).contains(&b)
         }
@@ -197,8 +196,82 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for GeneralizedTime {
     }
 }
 
-impl DeriveBerParserFromTryFrom for GeneralizedTime {}
-impl DeriveDerParserFromTryFrom for GeneralizedTime {}
+impl<'i> BerParser<'i> for GeneralizedTime {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::GeneralizedTime
+    }
+
+    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // GeneralizedTime is encoded as a VisibleString (X.680: 42.3) and can be constructed
+        // TODO: constructed GeneralizedTime not supported
+        if header.is_constructed() {
+            return Err(BerError::nom_err_input(&input, InnerError::Unsupported));
+        }
+
+        fn is_visible(b: u8) -> bool {
+            (0x20..=0x7f).contains(&b)
+        }
+        if !input.iter_elements().all(is_visible) {
+            return Err(BerError::nom_err_input(
+                &input,
+                InnerError::StringInvalidCharset,
+            ));
+        }
+
+        let (rem, data) = input.take_split(input.len());
+        let time = GeneralizedTime::from_bytes(data.as_bytes2())
+            .map_err(|e| BerError::nom_err_input(&data, e.into()))?;
+        Ok((rem, time))
+    }
+}
+
+impl<'i> DerParser<'i> for GeneralizedTime {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::GeneralizedTime
+    }
+
+    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Encoding shall be primitive (X.690: 10.2)
+        header.assert_primitive_input(&input).map_err(Err::Error)?;
+
+        fn is_visible(b: u8) -> bool {
+            (0x20..=0x7f).contains(&b)
+        }
+        if !input.iter_elements().all(is_visible) {
+            return Err(BerError::nom_err_input(
+                &input,
+                InnerError::StringInvalidCharset,
+            ));
+        }
+
+        let (rem, data) = input.take_split(input.len());
+
+        // X.690 section 11.7.1: The encoding shall terminate with a "Z"
+        if data.as_bytes2().last() != Some(&b'Z') {
+            return Err(BerError::nom_err_input(
+                &data,
+                InnerError::DerConstraintFailed(DerConstraint::MissingTimeZone),
+            ));
+        }
+        // The seconds element shall always be present (X.690: 11.7.2)
+        // XXX
+        // The decimal point element, if present, shall be the point option "." (X.690: 11.7.4)
+        if data.iter_elements().any(|b| b == b',') {
+            return Err(BerError::nom_err_input(
+                &data,
+                InnerError::DerConstraintFailed(DerConstraint::MissingSeconds),
+            ));
+        }
+
+        let time = GeneralizedTime::from_bytes(data.as_bytes2())
+            .map_err(|e| BerError::nom_err_input(&data, e.into()))?;
+        Ok((rem, time))
+    }
+}
 
 impl fmt::Display for GeneralizedTime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -303,5 +376,57 @@ impl ToDer for GeneralizedTime {
         )?;
         // write_fmt returns (), see above for length value
         Ok(15 + num_digits)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+
+    use crate::{ASN1TimeZone, DerConstraint, DerParser, GeneralizedTime, InnerError};
+
+    #[test]
+    fn parse_der_generalizedtime() {
+        let input = &hex!("18 0F 32 30 30 32 31 32 31 33 31 34 32 39 32 33 5A FF");
+        let (rem, result) = GeneralizedTime::parse_der(input.into()).expect("parsing failed");
+        assert_eq!(rem.as_bytes2(), &[0xff]);
+        #[cfg(feature = "datetime")]
+        {
+            use time::macros::datetime;
+            let datetime = datetime! {2002-12-13 14:29:23 UTC};
+            assert_eq!(result.utc_datetime(), Ok(datetime));
+        }
+        let _ = result;
+        // local time with fractional seconds (should fail: no 'Z' at end)
+        let input = b"\x18\x1019851106210627.3";
+        let result = GeneralizedTime::parse_der(input.into()).expect_err("should not parse");
+        assert!(matches!(
+            result,
+            nom::Err::Error(e) if *e.inner() == InnerError::DerConstraintFailed(DerConstraint::MissingTimeZone)
+
+        ));
+        // coordinated universal time with fractional seconds
+        let input = b"\x18\x1119851106210627.3Z";
+        let (rem, result) = GeneralizedTime::parse_der(input.into()).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert_eq!(result.0.millisecond, Some(300));
+        assert_eq!(result.0.tz, ASN1TimeZone::Z);
+        #[cfg(feature = "datetime")]
+        {
+            use time::macros::datetime;
+            let datetime = datetime! {1985-11-06 21:06:27.3 UTC};
+            assert_eq!(result.utc_datetime(), Ok(datetime));
+        }
+        #[cfg(feature = "std")]
+        let _ = result.to_string();
+        // local time with fractional seconds, and with local time 5 hours retarded in relation to coordinated universal time.
+        // (should fail: no 'Z' at end)
+        let input = b"\x18\x1519851106210627.3-0500";
+        let result = GeneralizedTime::parse_der(input.into()).expect_err("should not parse");
+        assert!(matches!(
+            result,
+            nom::Err::Error(e) if *e.inner() == InnerError::DerConstraintFailed(DerConstraint::MissingTimeZone)
+
+        ));
     }
 }
