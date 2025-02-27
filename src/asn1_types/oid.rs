@@ -10,6 +10,7 @@ use core::{
     convert::TryFrom, fmt, iter::FusedIterator, marker::PhantomData, ops::Shl, str::FromStr,
 };
 use displaydoc::Display;
+use nom::Input as _;
 use num_traits::Num;
 use thiserror::Error;
 
@@ -60,8 +61,39 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Oid<'a> {
     }
 }
 
-impl DeriveBerParserFromTryFrom for Oid<'_> {}
-impl DeriveDerParserFromTryFrom for Oid<'_> {}
+impl<'i> BerParser<'i> for Oid<'i> {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::Oid
+    }
+
+    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // Encoding shall be primitive (X.690: 8.19.1)
+        header.assert_primitive_input(&input).map_err(Err::Error)?;
+
+        // Each sub-identifier is represented as a series of (one or more) octets (X.690: 8.19.2)
+        if input.is_empty() {
+            return Err(BerError::nom_err_input(&input, InnerError::InvalidLength));
+        }
+
+        let (rem, data) = input.take_split(input.len());
+        Ok((rem, Oid::new(Cow::Borrowed(data.as_bytes2()))))
+    }
+}
+
+impl<'i> DerParser<'i> for Oid<'i> {
+    type Error = BerError<Input<'i>>;
+
+    fn check_tag(tag: Tag) -> bool {
+        tag == Tag::Oid
+    }
+
+    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        // parsing is similar as for BER
+        Self::from_any_ber(input, header)
+    }
+}
 
 impl CheckDerConstraints for Oid<'_> {
     fn check_constraints(any: &Any) -> Result<()> {
@@ -469,7 +501,7 @@ macro_rules! oid {
 
 #[cfg(all(test, feature = "std"))]
 mod tests {
-    use crate::{FromDer, Oid, ToDer};
+    use crate::{BerParser, DerParser, FromDer, Input, Oid, ToDer};
     use hex_literal::hex;
 
     #[test]
@@ -527,5 +559,23 @@ mod tests {
 
         let oid = foo!(1 2 3);
         assert_eq!(oid, oid! {1.2.3});
+    }
+
+    #[test]
+    fn parse_ber_oid() {
+        let input = &hex!("06 09 2a 86 48 86 f7 0d 01 01 05");
+        let (rem, result) = Oid::parse_ber(Input::from(input)).expect("parsing failed");
+        let expected = Oid::from(&[1, 2, 840, 113_549, 1, 1, 5]).unwrap();
+        assert!(rem.is_empty());
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn parse_der_oid() {
+        let input = &hex!("06 09 2a 86 48 86 f7 0d 01 01 05");
+        let (rem, result) = Oid::parse_der(Input::from(input)).expect("parsing failed");
+        let expected = Oid::from(&[1, 2, 840, 113_549, 1, 1, 5]).unwrap();
+        assert!(rem.is_empty());
+        assert_eq!(result, expected);
     }
 }
