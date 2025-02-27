@@ -54,11 +54,10 @@ where
 
     fn from_any_ber(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
         // Tagged Explicit must be constructed (X.690 8.14.2)
-        if !header.constructed {
-            return Err(Err::Error(
-                BerError::new(input, InnerError::ConstructExpected).into(),
-            ));
-        }
+        header
+            .assert_constructed_input(&input)
+            .map_err(|e| Err::Error(e.into()))?;
+
         // note: we check tag here, because the only way to have a different tag
         // would be to be IMPLICIT, and we already know we are EXPLICIT
         // This is an exception!
@@ -90,11 +89,10 @@ where
 
     fn from_any_der(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
         // Tagged Explicit must be constructed (X.690 8.14.2)
-        if !header.constructed {
-            return Err(Err::Error(
-                BerError::new(input, InnerError::ConstructExpected).into(),
-            ));
-        }
+        header
+            .assert_constructed_input(&input)
+            .map_err(|e| Err::Error(e.into()))?;
+
         // note: we check tag here, because the only way to have a different tag
         // would be to be IMPLICIT, and we already know we are EXPLICIT
         // This is an exception!
