@@ -1,7 +1,8 @@
 use nom::{Err, IResult};
 
-use crate::{Any, BerError, BerParser, Error, Header, InnerError, Input, Result, Tag, Tagged};
-use core::convert::TryFrom;
+use crate::{
+    impl_tryfrom_any, BerError, BerParser, Header, InnerError, Input, Result, Tag, Tagged,
+};
 
 /// End-of-contents octets
 ///
@@ -24,25 +25,7 @@ impl EndOfContent {
     }
 }
 
-impl<'a> TryFrom<Any<'a>> for EndOfContent {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<EndOfContent> {
-        TryFrom::try_from(&any)
-    }
-}
-
-impl<'a, 'b> TryFrom<&'b Any<'a>> for EndOfContent {
-    type Error = Error;
-
-    fn try_from(any: &'b Any<'a>) -> Result<EndOfContent> {
-        any.tag().assert_eq(Self::TAG)?;
-        if !any.header.length.is_null() {
-            return Err(Error::InvalidLength);
-        }
-        Ok(EndOfContent {})
-    }
-}
+impl_tryfrom_any!(EndOfContent);
 
 impl<'i> BerParser<'i> for EndOfContent {
     type Error = BerError<Input<'i>>;

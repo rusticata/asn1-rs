@@ -1,5 +1,4 @@
 use crate::*;
-use core::convert::TryFrom;
 
 /// ASN.1 `ENUMERATED` type
 ///
@@ -15,28 +14,7 @@ impl Enumerated {
     }
 }
 
-impl<'a> TryFrom<Any<'a>> for Enumerated {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<Enumerated> {
-        TryFrom::try_from(&any)
-    }
-}
-
-impl<'a, 'b> TryFrom<&'b Any<'a>> for Enumerated {
-    type Error = Error;
-
-    fn try_from(any: &'b Any<'a>) -> Result<Enumerated> {
-        any.tag().assert_eq(Self::TAG)?;
-        any.header.assert_primitive()?;
-        let res_u64 = bytes_to_u64_g(any.data.clone())?;
-        if res_u64 > (<u32>::MAX as u64) {
-            return Err(Error::IntegerTooLarge);
-        }
-        let value = res_u64 as u32;
-        Ok(Enumerated(value))
-    }
-}
+impl_tryfrom_any!(Enumerated);
 
 impl<'i> BerParser<'i> for Enumerated {
     type Error = BerError<Input<'i>>;

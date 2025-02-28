@@ -83,41 +83,7 @@ fn is_highest_bit_set(bytes: &[u8]) -> bool {
 
 macro_rules! impl_int {
     ($uint:ty => $int:ty) => {
-        impl<'a> TryFrom<Any<'a>> for $int {
-            type Error = Error;
-
-            fn try_from(any: Any<'a>) -> Result<Self> {
-                TryFrom::try_from(&any)
-            }
-        }
-
-        impl<'a, 'b> TryFrom<&'b Any<'a>> for $int {
-            type Error = Error;
-
-            fn try_from(any: &'b Any<'a>) -> Result<Self> {
-                $crate::debug::trace_generic(
-                    core::any::type_name::<$int>(),
-                    "Conversion to int",
-                    |any| {
-                        any.tag().assert_eq(Self::TAG)?;
-                        any.header.assert_primitive()?;
-                        let uint = if is_highest_bit_set(any.as_bytes()) {
-                            <$uint>::from_be_bytes(decode_array_int(any.data.as_bytes2())?)
-                        } else {
-                            // read as uint, but check if the value will fit in a signed integer
-                            let u =
-                                <$uint>::from_be_bytes(decode_array_uint(any.data.as_bytes2())?);
-                            if u > <$int>::MAX as $uint {
-                                return Err(Error::IntegerTooLarge);
-                            }
-                            u
-                        };
-                        Ok(uint as $int)
-                    },
-                    any,
-                )
-            }
-        }
+        impl_tryfrom_any!($int);
 
         impl<'i> BerParser<'i> for $int {
             type Error = BerError<Input<'i>>;
@@ -211,30 +177,7 @@ macro_rules! impl_int {
 
 macro_rules! impl_uint {
     ($ty:ty) => {
-        impl<'a> TryFrom<Any<'a>> for $ty {
-            type Error = Error;
-
-            fn try_from(any: Any<'a>) -> Result<Self> {
-                TryFrom::try_from(&any)
-            }
-        }
-        impl<'a, 'b> TryFrom<&'b Any<'a>> for $ty {
-            type Error = Error;
-
-            fn try_from(any: &'b Any<'a>) -> Result<Self> {
-                $crate::debug::trace_generic(
-                    core::any::type_name::<$ty>(),
-                    "Conversion to uint",
-                    |any| {
-                        any.tag().assert_eq(Self::TAG)?;
-                        any.header.assert_primitive()?;
-                        let result = Self::from_be_bytes(decode_array_uint(any.data.as_bytes2())?);
-                        Ok(result)
-                    },
-                    any,
-                )
-            }
-        }
+        impl_tryfrom_any!($ty);
 
         impl<'i> BerParser<'i> for $ty {
             type Error = BerError<Input<'i>>;
@@ -566,24 +509,7 @@ impl AsRef<[u8]> for Integer<'_> {
     }
 }
 
-impl<'a> TryFrom<Any<'a>> for Integer<'a> {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<Integer<'a>> {
-        TryFrom::try_from(&any)
-    }
-}
-
-impl<'a, 'b> TryFrom<&'b Any<'a>> for Integer<'a> {
-    type Error = Error;
-
-    fn try_from(any: &'b Any<'a>) -> Result<Integer<'a>, Self::Error> {
-        any.tag().assert_eq(Self::TAG)?;
-        Ok(Integer {
-            data: Cow::Borrowed(any.data.as_bytes2()),
-        })
-    }
-}
+impl_tryfrom_any!('i @ Integer<'i>);
 
 impl<'i> BerParser<'i> for Integer<'i> {
     type Error = BerError<Input<'i>>;

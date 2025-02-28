@@ -7,7 +7,6 @@ use alloc::borrow::Cow;
 use alloc::string::{String, ToString};
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
-use core::convert::TryFrom;
 use core::iter::FromIterator;
 use nom::Input as _;
 
@@ -51,48 +50,7 @@ impl From<String> for UniversalString<'_> {
     }
 }
 
-impl<'a> TryFrom<Any<'a>> for UniversalString<'a> {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<UniversalString<'a>> {
-        TryFrom::try_from(&any)
-    }
-}
-
-impl<'a, 'b> TryFrom<&'b Any<'a>> for UniversalString<'a> {
-    type Error = Error;
-
-    fn try_from(any: &'b Any<'a>) -> Result<UniversalString<'a>> {
-        any.tag().assert_eq(Self::TAG)?;
-
-        if any.data.len() % 4 != 0 {
-            return Err(Error::StringInvalidCharset);
-        }
-
-        // read slice as big-endian UCS-4 string
-        let v = &any
-            .data
-            .as_bytes2()
-            .chunks(4)
-            .map(|s| match s {
-                [a, b, c, d] => {
-                    let u32_val = ((*a as u32) << 24)
-                        | ((*b as u32) << 16)
-                        | ((*c as u32) << 8)
-                        | (*d as u32);
-                    char::from_u32(u32_val)
-                }
-                _ => unreachable!(),
-            })
-            .collect::<Option<Vec<_>>>()
-            .ok_or(Error::StringInvalidCharset)?;
-
-        let s = String::from_iter(v);
-        let data = Cow::Owned(s);
-
-        Ok(UniversalString { data })
-    }
-}
+impl_tryfrom_any!('i @ UniversalString<'i>);
 
 impl<'i> BerParser<'i> for UniversalString<'i> {
     type Error = BerError<Input<'i>>;

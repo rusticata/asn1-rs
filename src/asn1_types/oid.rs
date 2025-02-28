@@ -6,9 +6,7 @@ use alloc::format;
 use alloc::string::{String, ToString};
 #[cfg(not(feature = "std"))]
 use alloc::vec::Vec;
-use core::{
-    convert::TryFrom, fmt, iter::FusedIterator, marker::PhantomData, ops::Shl, str::FromStr,
-};
+use core::{fmt, iter::FusedIterator, marker::PhantomData, ops::Shl, str::FromStr};
 use displaydoc::Display;
 use nom::Input as _;
 use num_traits::Num;
@@ -43,23 +41,7 @@ pub struct Oid<'a> {
     relative: bool,
 }
 
-impl<'a> TryFrom<Any<'a>> for Oid<'a> {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<Self> {
-        TryFrom::try_from(&any)
-    }
-}
-
-impl<'a, 'b> TryFrom<&'b Any<'a>> for Oid<'a> {
-    type Error = Error;
-
-    fn try_from(any: &'b Any<'a>) -> Result<Self> {
-        // check that any.data.last().unwrap() >> 7 == 0u8
-        let asn1 = Cow::Borrowed(any.data.as_bytes2());
-        Ok(Oid::new(asn1))
-    }
-}
+impl_tryfrom_any!('i @ Oid<'i>);
 
 impl<'i> BerParser<'i> for Oid<'i> {
     type Error = BerError<Input<'i>>;

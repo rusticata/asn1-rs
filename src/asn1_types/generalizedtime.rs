@@ -2,7 +2,6 @@ use crate::*;
 use alloc::format;
 #[cfg(not(feature = "std"))]
 use alloc::string::String;
-use core::convert::TryFrom;
 use core::fmt;
 use nom::{AsBytes, Input as _};
 #[cfg(feature = "datetime")]
@@ -172,29 +171,7 @@ impl GeneralizedTime {
     }
 }
 
-impl<'a> TryFrom<Any<'a>> for GeneralizedTime {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<GeneralizedTime> {
-        TryFrom::try_from(&any)
-    }
-}
-
-impl<'a, 'b> TryFrom<&'b Any<'a>> for GeneralizedTime {
-    type Error = Error;
-
-    fn try_from(any: &'b Any<'a>) -> Result<GeneralizedTime> {
-        any.tag().assert_eq(Self::TAG)?;
-        fn is_visible(b: u8) -> bool {
-            (0x20..=0x7f).contains(&b)
-        }
-        if !any.data.iter_elements().all(is_visible) {
-            return Err(Error::StringInvalidCharset);
-        }
-
-        GeneralizedTime::from_bytes(any.data.as_bytes())
-    }
-}
+impl_tryfrom_any!(GeneralizedTime);
 
 impl<'i> BerParser<'i> for GeneralizedTime {
     type Error = BerError<Input<'i>>;

@@ -50,30 +50,7 @@ impl From<String> for BmpString<'_> {
     }
 }
 
-impl<'a, 'r> core::convert::TryFrom<&'r Any<'a>> for BmpString<'a> {
-    type Error = Error;
-
-    fn try_from(any: &'r Any<'a>) -> Result<BmpString<'a>> {
-        any.tag().assert_eq(Self::TAG)?;
-
-        // read slice as big-endian UTF-16 string
-        let v = &any
-            .data
-            .as_bytes2()
-            .chunks(2)
-            .map(|s| match s {
-                [a, b] => ((*a as u16) << 8) | (*b as u16),
-                [a] => *a as u16,
-                _ => unreachable!(),
-            })
-            .collect::<Vec<_>>();
-
-        let s = String::from_utf16(v)?;
-        let data = Cow::Owned(s);
-
-        Ok(BmpString { data })
-    }
-}
+impl_tryfrom_any!('i @ BmpString<'i>);
 
 impl<'i> BerParser<'i> for BmpString<'i> {
     type Error = BerError<Input<'i>>;
@@ -131,15 +108,6 @@ impl<'i> DerParser<'i> for BmpString<'i> {
         header.assert_primitive_input(&input).map_err(Err::Error)?;
 
         Self::from_ber_content(header, input)
-    }
-}
-
-impl<'a> core::convert::TryFrom<Any<'a>> for BmpString<'a> {
-    type Error = Error;
-
-    #[inline]
-    fn try_from(any: Any<'a>) -> Result<BmpString<'a>> {
-        BmpString::try_from(&any)
     }
 }
 

@@ -1,28 +1,7 @@
 use crate::*;
-use alloc::borrow::Cow;
-use core::convert::TryFrom;
 use nom::Input as _;
 
-impl<'a> TryFrom<Any<'a>> for &'a str {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<&'a str> {
-        TryFrom::try_from(&any)
-    }
-}
-
-impl<'a, 'b> TryFrom<&'b Any<'a>> for &'a str {
-    type Error = Error;
-
-    fn try_from(any: &'b Any<'a>) -> Result<&'a str> {
-        any.tag().assert_eq(Self::TAG)?;
-        let s = Utf8String::try_from(any)?;
-        match s.data {
-            Cow::Borrowed(s) => Ok(s),
-            Cow::Owned(_) => Err(Error::LifetimeError),
-        }
-    }
-}
+impl_tryfrom_any!('i @ &'i str);
 
 impl CheckDerConstraints for &'_ str {
     fn check_constraints(any: &Any) -> Result<()> {

@@ -1,5 +1,4 @@
 use crate::*;
-use core::convert::TryFrom;
 use core::fmt;
 use nom::Input as _;
 #[cfg(feature = "datetime")]
@@ -131,29 +130,7 @@ impl UtcTime {
     }
 }
 
-impl<'a> TryFrom<Any<'a>> for UtcTime {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<UtcTime> {
-        TryFrom::try_from(&any)
-    }
-}
-
-impl<'a, 'b> TryFrom<&'b Any<'a>> for UtcTime {
-    type Error = Error;
-
-    fn try_from(any: &'b Any<'a>) -> Result<UtcTime> {
-        any.tag().assert_eq(Self::TAG)?;
-        fn is_visible(b: u8) -> bool {
-            (0x20..=0x7f).contains(&b)
-        }
-        if !any.data.iter_elements().all(is_visible) {
-            return Err(Error::StringInvalidCharset);
-        }
-
-        UtcTime::from_bytes(any.data.as_bytes2())
-    }
-}
+impl_tryfrom_any!(UtcTime);
 
 impl<'i> BerParser<'i> for UtcTime {
     type Error = BerError<Input<'i>>;

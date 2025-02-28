@@ -376,6 +376,14 @@ impl Error {
     pub const fn unexpected_tag(expected: Option<Tag>, actual: Tag) -> Self {
         Self::UnexpectedTag { expected, actual }
     }
+
+    /// Build an error from a `Nom::Err<BerError<Input>>`
+    pub fn from_nom_berr(e: nom::Err<BerError<crate::Input<'_>>>) -> Self {
+        match e {
+            nom::Err::Incomplete(n) => Self::Incomplete(n),
+            nom::Err::Error(e) | nom::Err::Failure(e) => e.inner_error.into(),
+        }
+    }
 }
 
 impl<I> ParseError<I> for Error {

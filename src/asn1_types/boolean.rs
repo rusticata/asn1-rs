@@ -1,7 +1,6 @@
-use nom::{number::streaming::be_u8, AsBytes, Input as _};
+use nom::{number::streaming::be_u8, AsBytes};
 
 use crate::*;
-use core::convert::TryFrom;
 
 /// ASN.1 `BOOLEAN` type
 ///
@@ -32,34 +31,7 @@ impl Boolean {
     }
 }
 
-impl<'a> TryFrom<Any<'a>> for Boolean {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<Boolean> {
-        TryFrom::try_from(&any)
-    }
-}
-
-// non-consuming version
-impl<'a, 'b> TryFrom<&'b Any<'a>> for Boolean {
-    type Error = Error;
-
-    fn try_from(any: &'b Any<'a>) -> Result<Boolean> {
-        any.tag().assert_eq(Self::TAG)?;
-        // X.690 section 8.2.1:
-        // The encoding of a boolean value shall be primitive. The contents octets shall consist of a single octet
-        if any.header.length != Length::Definite(1) {
-            return Err(Error::InvalidLength);
-        }
-        let value = any
-            .data
-            .iter_elements()
-            .next()
-            .ok_or(Error::InvalidLength)?;
-        // let value = any.data[0];
-        Ok(Boolean { value })
-    }
-}
+impl_tryfrom_any!(Boolean);
 
 impl<'i> BerParser<'i> for Boolean {
     type Error = BerError<Input<'i>>;
@@ -146,23 +118,7 @@ impl ToDer for Boolean {
     }
 }
 
-impl<'a> TryFrom<Any<'a>> for bool {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<bool> {
-        TryFrom::try_from(&any)
-    }
-}
-
-impl<'a, 'b> TryFrom<&'b Any<'a>> for bool {
-    type Error = Error;
-
-    fn try_from(any: &'b Any<'a>) -> Result<bool> {
-        any.tag().assert_eq(Self::TAG)?;
-        let b = Boolean::try_from(any)?;
-        Ok(b.bool())
-    }
-}
+impl_tryfrom_any!(bool);
 
 impl CheckDerConstraints for bool {
     fn check_constraints(any: &Any) -> Result<()> {

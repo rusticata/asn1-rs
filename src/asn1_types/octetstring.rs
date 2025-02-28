@@ -1,6 +1,5 @@
 use crate::*;
 use alloc::borrow::Cow;
-use core::convert::TryFrom;
 use core::fmt::Debug;
 use nom::Input as _;
 
@@ -51,24 +50,7 @@ impl<'a> From<&'a [u8]> for OctetString<'a> {
     }
 }
 
-impl<'a> TryFrom<Any<'a>> for OctetString<'a> {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<OctetString<'a>> {
-        TryFrom::try_from(&any)
-    }
-}
-
-impl<'a, 'b> TryFrom<&'b Any<'a>> for OctetString<'a> {
-    type Error = Error;
-
-    fn try_from(any: &'b Any<'a>) -> Result<OctetString<'a>> {
-        any.tag().assert_eq(Self::TAG)?;
-        Ok(OctetString {
-            data: Cow::Borrowed(any.data.as_bytes2()),
-        })
-    }
-}
+impl_tryfrom_any!('i @ OctetString<'i>);
 
 impl<'i> BerParser<'i> for OctetString<'i> {
     type Error = BerError<Input<'i>>;
@@ -170,18 +152,7 @@ impl ToDer for OctetString<'_> {
     }
 }
 
-impl<'a> TryFrom<Any<'a>> for &'a [u8] {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<&'a [u8]> {
-        any.tag().assert_eq(Self::TAG)?;
-        let s = OctetString::try_from(any)?;
-        match s.data {
-            Cow::Borrowed(s) => Ok(s),
-            Cow::Owned(_) => Err(Error::LifetimeError),
-        }
-    }
-}
+impl_tryfrom_any!('i @ &'i [u8]);
 
 impl<'i> BerParser<'i> for &'i [u8] {
     type Error = BerError<Input<'i>>;

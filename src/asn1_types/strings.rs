@@ -91,30 +91,7 @@ macro_rules! asn1_string {
             }
         }
 
-        impl<'a> core::convert::TryFrom<$crate::Any<'a>> for $name<'a> {
-            type Error = $crate::Error;
-
-            fn try_from(any: $crate::Any<'a>) -> $crate::Result<$name<'a>> {
-                use core::convert::TryFrom;
-                TryFrom::try_from(&any)
-            }
-        }
-
-        impl<'a, 'b> core::convert::TryFrom<&'b $crate::Any<'a>> for $name<'a> {
-            type Error = $crate::Error;
-
-            fn try_from(any: &'b $crate::Any<'a>) -> $crate::Result<$name<'a>> {
-                use $crate::Tagged;
-                use alloc::borrow::Cow;
-                any.tag().assert_eq(Self::TAG)?;
-                let b = any.data.as_bytes2();
-                <$name>::test_valid_charset(b)?;
-
-                let s = alloc::str::from_utf8(b)?;
-                let data = Cow::Borrowed(s);
-                Ok($name { data })
-            }
-        }
+        $crate::impl_tryfrom_any!('i @ $name<'i>);
 
         impl<'i> $crate::BerParser<'i> for $name<'i> {
             type Error = $crate::BerError<$crate::Input<'i>>;

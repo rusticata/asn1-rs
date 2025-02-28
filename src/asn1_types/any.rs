@@ -4,7 +4,7 @@ use crate::*;
 use alloc::borrow::Cow;
 #[cfg(not(feature = "std"))]
 use alloc::string::{String, ToString};
-use core::convert::{TryFrom, TryInto};
+use core::convert::TryFrom;
 use nom::bytes::streaming::take;
 
 use self::debug::trace;
@@ -189,6 +189,55 @@ impl Any<'_> {
     }
 }
 
+#[doc(hidden)]
+#[macro_export]
+macro_rules! impl_tryfrom_any {
+    (IMPL $lft:lifetime $ty:ty ) => {
+        impl<$lft> core::convert::TryFrom<$crate::Any<$lft>> for $ty {
+            type Error = $crate::Error;
+
+            fn try_from(any: $crate::Any<$lft>) -> Result<Self> {
+                use $crate::BerParser;
+
+                if !<Self as $crate::BerParser>::check_tag(any.tag()) {
+                    Err($crate::Error::unexpected_tag(None, any.tag()).into())
+                } else {
+                    let (_, obj) = Self::from_ber_content(&any.header, any.data)
+                        .map_err($crate::Error::from_nom_berr)?;
+                    Ok(obj)
+                }
+            }
+        }
+
+        impl<$lft, 'b> core::convert::TryFrom<&'b $crate::Any<$lft>> for $ty {
+            type Error = $crate::Error;
+
+            fn try_from(any: &'b $crate::Any<$lft>) -> Result<Self> {
+                use $crate::BerParser;
+
+                if !<Self as $crate::BerParser>::check_tag(any.tag()) {
+                    Err($crate::Error::unexpected_tag(None, any.tag()).into())
+                } else {
+                    let (_, obj) = Self::from_ber_content(&any.header, any.data.clone())
+                        .map_err($crate::Error::from_nom_berr)?;
+                    Ok(obj)
+                }
+            }
+        }
+    };
+    // variant for lifetime present in <..> (like: OctetString<'i>)
+    ($lft:lifetime @ $ty:ty) => {
+        $crate::impl_tryfrom_any! {
+            IMPL $lft $ty
+        }
+    };
+    ($ty:ty) => {
+        $crate::impl_tryfrom_any! {
+            IMPL 'i $ty
+        }
+    };
+}
+
 macro_rules! impl_any_into {
     (IMPL $sname:expr, $fn_name:ident => $ty:ty, $asn1:expr) => {
         #[doc = "Attempt to convert object to `"]
@@ -197,7 +246,9 @@ macro_rules! impl_any_into {
         #[doc = $asn1]
         #[doc = "`)."]
         pub fn $fn_name(self) -> Result<$ty> {
-            self.try_into()
+            let (_, obj) =
+                <$ty>::from_ber_content(&self.header, self.data).map_err(Error::from_nom_berr)?;
+            Ok(obj)
         }
     };
     ($fn_name:ident => $ty:ty, $asn1:expr) => {
@@ -212,9 +263,14 @@ macro_rules! impl_any_as {
         #[doc = "Attempt to create ASN.1 type `"]
         #[doc = $asn1]
         #[doc = "` from this object."]
+        #[doc = "\n\nNote: this method makes shallow copies of `header` and `data`."]
         #[inline]
         pub fn $fn_name(&self) -> Result<$ty> {
-            TryFrom::try_from(self)
+            // This clone is cheap
+            let data = self.data.clone();
+            let (_, obj) =
+                <$ty>::from_ber_content(&self.header, data).map_err(Error::from_nom_berr)?;
+            Ok(obj)
         }
     };
     ($fn_name:ident => $ty:ty, $asn1:expr) => {

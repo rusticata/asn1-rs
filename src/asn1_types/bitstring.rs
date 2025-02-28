@@ -2,7 +2,6 @@ use crate::*;
 use bitvec::order::Msb0;
 use bitvec::slice::BitSlice;
 use bitvec::vec::BitVec;
-use core::convert::TryFrom;
 
 const BITSTRING_MAX_RECURSION: usize = 5;
 
@@ -75,38 +74,7 @@ impl AsRef<[u8]> for BitString {
     }
 }
 
-impl<'a> TryFrom<Any<'a>> for BitString {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<BitString> {
-        any.tag().assert_eq(Self::TAG)?;
-        if any.data.is_empty() {
-            return Err(Error::InvalidLength);
-        }
-        let Any { header, data } = any;
-        let (_, bitstring) =
-            parse_ber_segmented::<BitString>(&header, data, BITSTRING_MAX_RECURSION)
-                .map_err(Err::convert)?;
-        Ok(bitstring)
-    }
-}
-
-// non-consuming version
-impl<'a, 'b> TryFrom<&'b Any<'a>> for BitString {
-    type Error = Error;
-
-    fn try_from(any: &'b Any<'a>) -> Result<BitString> {
-        any.tag().assert_eq(Self::TAG)?;
-        if any.data.is_empty() {
-            return Err(Error::InvalidLength);
-        }
-        let Any { header, data } = any;
-        let (_, bitstring) =
-            parse_ber_segmented::<BitString>(header, data.clone(), BITSTRING_MAX_RECURSION)
-                .map_err(Err::convert)?;
-        Ok(bitstring)
-    }
-}
+impl_tryfrom_any!(BitString);
 
 impl<'i> BerParser<'i> for BitString {
     type Error = BerError<Input<'i>>;

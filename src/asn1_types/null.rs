@@ -1,5 +1,4 @@
 use crate::*;
-use core::convert::TryFrom;
 
 /// ASN.1 `NULL` type
 #[derive(Debug, PartialEq, Eq)]
@@ -17,25 +16,7 @@ impl Null {
     }
 }
 
-impl<'a> TryFrom<Any<'a>> for Null {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<Null> {
-        TryFrom::try_from(&any)
-    }
-}
-
-impl<'a, 'b> TryFrom<&'b Any<'a>> for Null {
-    type Error = Error;
-
-    fn try_from(any: &'b Any<'a>) -> Result<Null> {
-        any.tag().assert_eq(Self::TAG)?;
-        if !any.header.length.is_null() {
-            return Err(Error::InvalidLength);
-        }
-        Ok(Null {})
-    }
-}
+impl_tryfrom_any!(Null);
 
 impl<'i> BerParser<'i> for Null {
     type Error = BerError<Input<'i>>;
@@ -101,18 +82,7 @@ impl ToDer for Null {
     }
 }
 
-impl<'a> TryFrom<Any<'a>> for () {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<()> {
-        any.tag().assert_eq(Self::TAG)?;
-        any.header.assert_primitive()?;
-        if !any.header.length.is_null() {
-            return Err(Error::InvalidLength);
-        }
-        Ok(())
-    }
-}
+impl_tryfrom_any!(());
 
 impl<'i> BerParser<'i> for () {
     type Error = BerError<Input<'i>>;

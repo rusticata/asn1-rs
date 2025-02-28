@@ -1,26 +1,9 @@
 use crate::*;
 #[cfg(not(feature = "std"))]
 use alloc::string::{String, ToString};
-use core::convert::TryFrom;
 use nom::Input as _;
 
-impl<'a> TryFrom<Any<'a>> for String {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<String> {
-        TryFrom::try_from(&any)
-    }
-}
-
-impl<'a, 'b> TryFrom<&'b Any<'a>> for String {
-    type Error = Error;
-
-    fn try_from(any: &'b Any<'a>) -> Result<String> {
-        any.tag().assert_eq(Self::TAG)?;
-        let s = Utf8String::try_from(any)?;
-        Ok(s.data.into_owned())
-    }
-}
+impl_tryfrom_any!(String);
 
 impl CheckDerConstraints for String {
     fn check_constraints(any: &Any) -> Result<()> {

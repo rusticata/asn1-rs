@@ -1,21 +1,11 @@
 use nom::IResult;
 
 use crate::{
-    Any, BerError, BerParser, CheckDerConstraints, DerAutoDerive, DerParser, Error, Header, Input,
-    Real, Result, Tag, Tagged,
+    impl_tryfrom_any, Any, BerError, BerParser, CheckDerConstraints, DerAutoDerive, DerParser,
+    Header, Input, Real, Result, Tag, Tagged,
 };
-use core::convert::{TryFrom, TryInto};
 
-impl<'a> TryFrom<Any<'a>> for f64 {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<f64> {
-        any.tag().assert_eq(Self::TAG)?;
-        any.header.assert_primitive()?;
-        let real: Real = any.try_into()?;
-        Ok(real.f64())
-    }
-}
+impl_tryfrom_any!(f64);
 
 impl<'i> BerParser<'i> for f64 {
     type Error = BerError<Input<'i>>;

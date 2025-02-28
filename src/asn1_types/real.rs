@@ -1,6 +1,5 @@
 use crate::*;
 use alloc::format;
-use core::convert::TryFrom;
 use nom::Input as _;
 
 mod f32;
@@ -151,25 +150,7 @@ impl Real {
     }
 }
 
-impl<'a> TryFrom<Any<'a>> for Real {
-    type Error = Error;
-
-    fn try_from(any: Any<'a>) -> Result<Self> {
-        TryFrom::try_from(&any)
-    }
-}
-
-impl<'a, 'b> TryFrom<&'b Any<'a>> for Real {
-    type Error = Error;
-
-    fn try_from(any: &'b Any<'a>) -> Result<Self> {
-        any.tag().assert_eq(Self::TAG)?;
-        any.header.assert_primitive()?;
-        let bytes = any.data.as_bytes2();
-
-        decode_real(&any.header, bytes).map_err(Into::into)
-    }
-}
+impl_tryfrom_any!(Real);
 
 impl<'i> BerParser<'i> for Real {
     type Error = BerError<Input<'i>>;
