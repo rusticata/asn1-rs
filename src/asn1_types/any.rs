@@ -185,7 +185,7 @@ impl Any<'_> {
         header
             .assert_definite_inner()
             .map_err(BerError::convert(i.clone()))?;
-        DerMode::get_object_content(i, header, 8)
+        DerMode::get_object_content(header, i, 8)
     }
 }
 
@@ -404,7 +404,7 @@ impl<'a> Any<'a> {
 
 pub(crate) fn parse_ber_any(input: Input) -> IResult<Input, Any, BerError<Input>> {
     let (i, header) = Header::parse_ber(input)?;
-    let (i, data) = BerMode::get_object_content(i, &header, MAX_RECURSION)?;
+    let (i, data) = BerMode::get_object_content(&header, i, MAX_RECURSION)?;
     Ok((i, Any { header, data }))
 }
 
@@ -415,7 +415,7 @@ pub(crate) fn parse_der_any(input: Input) -> IResult<Input, Any, BerError<Input>
         .length
         .assert_definite_inner()
         .map_err(BerError::convert(input))?;
-    let (i, data) = DerMode::get_object_content(i, &header, MAX_RECURSION)?;
+    let (i, data) = DerMode::get_object_content(&header, i, MAX_RECURSION)?;
     Ok((i, Any { header, data }))
 }
 
@@ -429,7 +429,10 @@ impl<'a> FromBer<'a> for Any<'a> {
 impl<'i> BerParser<'i> for Any<'i> {
     type Error = BerError<Input<'i>>;
 
-    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_ber_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
         let (rem, data) = match header.length {
             Length::Definite(l) => take(l)(input)?,
             Length::Indefinite => {
@@ -437,7 +440,10 @@ impl<'i> BerParser<'i> for Any<'i> {
                 take(input.len())(input)?
             }
         };
-        let any = Any { header, data };
+        let any = Any {
+            header: header.clone(),
+            data,
+        };
         Ok((rem, any))
     }
 }
@@ -452,9 +458,18 @@ impl<'a> FromDer<'a> for Any<'a> {
 impl<'i> DerParser<'i> for Any<'i> {
     type Error = BerError<Input<'i>>;
 
-    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        let (rem, data) = DerMode::get_object_content(input, &header, MAX_RECURSION)?;
-        Ok((rem, Any { header, data }))
+    fn from_der_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
+        let (rem, data) = DerMode::get_object_content(header, input, MAX_RECURSION)?;
+        Ok((
+            rem,
+            Any {
+                header: header.clone(),
+                data,
+            },
+        ))
     }
 }
 

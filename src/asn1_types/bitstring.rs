@@ -85,7 +85,7 @@ impl<'a> TryFrom<Any<'a>> for BitString {
         }
         let Any { header, data } = any;
         let (_, bitstring) =
-            parse_ber_segmented::<BitString>(header, data, BITSTRING_MAX_RECURSION)
+            parse_ber_segmented::<BitString>(&header, data, BITSTRING_MAX_RECURSION)
                 .map_err(Err::convert)?;
         Ok(bitstring)
     }
@@ -102,7 +102,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for BitString {
         }
         let Any { header, data } = any;
         let (_, bitstring) =
-            parse_ber_segmented::<BitString>(header.clone(), data.clone(), BITSTRING_MAX_RECURSION)
+            parse_ber_segmented::<BitString>(header, data.clone(), BITSTRING_MAX_RECURSION)
                 .map_err(Err::convert)?;
         Ok(bitstring)
     }
@@ -115,11 +115,14 @@ impl<'i> BerParser<'i> for BitString {
         tag == Tag::BitString
     }
 
-    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_ber_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall either be primitive or constructed (X.690: 8.6.1)
 
         if !header.constructed() {
-            let (rem, data) = ber_get_content(&header, input)?;
+            let (rem, data) = ber_get_content(header, input)?;
 
             if data.is_empty() {
                 return Err(BerError::nom_err_input(&data, InnerError::InvalidLength));
@@ -159,11 +162,14 @@ impl<'i> DerParser<'i> for BitString {
         tag == Tag::BitString
     }
 
-    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_der_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall be primitive (X.690: 10.2)
         header.assert_primitive_input(&input).map_err(Err::Error)?;
 
-        <BitString>::from_ber_content(input, header)
+        <BitString>::from_ber_content(header, input)
     }
 }
 
@@ -275,7 +281,7 @@ mod tests {
         // example data from X.690 section 8.6.4.2
         let bytes = &hex!("0307 040A3B5F291CD0");
         let (data, header) = Header::parse_ber(Input::from(bytes)).expect("header");
-        let (rem, b) = parse_ber_segmented::<BitString>(header, data, 5).expect("parsing failed");
+        let (rem, b) = parse_ber_segmented::<BitString>(&header, data, 5).expect("parsing failed");
         assert!(rem.is_empty());
         // compare bitvector length to bitstring bytes, minus ignored bits
         assert_eq!(b.len(), bytes[3..].len() * 8 - usize::from(bytes[2]));
@@ -283,12 +289,12 @@ mod tests {
         //--- Fail: invalid length (only ignored bits)
         let bytes = &hex!("0301 04");
         let (data, header) = Header::parse_ber(Input::from(bytes)).expect("header");
-        let _ = parse_ber_segmented::<BitString>(header, data, 5).expect_err("invalid length");
+        let _ = parse_ber_segmented::<BitString>(&header, data, 5).expect_err("invalid length");
 
         //--- Fail: invalid length (invalid ignored bits)
         let bytes = &hex!("0302 0901");
         let (data, header) = Header::parse_ber(Input::from(bytes)).expect("header");
-        let _ = parse_ber_segmented::<BitString>(header, data, 5).expect_err("invalid length");
+        let _ = parse_ber_segmented::<BitString>(&header, data, 5).expect_err("invalid length");
     }
 
     #[test]
@@ -302,12 +308,12 @@ mod tests {
             00 00"
         );
         let (data, header) = Header::parse_ber(Input::from(bytes)).expect("header");
-        let (rem, b) = parse_ber_segmented::<BitString>(header, data, 5).expect("parsing failed");
+        let (rem, b) = parse_ber_segmented::<BitString>(&header, data, 5).expect("parsing failed");
         assert!(rem.is_empty());
         assert_eq!(b.len(), 44);
 
         // Fail: hit recursion limit
         let (data, header) = Header::parse_ber(Input::from(bytes)).expect("header");
-        let _ = parse_ber_segmented::<BitString>(header, data, 1).expect_err("recursion limit");
+        let _ = parse_ber_segmented::<BitString>(&header, data, 1).expect_err("recursion limit");
     }
 }

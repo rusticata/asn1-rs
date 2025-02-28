@@ -162,7 +162,10 @@ impl<'i> BerParser<'i> for UtcTime {
         tag == Tag::UtcTime
     }
 
-    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_ber_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
         // UtcTime is encoded as a VisibleString (X.680: 43.3) and can be constructed
         // TODO: constructed UtcTime not supported
         if header.is_constructed() {
@@ -193,7 +196,10 @@ impl<'i> DerParser<'i> for UtcTime {
         tag == Tag::UtcTime
     }
 
-    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_der_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall be primitive (X.690: 10.2)
         header.assert_primitive_input(&input).map_err(Err::Error)?;
 

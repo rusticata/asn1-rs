@@ -82,7 +82,10 @@ impl<'i> BerParser<'i> for BmpString<'i> {
         tag == Tag::BmpString
     }
 
-    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_ber_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall either be primitive or constructed (X.690: 8.20)
         let (rem, data) = if header.is_constructed() {
             let (rem, data) = input.take_split(input.len());
@@ -120,11 +123,14 @@ impl<'i> DerParser<'i> for BmpString<'i> {
         tag == Tag::BmpString
     }
 
-    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_der_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall be primitive (X.690: 10.2)
         header.assert_primitive_input(&input).map_err(Err::Error)?;
 
-        Self::from_ber_content(input, header)
+        Self::from_ber_content(header, input)
     }
 }
 

@@ -16,16 +16,16 @@ pub trait GetObjectContent {
     ///
     /// Note: if using BER and length is indefinite, terminating End-Of-Content is NOT included
     fn get_object_content<'a>(
-        i: Input<'a>,
         hdr: &'_ Header,
+        i: Input<'a>,
         max_depth: usize,
     ) -> IResult<Input<'a>, Input<'a>, BerError<Input<'a>>>;
 }
 
 impl GetObjectContent for BerMode {
     fn get_object_content<'a>(
-        i: Input<'a>,
         hdr: &'_ Header,
+        i: Input<'a>,
         max_depth: usize,
     ) -> IResult<Input<'a>, Input<'a>, BerError<Input<'a>>> {
         let start_i = i.clone();
@@ -50,7 +50,7 @@ pub fn ber_get_content<'i>(
     header: &Header,
     input: Input<'i>,
 ) -> IResult<Input<'i>, Input<'i>, BerError<Input<'i>>> {
-    BerMode::get_object_content(input, header, MAX_RECURSION)
+    BerMode::get_object_content(header, input, MAX_RECURSION)
 }
 
 impl GetObjectContent for DerMode {
@@ -58,8 +58,8 @@ impl GetObjectContent for DerMode {
     ///
     /// This this function is for DER only, it cannot go into recursion (no indefinite length)
     fn get_object_content<'a>(
-        i: Input<'a>,
         hdr: &'_ Header,
+        i: Input<'a>,
         _max_depth: usize,
     ) -> IResult<Input<'a>, Input<'a>, BerError<Input<'a>>> {
         match hdr.length {
@@ -80,7 +80,7 @@ pub fn der_get_content<'i>(
     header: &Header,
     input: Input<'i>,
 ) -> IResult<Input<'i>, Input<'i>, BerError<Input<'i>>> {
-    DerMode::get_object_content(input, header, MAX_RECURSION)
+    DerMode::get_object_content(header, input, MAX_RECURSION)
 }
 
 /// Skip object content, and return true if object was End-Of-Content

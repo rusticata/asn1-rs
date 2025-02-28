@@ -51,7 +51,10 @@ impl<'i> BerParser<'i> for EndOfContent {
         tag == Tag::EndOfContent
     }
 
-    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_ber_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
         if !header.length.is_null() {
             return Err(Err::Error(BerError::new(input, InnerError::InvalidLength)));
         }

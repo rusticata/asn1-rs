@@ -127,8 +127,8 @@ macro_rules! impl_int {
             }
 
             fn from_ber_content(
+                header: &'_ Header<'i>,
                 input: Input<'i>,
-                header: Header<'i>,
             ) -> IResult<Input<'i>, Self, Self::Error> {
                 // Encoding shall be primitive (X.690: 8.3.1)
                 header.assert_primitive_input(&input).map_err(Err::Error)?;
@@ -160,15 +160,15 @@ macro_rules! impl_int {
             }
 
             fn from_der_content(
+                header: &'_ Header<'i>,
                 input: Input<'i>,
-                header: Header<'i>,
             ) -> IResult<Input<'i>, Self, Self::Error> {
                 // Note: should we relax this constraint (leading 00 or ff)?
                 check_der_int_constraints_input(&input).map_err(|e| {
                     BerError::nom_err_input(&input, InnerError::DerConstraintFailed(e))
                 })?;
 
-                Self::from_ber_content(input, header)
+                Self::from_ber_content(header, input)
             }
         }
 
@@ -244,8 +244,8 @@ macro_rules! impl_uint {
             }
 
             fn from_ber_content(
+                header: &'_ Header<'i>,
                 input: Input<'i>,
-                header: Header<'i>,
             ) -> IResult<Input<'i>, Self, Self::Error> {
                 // Encoding shall be primitive (X.690: 8.3.1)
                 header.assert_primitive_input(&input).map_err(Err::Error)?;
@@ -267,15 +267,15 @@ macro_rules! impl_uint {
             }
 
             fn from_der_content(
+                header: &'_ Header<'i>,
                 input: Input<'i>,
-                header: Header<'i>,
             ) -> IResult<Input<'i>, Self, Self::Error> {
                 // Note: should we relax this constraint (leading 00 or ff)?
                 check_der_int_constraints_input(&input).map_err(|e| {
                     BerError::nom_err_input(&input, InnerError::DerConstraintFailed(e))
                 })?;
 
-                Self::from_ber_content(input, header)
+                Self::from_ber_content(header, input)
             }
         }
 
@@ -593,15 +593,15 @@ impl<'i> BerParser<'i> for Integer<'i> {
     }
 
     fn from_ber_content(
+        header: &'_ Header<'i>,
         input: Input<'i>,
-        header: Header<'i>,
     ) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall be primitive (X.690: 8.3.1)
         header.assert_primitive_input(&input).map_err(Err::Error)?;
 
         // since encoding must be primitive, indefinite length is not allowed
         // so we use `der_get_content`
-        let (rem, content) = der_get_content(&header, input)?;
+        let (rem, content) = der_get_content(header, input)?;
 
         // The contents octets shall consist of one or more octets (X.690: 8.3.2)
         if content.is_empty() {
@@ -625,14 +625,14 @@ impl<'i> DerParser<'i> for Integer<'i> {
     }
 
     fn from_der_content(
+        header: &'_ Header<'i>,
         input: Input<'i>,
-        header: Header<'i>,
     ) -> IResult<Input<'i>, Self, Self::Error> {
         // Note: should we relax this constraint (leading 00 or ff)?
         check_der_int_constraints_input(&input)
             .map_err(|e| BerError::nom_err_input(&input, InnerError::DerConstraintFailed(e)))?;
 
-        Self::from_ber_content(input, header)
+        Self::from_ber_content(header, input)
     }
 }
 

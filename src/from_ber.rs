@@ -85,8 +85,8 @@ where
             ));
         }
         let (rem, data) =
-            BerMode::get_object_content(rem, &header, MAX_RECURSION).map_err(Err::convert)?;
-        let (_, obj) = Self::from_ber_content(data, header).map_err(Err::convert)?;
+            BerMode::get_object_content(&header, rem, MAX_RECURSION).map_err(Err::convert)?;
+        let (_, obj) = Self::from_ber_content(&header, data).map_err(Err::convert)?;
         Ok((rem, obj))
     }
 
@@ -104,7 +104,10 @@ where
     ///
     /// Note: in this method, implementers should *not* check header tag (which can be
     /// different from the usual object tag when using IMPLICIT tagging, for ex.).
-    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error>;
+    fn from_ber_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error>;
 
     fn parse_ber_optional(input: Input<'i>) -> IResult<Input<'i>, Option<Self>, Self::Error> {
         if input.input_len() == 0 {
@@ -115,8 +118,8 @@ where
             return Ok((input, None));
         }
         let (rem, data) =
-            BerMode::get_object_content(rem, &header, MAX_RECURSION).map_err(Err::convert)?;
-        let (_, obj) = Self::from_ber_content(data, header).map_err(Err::convert)?;
+            BerMode::get_object_content(&header, rem, MAX_RECURSION).map_err(Err::convert)?;
+        let (_, obj) = Self::from_ber_content(&header, data).map_err(Err::convert)?;
         Ok((rem, Some(obj)))
     }
 }

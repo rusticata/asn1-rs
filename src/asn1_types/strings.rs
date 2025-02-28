@@ -124,7 +124,7 @@ macro_rules! asn1_string {
                 tag == Self::TAG
             }
 
-            fn from_ber_content(input: $crate::Input<'i>, header: $crate::Header<'i>) -> $crate::nom::IResult<$crate::Input<'i>, Self, Self::Error> {
+            fn from_ber_content(header: &'_ $crate::Header<'i>, input: $crate::Input<'i>) -> $crate::nom::IResult<$crate::Input<'i>, Self, Self::Error> {
                 use alloc::borrow::Cow;
                 // Encoding shall either be primitive or constructed (X.690: 8.20)
                 let (rem, data) =
@@ -170,13 +170,13 @@ macro_rules! asn1_string {
                 tag == Self::TAG
             }
 
-            fn from_der_content(input: $crate::Input<'i>, header: $crate::Header<'i>) -> $crate::nom::IResult<$crate::Input<'i>, Self, Self::Error> {
+            fn from_der_content(header: &'_ $crate::Header<'i>, input: $crate::Input<'i>) -> $crate::nom::IResult<$crate::Input<'i>, Self, Self::Error> {
                 use $crate::BerParser;
 
                 // Encoding shall be primitive (X.690: 10.2)
                 header.assert_primitive_input(&input).map_err($crate::nom::Err::Error)?;
 
-                Self::from_ber_content(input, header)
+                Self::from_ber_content(header, input)
             }
         }
 

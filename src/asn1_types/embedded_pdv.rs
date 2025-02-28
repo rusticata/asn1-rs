@@ -134,8 +134,8 @@ impl<'i> BerParser<'i> for EmbeddedPdv<'i> {
     }
 
     fn from_ber_content(
+        _header: &'_ Header<'i>,
         input: Input<'i>,
-        _header: Header<'i>,
     ) -> IResult<Input<'i>, Self, Self::Error> {
         // AUTOMATIC TAGS means all values will be tagged (IMPLICIT)
         // definition taken from <https://www.oss.com/asn1/products/documentation/asn1_java_8.7/api/toed/com/oss/asn1/EmbeddedPDV.html>
@@ -161,12 +161,12 @@ impl<'i> BerParser<'i> for EmbeddedPdv<'i> {
             }
             Tag(1) => {
                 // syntax OBJECT IDENTIFIER
-                let (_, oid) = Oid::from_ber_content(inner0.data, inner0.header)?;
+                let (_, oid) = Oid::from_ber_content(&inner0.header, inner0.data)?;
                 PdvIdentification::Syntax(oid)
             }
             Tag(2) => {
                 // presentation-context-id INTEGER
-                let (_, i) = Integer::from_ber_content(inner0.data, inner0.header)?;
+                let (_, i) = Integer::from_ber_content(&inner0.header, inner0.data)?;
                 PdvIdentification::PresentationContextId(i)
             }
             Tag(3) => {
@@ -189,7 +189,7 @@ impl<'i> BerParser<'i> for EmbeddedPdv<'i> {
             }
             Tag(4) => {
                 // transfer-syntax OBJECT IDENTIFIER
-                let (_, oid) = Oid::from_ber_content(inner0.data, inner0.header)?;
+                let (_, oid) = Oid::from_ber_content(&inner0.header, inner0.data)?;
                 PdvIdentification::TransferSyntax(oid)
             }
             Tag(5) => {
@@ -228,8 +228,11 @@ impl<'i> DerParser<'i> for EmbeddedPdv<'i> {
         tag == Tag::EmbeddedPdv
     }
 
-    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        Self::from_ber_content(input, header)
+    fn from_der_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
+        Self::from_ber_content(header, input)
     }
 }
 

@@ -45,11 +45,14 @@ impl<'i> BerParser<'i> for Enumerated {
         tag == Tag::Enumerated
     }
 
-    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_ber_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall be primitive (X.690: 8.4)
         header.assert_primitive_input(&input).map_err(Err::Error)?;
         // The encoding of an enumerated value shall be that of the integer value with which it is associated.
-        let (rem, res) = <u32>::from_ber_content(input, header)?;
+        let (rem, res) = <u32>::from_ber_content(header, input)?;
         Ok((rem, Enumerated(res)))
     }
 }
@@ -61,11 +64,14 @@ impl<'i> DerParser<'i> for Enumerated {
         tag == Tag::Enumerated
     }
 
-    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_der_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall be primitive (X.690: 8.4)
         header.assert_primitive_input(&input).map_err(Err::Error)?;
         // The encoding of an enumerated value shall be that of the integer value with which it is associated.
-        let (rem, res) = <u32>::from_der_content(input, header)?;
+        let (rem, res) = <u32>::from_der_content(header, input)?;
         Ok((rem, Enumerated(res)))
     }
 }

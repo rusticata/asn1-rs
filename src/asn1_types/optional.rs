@@ -74,12 +74,15 @@ where
         }
         // NOTE: end
         let (rem, data) =
-            BerMode::get_object_content(rem, &header, MAX_RECURSION).map_err(Err::convert)?;
-        let (_, obj) = Self::from_ber_content(data, header).map_err(Err::convert)?;
+            BerMode::get_object_content(&header, rem, MAX_RECURSION).map_err(Err::convert)?;
+        let (_, obj) = Self::from_ber_content(&header, data).map_err(Err::convert)?;
         Ok((rem, obj))
     }
 
-    fn from_ber_content(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+    fn from_ber_content(
+        header: &'_ Header<'a>,
+        input: Input<'a>,
+    ) -> IResult<Input<'a>, Self, Self::Error> {
         if input.is_empty() {
             return Ok((input, None));
         }
@@ -87,8 +90,8 @@ where
             return Ok((input, None));
         }
         let (rem, data) =
-            BerMode::get_object_content(input, &header, MAX_RECURSION).map_err(Err::convert)?;
-        let (_, obj) = T::from_ber_content(data, header).map_err(Err::convert)?;
+            BerMode::get_object_content(header, input, MAX_RECURSION).map_err(Err::convert)?;
+        let (_, obj) = T::from_ber_content(header, data).map_err(Err::convert)?;
         Ok((rem, Some(obj)))
     }
 }
@@ -125,12 +128,15 @@ where
         }
         // NOTE: end
         let (rem, data) =
-            BerMode::get_object_content(rem, &header, MAX_RECURSION).map_err(Err::convert)?;
-        let (_, obj) = Self::from_der_content(data, header).map_err(Err::convert)?;
+            BerMode::get_object_content(&header, rem, MAX_RECURSION).map_err(Err::convert)?;
+        let (_, obj) = Self::from_der_content(&header, data).map_err(Err::convert)?;
         Ok((rem, obj))
     }
 
-    fn from_der_content(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+    fn from_der_content(
+        header: &'_ Header<'a>,
+        input: Input<'a>,
+    ) -> IResult<Input<'a>, Self, Self::Error> {
         if input.is_empty() {
             return Ok((input, None));
         }
@@ -138,8 +144,8 @@ where
             return Ok((input, None));
         }
         let (rem, data) =
-            BerMode::get_object_content(input, &header, MAX_RECURSION).map_err(Err::convert)?;
-        let (_, obj) = T::from_der_content(data, header).map_err(Err::convert)?;
+            BerMode::get_object_content(header, input, MAX_RECURSION).map_err(Err::convert)?;
+        let (_, obj) = T::from_der_content(header, data).map_err(Err::convert)?;
         Ok((rem, Some(obj)))
     }
 }

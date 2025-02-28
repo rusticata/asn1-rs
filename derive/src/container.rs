@@ -252,7 +252,7 @@ impl Container {
             if self.is_any {
                 quote! {
                     use asn1_rs::BerParser;
-                    let (rem, any) = asn1_rs::Any::from_ber_content(input, header)?;
+                    let (rem, any) = asn1_rs::Any::from_ber_content(header, input)?;
                     Ok((rem, Self(any)))
                 }
             } else {
@@ -268,7 +268,7 @@ impl Container {
                 };
                 quote! {
                     use asn1_rs::BerParser;
-                    let (rem, any) = BerParser::from_ber_content(input, header)?;
+                    let (rem, any) = BerParser::from_ber_content(header, input)?;
                     Ok((rem, Self(any)))
                 }
             }
@@ -299,7 +299,7 @@ impl Container {
 
                 #impl_checktag
 
-                fn from_ber_content(input: Input<#lft>, header: Header<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
+                fn from_ber_content(header: &'_ Header<#lft>, input: Input<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
                     #fn_content
                 }
             }
@@ -350,7 +350,7 @@ impl Container {
             if self.is_any {
                 quote! {
                     use asn1_rs::DerParser;
-                    let (rem, any) = asn1_rs::Any::from_der_content(input, header)?;
+                    let (rem, any) = asn1_rs::Any::from_der_content(header, input)?;
                     Ok((rem, Self(any)))
                 }
             } else {
@@ -366,7 +366,7 @@ impl Container {
                 };
                 quote! {
                     use asn1_rs::DerParser;
-                    let (rem, any) = DerParser::from_der_content(input, header)?;
+                    let (rem, any) = DerParser::from_der_content(header, input)?;
                     Ok((rem, Self(any)))
                 }
             }
@@ -397,7 +397,7 @@ impl Container {
 
                 #impl_checktag
 
-                fn from_der_content(input: Input<#lft>, header: Header<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
+                fn from_der_content(header: &'_ Header<#lft>, input: Input<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
                     #fn_content
                 }
             }

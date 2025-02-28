@@ -79,7 +79,7 @@ impl<'a> AnyIterator<'a, BerMode> {
     {
         let b = <Result<B, Err<T::Error, T::Error>>>::from_iter(self.map(|r| match r {
             Ok((_, obj)) => {
-                let (_, obj) = T::from_ber_content(obj.data, obj.header)?;
+                let (_, obj) = T::from_ber_content(&obj.header, obj.data)?;
                 Ok(obj)
             }
             Err(e) => Err(Err::Error(e.into())),
@@ -122,7 +122,7 @@ impl<'a> AnyIterator<'a, DerMode> {
     {
         let b = <Result<B, Err<T::Error, T::Error>>>::from_iter(self.map(|r| match r {
             Ok((_, obj)) => {
-                let (_, obj) = T::from_der_content(obj.data, obj.header)?;
+                let (_, obj) = T::from_der_content(&obj.header, obj.data)?;
                 Ok(obj)
             }
             Err(e) => Err(Err::Error(e.into())),

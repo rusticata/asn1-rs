@@ -14,7 +14,7 @@ pub trait Appendable {
 /// - header of recursion entrypoint must be constructed
 /// - `T` must be able to parse a primitive object using `BerParser`
 pub(crate) fn parse_ber_segmented<'i, T>(
-    header: Header<'i>,
+    header: &'_ Header<'i>,
     input: Input<'i>,
     recursion_limit: usize,
 ) -> IResult<Input<'i>, T, BerError<Input<'i>>>
@@ -32,7 +32,7 @@ where
 
     if header.constructed() {
         let (rem, data) = if header.length.is_definite() {
-            ber_get_content(&header, input)?
+            ber_get_content(header, input)?
         } else {
             // FIXME: previous get_length already consumed EndOfContent, so we cannot use it
             input.take_split(input.len())
@@ -52,14 +52,14 @@ where
             }
             // Empty segments are sometimes allowed (for ex: OctetStrings). Just skip recursion if empty
             if !data2.is_empty() {
-                let (_, mut part_v) = parse_ber_segmented(h2, data2, recursion_limit - 1)?;
+                let (_, mut part_v) = parse_ber_segmented(&h2, data2, recursion_limit - 1)?;
                 v.append(&mut part_v);
             }
         }
         Ok((rem, v))
     } else {
-        let (rem, data) = ber_get_content(&header, input)?;
-        let (_, t) = T::from_ber_content(data, header)?;
+        let (rem, data) = ber_get_content(header, input)?;
+        let (_, t) = T::from_ber_content(header, data)?;
         Ok((rem, t))
     }
 }

@@ -47,10 +47,10 @@ where
     }
 }
 
-impl<'a, T, E, const CLASS: u8, const TAG: u32> BerParser<'a>
+impl<'i, T, E, const CLASS: u8, const TAG: u32> BerParser<'i>
     for TaggedValue<T, E, Implicit, CLASS, TAG>
 where
-    T: BerParser<'a>,
+    T: BerParser<'i>,
     // E: ParseError<Input<'a>> + From<BerError<Input<'a>>>,
 {
     type Error = T::Error;
@@ -59,21 +59,24 @@ where
         tag == Self::TAG
     }
 
-    fn from_ber_content(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+    fn from_ber_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
         // pass the same header to parse inner content
         // note: we *know* that header.tag is most probably different from t::tag,
         // so the tag is not checked here
 
-        let (rem, t) = T::from_ber_content(input, header)?;
+        let (rem, t) = T::from_ber_content(header, input)?;
         let tagged = TaggedValue::implicit(t);
         Ok((rem, tagged))
     }
 }
 
-impl<'a, T, E, const CLASS: u8, const TAG: u32> DerParser<'a>
+impl<'i, T, E, const CLASS: u8, const TAG: u32> DerParser<'i>
     for TaggedValue<T, E, Implicit, CLASS, TAG>
 where
-    T: DerParser<'a>,
+    T: DerParser<'i>,
     // E: ParseError<Input<'a>> + From<BerError<Input<'a>>>,
 {
     type Error = T::Error;
@@ -82,12 +85,15 @@ where
         tag == Self::TAG
     }
 
-    fn from_der_content(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+    fn from_der_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
         // pass the same header to parse inner content
         // note: we *know* that header.tag is most probably different from t::tag,
         // so the tag is not checked here
 
-        let (rem, t) = T::from_der_content(input, header)?;
+        let (rem, t) = T::from_der_content(header, input)?;
         let tagged = TaggedValue::implicit(t);
         Ok((rem, tagged))
     }

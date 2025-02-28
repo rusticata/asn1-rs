@@ -68,7 +68,10 @@ impl<'i> BerParser<'i> for Oid<'i> {
         tag == Tag::Oid
     }
 
-    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_ber_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall be primitive (X.690: 8.19.1)
         header.assert_primitive_input(&input).map_err(Err::Error)?;
 
@@ -89,9 +92,12 @@ impl<'i> DerParser<'i> for Oid<'i> {
         tag == Tag::Oid
     }
 
-    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_der_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
         // parsing is similar as for BER
-        Self::from_ber_content(input, header)
+        Self::from_ber_content(header, input)
     }
 }
 

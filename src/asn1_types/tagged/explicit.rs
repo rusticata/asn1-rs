@@ -39,11 +39,11 @@ where
     }
 }
 
-impl<'a, T, E, const CLASS: u8, const TAG: u32> BerParser<'a>
+impl<'i, T, E, const CLASS: u8, const TAG: u32> BerParser<'i>
     for TaggedValue<T, E, Explicit, CLASS, TAG>
 where
     // T: Tagged,
-    T: BerParser<'a>,
+    T: BerParser<'i>,
     // E: ParseError<Input<'a>> + From<BerError<Input<'a>>>,
 {
     type Error = T::Error;
@@ -52,7 +52,10 @@ where
         tag == Self::TAG
     }
 
-    fn from_ber_content(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+    fn from_ber_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
         // Tagged Explicit must be constructed (X.690 8.14.2)
         header
             .assert_constructed_input(&input)
@@ -74,11 +77,11 @@ where
     }
 }
 
-impl<'a, T, E, const CLASS: u8, const TAG: u32> DerParser<'a>
+impl<'i, T, E, const CLASS: u8, const TAG: u32> DerParser<'i>
     for TaggedValue<T, E, Explicit, CLASS, TAG>
 where
     // T: Tagged,
-    T: DerParser<'a>,
+    T: DerParser<'i>,
     // E: ParseError<Input<'a>> + From<BerError<Input<'a>>>,
 {
     type Error = T::Error;
@@ -87,7 +90,10 @@ where
         tag == Self::TAG
     }
 
-    fn from_der_content(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+    fn from_der_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
         // Tagged Explicit must be constructed (X.690 8.14.2)
         header
             .assert_constructed_input(&input)

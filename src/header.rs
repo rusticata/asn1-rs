@@ -261,7 +261,7 @@ impl<'a> Header<'a> {
     ) -> IResult<Input<'i>, Input<'i>, BerError<Input<'i>>> {
         // defaults to maximum depth 8
         // depth is used only if BER, and length is indefinite
-        BerMode::get_object_content(i, self, 8)
+        BerMode::get_object_content(self, i, 8)
     }
 
     /// Get the content following a DER header
@@ -272,7 +272,7 @@ impl<'a> Header<'a> {
     ) -> IResult<Input<'i>, Input<'i>, BerError<Input<'i>>> {
         self.assert_definite_inner()
             .map_err(BerError::convert(i.clone()))?;
-        DerMode::get_object_content(i, self, 8)
+        DerMode::get_object_content(self, i, 8)
     }
 }
 
@@ -313,11 +313,12 @@ impl<'i> BerParser<'i> for Header<'i> {
         parse_header(input)
     }
 
+    /// <div class="warning">This method is usually not called (and will create a useless clone)</div>
     fn from_ber_content(
+        header: &'_ Header<'i>,
         input: Input<'i>,
-        header: Header<'i>,
     ) -> IResult<Input<'i>, Self, Self::Error> {
-        Ok((input, header))
+        Ok((input, header.clone()))
     }
 }
 
@@ -336,8 +337,12 @@ impl<'i> DerParser<'i> for Header<'i> {
         Ok((rem, header))
     }
 
-    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        Ok((input, header))
+    /// <div class="warning">This method is usually not called (and will create a useless clone)</div>
+    fn from_der_content(
+        header: &'_ Header<'i>,
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
+        Ok((input, header.clone()))
     }
 }
 
