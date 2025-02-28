@@ -1,7 +1,6 @@
 use crate::*;
 use alloc::borrow::Cow;
 use alloc::vec;
-use core::convert::{TryFrom, TryInto};
 use nom::Input as _;
 
 #[cfg(feature = "bigint")]
@@ -429,7 +428,7 @@ macro_rules! impl_from_to {
             }
         }
 
-        impl TryFrom<Integer<'_>> for $ty {
+        impl core::convert::TryFrom<Integer<'_>> for $ty {
             type Error = Error;
 
             fn try_from(value: Integer<'_>) -> Result<Self> {
@@ -444,6 +443,7 @@ macro_rules! impl_from_to {
             #[doc = ""]
             #[doc = "This function returns an `IntegerTooLarge` error if the integer will not fit into the output type."]
             pub fn $to(&self) -> Result<$ty> {
+                use core::convert::TryInto;
                 self.any().try_into()
             }
         }
