@@ -226,7 +226,7 @@ pub type OptTaggedExplicit<T, E, const TAG: u32> = Option<TaggedExplicit<T, E, T
 /// ```rust
 /// use asn1_rs::{Error, FromBer, Integer, OptTaggedImplicit, TaggedValue};
 ///
-/// let bytes = &[0xa0, 0x1, 0x2];
+/// let bytes = &[0x80, 0x1, 0x2];
 ///
 /// let (_, tagged) = OptTaggedImplicit::<Integer, Error, 0>::from_ber(bytes).unwrap();
 /// assert_eq!(tagged, Some(TaggedValue::implicit(Integer::from(2))));

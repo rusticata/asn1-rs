@@ -33,10 +33,23 @@ pub type PrivateExplicit<T, E, const TAG: u32> =
 /// ```rust
 /// use asn1_rs::{Error, FromBer, Integer, PrivateImplicit, TaggedValue};
 ///
-/// let bytes = &[0xe0, 0x1, 0x2];
+/// let bytes = &[0xc0, 0x1, 0x2];
 ///
 /// let (_, tagged) = PrivateImplicit::<Integer, Error, 0>::from_ber(bytes).unwrap();
 /// assert_eq!(tagged, TaggedValue::implicit(Integer::from(2_u8)));
 /// ```
 pub type PrivateImplicit<T, E, const TAG: u32> =
     TaggedValue<T, E, Implicit, { Class::PRIVATE }, TAG>;
+
+#[cfg(test)]
+mod tests {
+    use crate::{Error, FromBer, Integer, PrivateImplicit, TaggedValue};
+
+    #[test]
+    fn from_ber_private_implicit() {
+        let bytes = &[0xc0, 0x1, 0x2];
+
+        let (_, tagged) = PrivateImplicit::<Integer, Error, 0>::from_ber(bytes).unwrap();
+        assert_eq!(tagged, TaggedValue::implicit(Integer::from(2_u8)));
+    }
+}

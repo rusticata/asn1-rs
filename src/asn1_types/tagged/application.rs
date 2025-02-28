@@ -33,10 +33,23 @@ pub type ApplicationExplicit<T, E, const TAG: u32> =
 /// ```rust
 /// use asn1_rs::{ApplicationImplicit, Error, FromBer, Integer, TaggedValue};
 ///
-/// let bytes = &[0x60, 0x1, 0x2];
+/// let bytes = &[0x40, 0x1, 0x2];
 ///
 /// let (_, tagged) = ApplicationImplicit::<Integer, Error, 0>::from_ber(bytes).unwrap();
 /// assert_eq!(tagged, TaggedValue::implicit(Integer::from(2_u8)));
 /// ```
 pub type ApplicationImplicit<T, E, const TAG: u32> =
     TaggedValue<T, E, Implicit, { Class::APPLICATION }, TAG>;
+
+#[cfg(test)]
+mod tests {
+    use crate::{ApplicationImplicit, Error, FromBer, Integer, TaggedValue};
+
+    #[test]
+    fn from_ber_application_implicit() {
+        let bytes = &[0x40, 0x1, 0x2];
+
+        let (_, tagged) = ApplicationImplicit::<Integer, Error, 0>::from_ber(bytes).unwrap();
+        assert_eq!(tagged, TaggedValue::implicit(Integer::from(2_u8)));
+    }
+}

@@ -201,7 +201,7 @@ where
 /// ```rust
 /// use asn1_rs::{Error, FromBer, Integer, TaggedImplicit, TaggedValue};
 ///
-/// let bytes = &[0xa0, 0x1, 0x2];
+/// let bytes = &[0x80, 0x1, 0x2];
 ///
 /// let (_, tagged) = TaggedImplicit::<Integer, Error, 0>::from_ber(bytes).unwrap();
 /// assert_eq!(tagged, TaggedValue::implicit(Integer::from(2)));
