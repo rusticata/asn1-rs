@@ -602,6 +602,12 @@ pub(crate) fn parse_header<'a, I: nom::Input<Item = u8>>(
     const INDEFINITE: u8 = 0b1000_0000;
     let length = if len_b0 == INDEFINITE {
         // indefinite form (X.690: 8.1.3.6)
+        if !constructed {
+            return Err(Err::Error(BerError::new(
+                input,
+                InnerError::IndefiniteLengthUnexpected,
+            )));
+        }
         Length::Indefinite
     } else if len_b0 & INDEFINITE == 0 {
         // definite, short form (X.690: 8.1.3.4)
@@ -686,6 +692,10 @@ mod tests {
         assert!(hdr4.assert_definite().is_err());
         let xx = hdr4.to_der_vec().expect("serialize failed");
         assert_eq!(&xx, &[0xa2, 0x80]);
+
+        // indefinite length should be accepted only if constructed
+        let primitive_indef = &hex!("0280");
+        Header::parse_ber(primitive_indef.into()).expect_err("primitive with indefinite length");
 
         // parse_*_content
         let hdr = Header::new_simple(Tag(2)).with_length(Length::Definite(1));
