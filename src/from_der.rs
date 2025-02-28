@@ -5,11 +5,9 @@ use nom::bytes::streaming::take;
 use nom::error::ParseError;
 use nom::{Err, IResult, Input as _};
 
-use crate::ber::{GetObjectContent, MAX_RECURSION};
 use crate::debug::{trace, trace_generic};
 use crate::{
-    parse_der_any, wrap_ber_parser, Any, BerError, DerMode, Error, Header, Input, ParseResult,
-    Result, Tag, Tagged,
+    parse_der_any, wrap_ber_parser, Any, BerError, Error, Header, Input, ParseResult, Result, Tag,
 };
 
 /// Base trait for DER object parsers
@@ -191,32 +189,5 @@ where
         let (rem, data) = take(length)(rem)?;
         let (_, obj) = Self::from_any_der(data, header).map_err(Err::convert)?;
         Ok((rem, Some(obj)))
-    }
-}
-
-/// See [`crate::DeriveBerParserFromTryFrom`]
-pub trait DeriveDerParserFromTryFrom {}
-
-impl<'i, E, T> DerParser<'i> for T
-where
-    T: Tagged,
-    T: CheckDerConstraints,
-    T: DeriveDerParserFromTryFrom,
-    T: TryFrom<Any<'i>, Error = E>,
-    E: ParseError<Input<'i>> + From<BerError<Input<'i>>>,
-{
-    type Error = E;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Self::TAG
-    }
-
-    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        let (rem, data) =
-            DerMode::get_object_content(input, &header, MAX_RECURSION).map_err(Err::convert)?;
-
-        let any = Any::new(header, data);
-        let obj = T::try_from(any).map_err(|e| Err::Error(e))?;
-        Ok((rem, obj))
     }
 }

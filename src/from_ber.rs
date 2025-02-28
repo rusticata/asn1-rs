@@ -5,7 +5,7 @@ use nom::Input as _;
 use nom::{Err, IResult};
 
 use crate::ber::{GetObjectContent, MAX_RECURSION};
-use crate::{Any, BerError, BerMode, Error, Header, Input, ParseResult, Tag, Tagged};
+use crate::{Any, BerError, BerMode, Error, Header, Input, ParseResult, Tag};
 
 /// Base trait for BER object parsers
 ///
@@ -118,54 +118,6 @@ where
             BerMode::get_object_content(rem, &header, MAX_RECURSION).map_err(Err::convert)?;
         let (_, obj) = Self::from_any_ber(data, header).map_err(Err::convert)?;
         Ok((rem, Some(obj)))
-    }
-}
-
-// NOTE: remove this when MSRV >= 1.84?
-/// Trait to automatically derive BerParser
-///
-/// This trait is only a marker to control if a BER parser should be automatically derived. It is empty.
-///
-/// # Note
-/// We cannot derive BerParser automatically from `T: TryFrom<Any>`, because we end up in a
-/// conflicting implementation of trait:
-/// <pre>
-/// error[E0119]: conflicting implementations of trait `from_ber::BerParser<'_>` for type `asn1_types::any::Any<'_>`
-///    --> src/from_ber.rs:125:1
-///     |
-/// 125 | impl<'i, E, T> BerParser<'i> for T
-///     | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ conflicting implementation for `asn1_types::any::Any<'_>`
-///     |
-///    ::: src/asn1_types/any.rs:440:1
-///     |
-/// 440 | impl<'i> BerParser<'i> for Any<'i> {
-///     | ---------------------------------- first implementation here
-/// </pre>
-/// This seems to be solved from rustc >= 1.84, thanks to the new trait solver
-///
-/// since our MSRV is < 1.84, we add a workaround.
-pub trait DeriveBerParserFromTryFrom {}
-
-impl<'i, E, T> BerParser<'i> for T
-where
-    T: Tagged,
-    T: DeriveBerParserFromTryFrom,
-    T: TryFrom<Any<'i>, Error = E>,
-    E: ParseError<Input<'i>> + From<BerError<Input<'i>>>,
-{
-    type Error = E;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Self::TAG
-    }
-
-    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        let (rem, data) =
-            BerMode::get_object_content(input, &header, MAX_RECURSION).map_err(Err::convert)?;
-
-        let any = Any::new(header, data);
-        let obj = T::try_from(any).map_err(|e| Err::Error(e))?;
-        Ok((rem, obj))
     }
 }
 
