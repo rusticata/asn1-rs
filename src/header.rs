@@ -306,22 +306,6 @@ impl<'a> FromBer<'a> for Header<'a> {
     }
 }
 
-// impl<'a, I: Input<Item = u8>> BerParser<'a, I> for Header<'a>
-// where
-//     I: 'a,
-// {
-//     type Error = BerError<I>;
-
-//     fn parse_ber(input: I) -> IResult<I, Self, Self::Error> {
-//         parse_header(input)
-//     }
-
-//     fn from_any_ber(input: I, header: Header<'a>) -> IResult<I, Self, Self::Error> {
-//         // TODO: when header is generic, remove this copy/to_static()
-//         Ok((input, header.to_static()))
-//     }
-// }
-
 impl<'i> BerParser<'i> for Header<'i> {
     type Error = BerError<Input<'i>>;
 
@@ -329,7 +313,10 @@ impl<'i> BerParser<'i> for Header<'i> {
         parse_header(input)
     }
 
-    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_ber_content(
+        input: Input<'i>,
+        header: Header<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
         Ok((input, header))
     }
 }
@@ -349,7 +336,7 @@ impl<'i> DerParser<'i> for Header<'i> {
         Ok((rem, header))
     }
 
-    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         Ok((input, header))
     }
 }

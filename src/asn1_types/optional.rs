@@ -75,11 +75,11 @@ where
         // NOTE: end
         let (rem, data) =
             BerMode::get_object_content(rem, &header, MAX_RECURSION).map_err(Err::convert)?;
-        let (_, obj) = Self::from_any_ber(data, header).map_err(Err::convert)?;
+        let (_, obj) = Self::from_ber_content(data, header).map_err(Err::convert)?;
         Ok((rem, obj))
     }
 
-    fn from_any_ber(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+    fn from_ber_content(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
         if input.is_empty() {
             return Ok((input, None));
         }
@@ -88,7 +88,7 @@ where
         }
         let (rem, data) =
             BerMode::get_object_content(input, &header, MAX_RECURSION).map_err(Err::convert)?;
-        let (_, obj) = T::from_any_ber(data, header).map_err(Err::convert)?;
+        let (_, obj) = T::from_ber_content(data, header).map_err(Err::convert)?;
         Ok((rem, Some(obj)))
     }
 }
@@ -126,11 +126,11 @@ where
         // NOTE: end
         let (rem, data) =
             BerMode::get_object_content(rem, &header, MAX_RECURSION).map_err(Err::convert)?;
-        let (_, obj) = Self::from_any_der(data, header).map_err(Err::convert)?;
+        let (_, obj) = Self::from_der_content(data, header).map_err(Err::convert)?;
         Ok((rem, obj))
     }
 
-    fn from_any_der(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+    fn from_der_content(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
         if input.is_empty() {
             return Ok((input, None));
         }
@@ -139,7 +139,7 @@ where
         }
         let (rem, data) =
             BerMode::get_object_content(input, &header, MAX_RECURSION).map_err(Err::convert)?;
-        let (_, obj) = T::from_any_der(data, header).map_err(Err::convert)?;
+        let (_, obj) = T::from_der_content(data, header).map_err(Err::convert)?;
         Ok((rem, Some(obj)))
     }
 }

@@ -334,7 +334,7 @@ impl<'i> BerParser<'i> for Sequence<'i> {
         tag == Tag::Sequence
     }
 
-    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall be constructed (X.690: 8.9.1)
         header
             .assert_constructed_input(&input)
@@ -357,7 +357,7 @@ impl<'i> DerParser<'i> for Sequence<'i> {
         tag == Tag::Sequence
     }
 
-    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall be constructed (X.690: 8.9.1)
         header
             .assert_constructed_input(&input)

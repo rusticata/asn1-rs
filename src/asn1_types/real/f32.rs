@@ -24,8 +24,8 @@ impl<'i> BerParser<'i> for f32 {
         tag == Tag::RealType
     }
 
-    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        let (rem, real) = Real::from_any_ber(input, header)?;
+    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        let (rem, real) = Real::from_ber_content(input, header)?;
 
         Ok((rem, real.f32()))
     }
@@ -38,8 +38,8 @@ impl<'i> DerParser<'i> for f32 {
         tag == Tag::RealType
     }
 
-    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        let (rem, real) = Real::from_any_der(input, header)?;
+    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        let (rem, real) = Real::from_der_content(input, header)?;
 
         Ok((rem, real.f32()))
     }

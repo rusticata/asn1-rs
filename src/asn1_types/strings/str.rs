@@ -39,7 +39,7 @@ impl<'i> BerParser<'i> for &'i str {
         tag == Tag::Utf8String
     }
 
-    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall either be primitive or constructed (X.690: 8.20)
         // However, we are implementing for a shared slice, so it cannot use constructed form
         // (which requires allocation)
@@ -66,7 +66,7 @@ impl<'i> DerParser<'i> for &'i str {
         tag == Tag::Utf8String
     }
 
-    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall be primitive (X.690: 10.2)
         header.assert_primitive_input(&input).map_err(Err::Error)?;
 

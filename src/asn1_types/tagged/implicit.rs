@@ -59,12 +59,12 @@ where
         tag == Self::TAG
     }
 
-    fn from_any_ber(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+    fn from_ber_content(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
         // pass the same header to parse inner content
         // note: we *know* that header.tag is most probably different from t::tag,
         // so the tag is not checked here
 
-        let (rem, t) = T::from_any_ber(input, header)?;
+        let (rem, t) = T::from_ber_content(input, header)?;
         let tagged = TaggedValue::implicit(t);
         Ok((rem, tagged))
     }
@@ -82,12 +82,12 @@ where
         tag == Self::TAG
     }
 
-    fn from_any_der(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+    fn from_der_content(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
         // pass the same header to parse inner content
         // note: we *know* that header.tag is most probably different from t::tag,
         // so the tag is not checked here
 
-        let (rem, t) = T::from_any_der(input, header)?;
+        let (rem, t) = T::from_der_content(input, header)?;
         let tagged = TaggedValue::implicit(t);
         Ok((rem, tagged))
     }

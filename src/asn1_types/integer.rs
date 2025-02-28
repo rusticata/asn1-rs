@@ -126,7 +126,7 @@ macro_rules! impl_int {
                 tag == Tag::Integer
             }
 
-            fn from_any_ber(
+            fn from_ber_content(
                 input: Input<'i>,
                 header: Header<'i>,
             ) -> IResult<Input<'i>, Self, Self::Error> {
@@ -159,7 +159,7 @@ macro_rules! impl_int {
                 tag == Tag::Integer
             }
 
-            fn from_any_der(
+            fn from_der_content(
                 input: Input<'i>,
                 header: Header<'i>,
             ) -> IResult<Input<'i>, Self, Self::Error> {
@@ -168,7 +168,7 @@ macro_rules! impl_int {
                     BerError::nom_err_input(&input, InnerError::DerConstraintFailed(e))
                 })?;
 
-                Self::from_any_ber(input, header)
+                Self::from_ber_content(input, header)
             }
         }
 
@@ -243,7 +243,7 @@ macro_rules! impl_uint {
                 tag == Tag::Integer
             }
 
-            fn from_any_ber(
+            fn from_ber_content(
                 input: Input<'i>,
                 header: Header<'i>,
             ) -> IResult<Input<'i>, Self, Self::Error> {
@@ -266,7 +266,7 @@ macro_rules! impl_uint {
                 tag == Tag::Integer
             }
 
-            fn from_any_der(
+            fn from_der_content(
                 input: Input<'i>,
                 header: Header<'i>,
             ) -> IResult<Input<'i>, Self, Self::Error> {
@@ -275,7 +275,7 @@ macro_rules! impl_uint {
                     BerError::nom_err_input(&input, InnerError::DerConstraintFailed(e))
                 })?;
 
-                Self::from_any_ber(input, header)
+                Self::from_ber_content(input, header)
             }
         }
 
@@ -592,7 +592,10 @@ impl<'i> BerParser<'i> for Integer<'i> {
         tag == Tag::Integer
     }
 
-    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_ber_content(
+        input: Input<'i>,
+        header: Header<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall be primitive (X.690: 8.3.1)
         header.assert_primitive_input(&input).map_err(Err::Error)?;
 
@@ -621,12 +624,15 @@ impl<'i> DerParser<'i> for Integer<'i> {
         tag == Tag::Integer
     }
 
-    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_der_content(
+        input: Input<'i>,
+        header: Header<'i>,
+    ) -> IResult<Input<'i>, Self, Self::Error> {
         // Note: should we relax this constraint (leading 00 or ff)?
         check_der_int_constraints_input(&input)
             .map_err(|e| BerError::nom_err_input(&input, InnerError::DerConstraintFailed(e)))?;
 
-        Self::from_any_ber(input, header)
+        Self::from_ber_content(input, header)
     }
 }
 

@@ -125,8 +125,8 @@ where
         tag == Self::TAG
     }
 
-    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        let (rem, items) = <Vec<T>>::from_any_ber(input, header)?;
+    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        let (rem, items) = <Vec<T>>::from_ber_content(input, header)?;
         // NOTE: can't use SequenceIterator, it does not return `rem`
 
         Ok((rem, SequenceOf::new(items)))
@@ -144,8 +144,8 @@ where
         tag == Self::TAG
     }
 
-    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        let (rem, items) = <Vec<T>>::from_any_der(input, header)?;
+    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        let (rem, items) = <Vec<T>>::from_der_content(input, header)?;
         // NOTE: can't use SequenceIterator, it does not return `rem`
 
         Ok((rem, SequenceOf::new(items)))

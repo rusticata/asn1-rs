@@ -59,7 +59,7 @@ where
         Ok((rem, v))
     } else {
         let (rem, data) = ber_get_content(&header, input)?;
-        let (_, t) = T::from_any_ber(data, header)?;
+        let (_, t) = T::from_ber_content(data, header)?;
         Ok((rem, t))
     }
 }

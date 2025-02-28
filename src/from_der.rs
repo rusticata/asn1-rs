@@ -121,7 +121,7 @@ pub trait CheckDerConstraints {
 /// Base trait for DER object parsers
 ///
 /// Implementers should provide a definition (or validate the default one) for the following methods:
-/// - [`from_any_der`](DerParser::from_any_der): Parse DER content, given a header and data
+/// - [`from_der_content`](DerParser::from_der_content): Parse DER content, given a header and data
 /// - [`check_tag`](DerParser::check_tag): check if a tag is acceptable for this object (default: all tags are accepted)
 pub trait DerParser<'i>
 where
@@ -147,7 +147,7 @@ where
             ));
         }
         let (rem, data) = take(length)(rem)?;
-        let (_, obj) = Self::from_any_der(data, header).map_err(Err::convert)?;
+        let (_, obj) = Self::from_der_content(data, header).map_err(Err::convert)?;
         Ok((rem, obj))
     }
 
@@ -171,7 +171,7 @@ where
     ///
     /// Note: in this method, implementers should *not* check header tag (which can be
     /// different from the usual object tag when using IMPLICIT tagging, for ex.).
-    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error>;
+    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error>;
 
     fn parse_der_optional(input: Input<'i>) -> IResult<Input<'i>, Option<Self>, Self::Error> {
         if input.input_len() == 0 {
@@ -187,7 +187,7 @@ where
             .definite_inner()
             .map_err(BerError::convert_into(input.clone()))?;
         let (rem, data) = take(length)(rem)?;
-        let (_, obj) = Self::from_any_der(data, header).map_err(Err::convert)?;
+        let (_, obj) = Self::from_der_content(data, header).map_err(Err::convert)?;
         Ok((rem, Some(obj)))
     }
 }

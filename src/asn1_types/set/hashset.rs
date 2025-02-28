@@ -38,7 +38,7 @@ where
         tag == Self::TAG
     }
 
-    fn from_any_ber(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+    fn from_ber_content(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
         // Encoding shall be constructed (X.690: 8.12.1)
         header
             .assert_constructed_input(&input)
@@ -59,7 +59,7 @@ where
         tag == Self::TAG
     }
 
-    fn from_any_der(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
+    fn from_der_content(input: Input<'a>, header: Header<'a>) -> IResult<Input<'a>, Self, Self::Error> {
         // Encoding shall be constructed (X.690: 8.12.1)
         header
             .assert_constructed_input(&input)

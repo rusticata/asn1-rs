@@ -115,7 +115,7 @@ impl<'i> BerParser<'i> for BitString {
         tag == Tag::BitString
     }
 
-    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall either be primitive or constructed (X.690: 8.6.1)
 
         if !header.constructed() {
@@ -159,11 +159,11 @@ impl<'i> DerParser<'i> for BitString {
         tag == Tag::BitString
     }
 
-    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall be primitive (X.690: 10.2)
         header.assert_primitive_input(&input).map_err(Err::Error)?;
 
-        <BitString>::from_any_ber(input, header)
+        <BitString>::from_ber_content(input, header)
     }
 }
 

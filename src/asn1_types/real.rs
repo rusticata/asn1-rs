@@ -178,7 +178,7 @@ impl<'i> BerParser<'i> for Real {
         tag == Tag::RealType
     }
 
-    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall be primitive (X.690: 8.5.1)
         header.assert_primitive_input(&input).map_err(Err::Error)?;
 
@@ -197,8 +197,8 @@ impl<'i> DerParser<'i> for Real {
         tag == Tag::RealType
     }
 
-    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        Self::from_any_ber(input, header)
+    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        Self::from_ber_content(input, header)
     }
 }
 

@@ -142,7 +142,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.iter.next() {
-            Some(Ok((_, any))) => match T::from_any_ber(any.data, any.header) {
+            Some(Ok((_, any))) => match T::from_ber_content(any.data, any.header) {
                 Ok((_, obj)) => Some(Ok(obj)),
                 Err(e) => {
                     let e = match e {
@@ -173,7 +173,7 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.iter.next() {
-            Some(Ok((_, any))) => match T::from_any_der(any.data, any.header) {
+            Some(Ok((_, any))) => match T::from_der_content(any.data, any.header) {
                 Ok((_, obj)) => Some(Ok(obj)),
                 Err(e) => {
                     let e = match e {

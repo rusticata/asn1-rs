@@ -64,7 +64,7 @@ where
 /// Base trait for BER object parsers
 ///
 /// Implementers should provide a definition (or validate the default one) for the following methods:
-/// - [`from_any_ber`](BerParser::from_any_ber): Parse BER content, given a header and data
+/// - [`from_ber_content`](BerParser::from_ber_content): Parse BER content, given a header and data
 /// - [`check_tag`](BerParser::check_tag): check if a tag is acceptable for this object (default: all tags are accepted)
 pub trait BerParser<'i>
 where
@@ -86,7 +86,7 @@ where
         }
         let (rem, data) =
             BerMode::get_object_content(rem, &header, MAX_RECURSION).map_err(Err::convert)?;
-        let (_, obj) = Self::from_any_ber(data, header).map_err(Err::convert)?;
+        let (_, obj) = Self::from_ber_content(data, header).map_err(Err::convert)?;
         Ok((rem, obj))
     }
 
@@ -104,7 +104,7 @@ where
     ///
     /// Note: in this method, implementers should *not* check header tag (which can be
     /// different from the usual object tag when using IMPLICIT tagging, for ex.).
-    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error>;
+    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error>;
 
     fn parse_ber_optional(input: Input<'i>) -> IResult<Input<'i>, Option<Self>, Self::Error> {
         if input.input_len() == 0 {
@@ -116,7 +116,7 @@ where
         }
         let (rem, data) =
             BerMode::get_object_content(rem, &header, MAX_RECURSION).map_err(Err::convert)?;
-        let (_, obj) = Self::from_any_ber(data, header).map_err(Err::convert)?;
+        let (_, obj) = Self::from_ber_content(data, header).map_err(Err::convert)?;
         Ok((rem, Some(obj)))
     }
 }

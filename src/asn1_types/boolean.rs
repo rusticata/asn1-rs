@@ -68,7 +68,7 @@ impl<'i> BerParser<'i> for Boolean {
         tag == Tag::Boolean
     }
 
-    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall be primitive (X.690: 8.2.1)
         header.assert_primitive_input(&input).map_err(Err::Error)?;
         // The contents octets shall consist of a single octet (X.690: 8.2.1)
@@ -87,8 +87,8 @@ impl<'i> DerParser<'i> for Boolean {
         tag == Tag::Boolean
     }
 
-    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        let (rem, b) = Boolean::from_any_ber(input, header)?;
+    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        let (rem, b) = Boolean::from_ber_content(input, header)?;
         if !(b.value == 0 || b.value == 0xff) {
             let e = DerConstraint::InvalidBoolean;
             return Err(BerError::nom_err_input(
@@ -176,8 +176,8 @@ impl<'i> BerParser<'i> for bool {
         tag == Tag::Boolean
     }
 
-    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        <Boolean>::from_any_ber(input, header).map(|(rem, b)| (rem, b.bool()))
+    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        <Boolean>::from_ber_content(input, header).map(|(rem, b)| (rem, b.bool()))
     }
 }
 
@@ -188,8 +188,8 @@ impl<'i> DerParser<'i> for bool {
         tag == Tag::Boolean
     }
 
-    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        <Boolean>::from_any_der(input, header).map(|(rem, b)| (rem, b.bool()))
+    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        <Boolean>::from_der_content(input, header).map(|(rem, b)| (rem, b.bool()))
     }
 }
 

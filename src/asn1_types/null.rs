@@ -44,7 +44,7 @@ impl<'i> BerParser<'i> for Null {
         tag == Tag::Null
     }
 
-    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall be primitive (X.690: 8.8.1)
         header.assert_primitive_input(&input).map_err(Err::Error)?;
         // Content octets shall not contain any octets (X.690: 8.8.2)
@@ -62,9 +62,9 @@ impl<'i> DerParser<'i> for Null {
         tag == Tag::Null
     }
 
-    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         // DER parser is the same as BER
-        <Null>::from_any_ber(input, header)
+        <Null>::from_ber_content(input, header)
     }
 }
 
@@ -115,8 +115,8 @@ impl<'i> BerParser<'i> for () {
         tag == Tag::Null
     }
 
-    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        <Null>::from_any_ber(input, header).map(|(rem, _)| (rem, ()))
+    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        <Null>::from_ber_content(input, header).map(|(rem, _)| (rem, ()))
     }
 }
 
@@ -127,8 +127,8 @@ impl<'i> DerParser<'i> for () {
         tag == Tag::Null
     }
 
-    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        <Null>::from_any_der(input, header).map(|(rem, _)| (rem, ()))
+    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+        <Null>::from_der_content(input, header).map(|(rem, _)| (rem, ()))
     }
 }
 

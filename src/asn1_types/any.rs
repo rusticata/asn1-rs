@@ -429,7 +429,7 @@ impl<'a> FromBer<'a> for Any<'a> {
 impl<'i> BerParser<'i> for Any<'i> {
     type Error = BerError<Input<'i>>;
 
-    fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_ber_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         let (rem, data) = match header.length {
             Length::Definite(l) => take(l)(input)?,
             Length::Indefinite => {
@@ -452,7 +452,7 @@ impl<'a> FromDer<'a> for Any<'a> {
 impl<'i> DerParser<'i> for Any<'i> {
     type Error = BerError<Input<'i>>;
 
-    fn from_any_der(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
+    fn from_der_content(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         let (rem, data) = DerMode::get_object_content(input, &header, MAX_RECURSION)?;
         Ok((rem, Any { header, data }))
     }
