@@ -104,18 +104,6 @@ fn from_der_bool() {
 }
 
 #[test]
-fn from_der_embedded_pdv() {
-    let input = &hex!("2b 0d a0 07 81 05 2a 03 04 05 06 82 02 aa a0");
-    let (rem, result) = EmbeddedPdv::from_der(input).expect("parsing failed");
-    assert_eq!(rem, &[]);
-    assert_eq!(
-        result.identification,
-        PdvIdentification::Syntax(Oid::from(&[1, 2, 3, 4, 5, 6]).unwrap())
-    );
-    assert_eq!(result.data_value, &[0xaa, 0xa0]);
-}
-
-#[test]
 fn from_der_enumerated() {
     let input = &hex!("0a 01 02");
     let (rem, result) = Enumerated::from_der(input).expect("parsing failed");

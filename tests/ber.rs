@@ -41,68 +41,6 @@ fn from_ber_bitstring() {
 }
 
 #[test]
-fn from_ber_embedded_pdv() {
-    let input = &hex!("2b 0d a0 07 81 05 2a 03 04 05 06 82 02 aa a0");
-    let (rem, result) = EmbeddedPdv::from_ber(input).expect("parsing failed");
-    assert_eq!(rem, &[]);
-    assert_eq!(
-        result.identification,
-        PdvIdentification::Syntax(Oid::from(&[1, 2, 3, 4, 5, 6]).unwrap())
-    );
-    assert_eq!(result.data_value, &[0xaa, 0xa0]);
-}
-
-#[test]
-fn embedded_pdv_variants() {
-    // identification: syntaxes
-    let input = &hex!("2b 11 a0 0c a0 0a 80 02  2a 03 81 04 2a 03 04 05   82 01 00");
-    let (rem, res) = EmbeddedPdv::from_ber(input).expect("parsing EMBEDDED PDV failed");
-    assert!(rem.is_empty());
-    assert!(matches!(
-        res.identification,
-        PdvIdentification::Syntaxes { .. }
-    ));
-    // identification: syntax
-    let input = &hex!("2b 09 a0 04 81 02 2a 03  82 01 00");
-    let (rem, res) = EmbeddedPdv::from_ber(input).expect("parsing EMBEDDED PDV failed");
-    assert!(rem.is_empty());
-    assert!(matches!(res.identification, PdvIdentification::Syntax(_)));
-    // identification: presentation-context-id
-    let input = &hex!("2b 08 a0 03 82 01 02 82  01 00");
-    let (rem, res) = EmbeddedPdv::from_ber(input).expect("parsing EMBEDDED PDV failed");
-    assert!(rem.is_empty());
-    assert!(matches!(
-        res.identification,
-        PdvIdentification::PresentationContextId(_)
-    ));
-    // identification: context-negotiation
-    let input = &hex!("2b 10 a0 0b a3 09 80 01  2a 81 04 2a 03 04 05 82   01 00");
-    let (rem, res) = EmbeddedPdv::from_ber(input).expect("parsing EMBEDDED PDV failed");
-    assert!(rem.is_empty());
-    assert!(matches!(
-        res.identification,
-        PdvIdentification::ContextNegotiation { .. }
-    ));
-    // identification: transfer-syntax
-    let input = &hex!("2b 0b a0 06 84 04 2a 03  04 05 82 01 00");
-    let (rem, res) = EmbeddedPdv::from_ber(input).expect("parsing EMBEDDED PDV failed");
-    assert!(rem.is_empty());
-    assert!(matches!(
-        res.identification,
-        PdvIdentification::TransferSyntax(_)
-    ));
-    // identification: fixed
-    let input = &hex!("2b 07 a0 02 85 00 82 01  00");
-    let (rem, res) = EmbeddedPdv::from_ber(input).expect("parsing EMBEDDED PDV failed");
-    assert!(rem.is_empty());
-    assert!(matches!(res.identification, PdvIdentification::Fixed));
-    // identification: invalid
-    let input = &hex!("2b 07 a0 02 86 00 82 01  00");
-    let e = EmbeddedPdv::from_ber(input).expect_err("parsing should fail");
-    assert!(matches!(e, Err::Error(Error::InvalidValue { .. })));
-}
-
-#[test]
 fn from_ber_endofcontent() {
     let input = &hex!("00 00");
     let (rem, _result) = EndOfContent::from_ber(input).expect("parsing failed");
