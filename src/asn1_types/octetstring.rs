@@ -4,7 +4,7 @@ use core::convert::TryFrom;
 use core::fmt::Debug;
 use nom::Input as _;
 
-const OCTETSTRING_MAX_RECURSION: usize = 5;
+pub(crate) const OCTETSTRING_MAX_RECURSION: usize = 5;
 
 /// ASN.1 `OCTETSTRING` type
 ///

@@ -24,6 +24,14 @@ mod tests {
 
     use crate::{BerParser, DerParser, Input, VisibleString};
 
+    // Example data from X.690: 8.20.5.4
+    // Text is "Jones"
+    const VISIBLE_STRING_CONSTRUCTED1: &[u8] = &hex!("3a 09 04034A6F6E 04026573");
+
+    // Example data from X.690: 8.20.5.4
+    // Text is "Jones"
+    const VISIBLE_STRING_CONSTRUCTED2: &[u8] = &hex!("3a 80 04034A6F6E 04026573 0000");
+
     #[test]
     fn parse_ber_visiblestring() {
         let input = &hex!("1a 03 31 32 33");
@@ -36,13 +44,32 @@ mod tests {
     }
 
     #[test]
+    fn parse_ber_visiblestring_constructed() {
+        // Example data from X.690: 8.20.5.4
+        let input = Input::from(VISIBLE_STRING_CONSTRUCTED1);
+        let (rem, result) = VisibleString::parse_ber(input).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert_eq!(result.as_ref(), "Jones");
+
+        let input = Input::from(VISIBLE_STRING_CONSTRUCTED2);
+        let (rem, result) = VisibleString::parse_ber(input).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert_eq!(result.as_ref(), "Jones");
+    }
+
+    #[test]
     fn parse_der_visiblestring() {
         let input = &hex!("1a 03 31 32 33");
         let (rem, result) = VisibleString::parse_der(Input::from(input)).expect("parsing failed");
         assert!(rem.is_empty());
         assert_eq!(result.as_ref(), "123");
-        // wrong charset
+
+        // Fail: wrong charset
         let input = &hex!("1a 03 41 00 D8"); // 0x00d8 is the encoding of 'Ø'
         let _ = VisibleString::parse_der(Input::from(input)).expect_err("parsing should fail");
+
+        // Fail: constructed
+        let input = Input::from(VISIBLE_STRING_CONSTRUCTED1);
+        let _ = VisibleString::parse_der(input).expect_err("constructed");
     }
 }

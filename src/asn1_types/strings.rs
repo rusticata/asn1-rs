@@ -125,22 +125,39 @@ macro_rules! asn1_string {
             }
 
             fn from_any_ber(input: $crate::Input<'i>, header: $crate::Header<'i>) -> $crate::nom::IResult<$crate::Input<'i>, Self, Self::Error> {
+                use alloc::borrow::Cow;
                 // Encoding shall either be primitive or constructed (X.690: 8.20)
-                if !header.constructed() {
-                    use alloc::borrow::Cow;
-                    use $crate::nom::Input as _;
+                let (rem, data) =
+                    if !header.constructed() {
+                        use $crate::nom::Input as _;
 
-                    let (rem, data) = input.take_split(input.len());
-                    let b = data.as_bytes2();
-                    <$name>::test_valid_charset(b).map_err(|e|
-                        $crate::BerError::nom_err_input(&data, e.into()))?;
+                        let (rem, data) = input.take_split(input.len());
+                        (rem, Cow::Borrowed(data.as_bytes2()))
+                    } else {
+                        let (rem, s) = $crate::parse_ber_segmented::<$crate::OctetString>(header, input, $crate::OCTETSTRING_MAX_RECURSION)?;
 
-                    let s = alloc::str::from_utf8(b).map_err(|e|
-                        $crate::BerError::nom_err_input(&data, e.into()))?;
-                    let data = Cow::Borrowed(s);
-                    Ok((rem, $name { data }))
-                } else {
-                    return Err($crate::BerError::nom_err_input(&input, $crate::InnerError::Unsupported));
+                        let s = s.into_cow();
+                        (rem, s)
+                    };
+
+                let b = data.as_ref();
+                <$name>::test_valid_charset(b).map_err(|e|
+                    $crate::BerError::nom_err_input(&rem, e.into()))?;
+
+                match data {
+                    Cow::Borrowed(b) => {
+                        let s = alloc::str::from_utf8(b).map_err(|e|
+                            $crate::BerError::nom_err_input(&rem, e.into()))?;
+                        let data = Cow::Borrowed(s);
+                        Ok((rem, $name { data }))
+                    }
+                    Cow::Owned(v) => {
+                        let s = alloc::string::String::from_utf8(v).map_err(|e|
+                            $crate::BerError::nom_err_input(&rem, e.into()))?;
+
+                        let data = Cow::Owned(s);
+                        Ok((rem, $name { data }))
+                    }
                 }
             }
         }

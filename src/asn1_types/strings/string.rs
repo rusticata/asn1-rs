@@ -38,21 +38,10 @@ impl<'i> BerParser<'i> for String {
     }
 
     fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        // Encoding shall either be primitive or constructed (X.690: 8.20)
-        // TODO:  constructed strings not supported
-        if header.is_constructed() {
-            return Err(BerError::nom_err_input(&input, InnerError::Unsupported))?;
-        }
+        let (rem, obj) = Utf8String::from_any_ber(input, header)?;
 
-        let (rem, data) = input.take_split(input.len());
-
-        match core::str::from_utf8(data.as_bytes2()) {
-            Ok(s) => Ok((rem, s.to_string())),
-            Err(_) => Err(BerError::nom_err_input(
-                &rem,
-                InnerError::StringInvalidCharset,
-            )),
-        }
+        let s = obj.data.into_owned();
+        Ok((rem, s))
     }
 }
 

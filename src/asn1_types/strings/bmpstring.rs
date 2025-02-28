@@ -84,29 +84,32 @@ impl<'i> BerParser<'i> for BmpString<'i> {
 
     fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall either be primitive or constructed (X.690: 8.20)
-        // TODO:  constructed strings not supported
-        if header.is_constructed() {
-            Err(BerError::nom_err_input(&input, InnerError::Unsupported))
-        } else {
+        let (rem, data) = if header.is_constructed() {
             let (rem, data) = input.take_split(input.len());
+            (rem, Cow::Borrowed(data.as_bytes2()))
+        } else {
+            let (rem, s) =
+                parse_ber_segmented::<OctetString>(header, input, OCTETSTRING_MAX_RECURSION)?;
+            let s = s.into_cow();
+            (rem, s)
+        };
 
-            // read slice as big-endian UTF-16 string
-            let v = data
-                .as_bytes2()
-                .chunks(2)
-                .map(|s| match s {
-                    [a, b] => ((*a as u16) << 8) | (*b as u16),
-                    [a] => *a as u16,
-                    _ => unreachable!(),
-                })
-                .collect::<Vec<_>>();
+        // read slice as big-endian UTF-16 string
+        let v = data
+            .as_ref()
+            .chunks(2)
+            .map(|s| match s {
+                [a, b] => ((*a as u16) << 8) | (*b as u16),
+                [a] => *a as u16,
+                _ => unreachable!(),
+            })
+            .collect::<Vec<_>>();
 
-            let s = String::from_utf16(&v)
-                .map_err(|_| BerError::nom_err_input(&data, InnerError::StringInvalidCharset))?;
-            let data = Cow::Owned(s);
+        let s = String::from_utf16(&v)
+            .map_err(|_| BerError::nom_err_input(&rem, InnerError::StringInvalidCharset))?;
+        let data = Cow::Owned(s);
 
-            Ok((rem, BmpString { data }))
-        }
+        Ok((rem, BmpString { data }))
     }
 }
 

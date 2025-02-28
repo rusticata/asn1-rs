@@ -103,41 +103,44 @@ impl<'i> BerParser<'i> for UniversalString<'i> {
 
     fn from_any_ber(input: Input<'i>, header: Header<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         // Encoding shall either be primitive or constructed (X.690: 8.20)
-        // TODO:  constructed strings not supported
-        if header.is_constructed() {
-            Err(BerError::nom_err_input(&input, InnerError::Unsupported))
-        } else {
+        let (rem, data) = if header.is_constructed() {
             let (rem, data) = input.take_split(input.len());
+            (rem, Cow::Borrowed(data.as_bytes2()))
+        } else {
+            let (rem, s) =
+                parse_ber_segmented::<OctetString>(header, input, OCTETSTRING_MAX_RECURSION)?;
+            let s = s.into_cow();
+            (rem, s)
+        };
 
-            if data.len() % 4 != 0 {
-                return Err(BerError::nom_err_input(
-                    &input,
-                    InnerError::StringInvalidCharset,
-                ));
-            }
-
-            // read slice as big-endian UCS-4 string
-            let v = data
-                .as_bytes2()
-                .chunks(4)
-                .map(|s| match s {
-                    [a, b, c, d] => {
-                        let u32_val = ((*a as u32) << 24)
-                            | ((*b as u32) << 16)
-                            | ((*c as u32) << 8)
-                            | (*d as u32);
-                        char::from_u32(u32_val)
-                    }
-                    _ => unreachable!(),
-                })
-                .collect::<Option<Vec<_>>>()
-                .ok_or_else(|| BerError::nom_err_input(&input, InnerError::StringInvalidCharset))?;
-
-            let s = String::from_iter(v);
-            let data = Cow::Owned(s);
-
-            Ok((rem, UniversalString { data }))
+        if data.len() % 4 != 0 {
+            return Err(BerError::nom_err_input(
+                &rem,
+                InnerError::StringInvalidCharset,
+            ));
         }
+
+        // read slice as big-endian UCS-4 string
+        let v = data
+            .as_ref()
+            .chunks(4)
+            .map(|s| match s {
+                [a, b, c, d] => {
+                    let u32_val = ((*a as u32) << 24)
+                        | ((*b as u32) << 16)
+                        | ((*c as u32) << 8)
+                        | (*d as u32);
+                    char::from_u32(u32_val)
+                }
+                _ => unreachable!(),
+            })
+            .collect::<Option<Vec<_>>>()
+            .ok_or_else(|| BerError::nom_err_input(&rem, InnerError::StringInvalidCharset))?;
+
+        let s = String::from_iter(v);
+        let data = Cow::Owned(s);
+
+        Ok((rem, UniversalString { data }))
     }
 }
 
