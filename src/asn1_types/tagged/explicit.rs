@@ -61,6 +61,15 @@ where
             .assert_constructed_input(&input)
             .map_err(|e| Err::Error(e.into()))?;
 
+        // assert class
+        if header.class as u8 != CLASS {
+            // Safety: CLASS < 4
+            let class = Class::try_from(CLASS).unwrap_or(Class::Private);
+            return Err(Err::Error(
+                BerError::unexpected_class(input, Some(class), header.class).into(),
+            ));
+        }
+
         // note: we check tag here, because the only way to have a different tag
         // would be to be IMPLICIT, and we already know we are EXPLICIT
         // This is an exception!
@@ -98,6 +107,15 @@ where
         header
             .assert_constructed_input(&input)
             .map_err(|e| Err::Error(e.into()))?;
+
+        // assert class
+        if header.class as u8 != CLASS {
+            // Safety: CLASS < 4
+            let class = Class::try_from(CLASS).unwrap_or(Class::Private);
+            return Err(Err::Error(
+                BerError::unexpected_class(input, Some(class), header.class).into(),
+            ));
+        }
 
         // note: we check tag here, because the only way to have a different tag
         // would be to be IMPLICIT, and we already know we are EXPLICIT
@@ -357,6 +375,10 @@ mod tests {
 
         // tagged value, incorrect tag -> Fail
         let input: &[u8] = &hex! {"a1 03 0101ff"};
+        let _res = T::parse_ber(input.into()).expect_err("parsing should have failed");
+
+        // tagged value, correct tag but incorrect class -> Fail
+        let input: &[u8] = &hex! {"60 03 0101ff"};
         let _res = T::parse_ber(input.into()).expect_err("parsing should have failed");
     }
 

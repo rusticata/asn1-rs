@@ -171,6 +171,12 @@ impl<I: Input> BerError<I> {
         Self::new(input, InnerError::UnexpectedTag { expected, actual })
     }
 
+    /// Build an error from the provided unexpected tag
+    #[inline]
+    pub const fn unexpected_class(input: I, expected: Option<Class>, actual: Class) -> Self {
+        Self::new(input, InnerError::UnexpectedClass { expected, actual })
+    }
+
     /// Build an `Incomplete` error from the provided parameters
     #[inline]
     pub const fn incomplete(input: I, n: nom::Needed) -> Self {

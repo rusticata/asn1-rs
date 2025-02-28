@@ -63,6 +63,15 @@ where
         header: &'_ Header<'i>,
         input: Input<'i>,
     ) -> IResult<Input<'i>, Self, Self::Error> {
+        // assert class
+        if header.class as u8 != CLASS {
+            // Safety: CLASS < 4
+            let class = Class::try_from(CLASS).unwrap_or(Class::Private);
+            return Err(Err::Error(
+                BerError::unexpected_class(input, Some(class), header.class).into(),
+            ));
+        }
+
         // pass the same header to parse inner content
         // note: we *know* that header.tag is most probably different from t::tag,
         // so the tag is not checked here
@@ -89,6 +98,15 @@ where
         header: &'_ Header<'i>,
         input: Input<'i>,
     ) -> IResult<Input<'i>, Self, Self::Error> {
+        // assert class
+        if header.class as u8 != CLASS {
+            // Safety: CLASS < 4
+            let class = Class::try_from(CLASS).unwrap_or(Class::Private);
+            return Err(Err::Error(
+                BerError::unexpected_class(input, Some(class), header.class).into(),
+            ));
+        }
+
         // pass the same header to parse inner content
         // note: we *know* that header.tag is most probably different from t::tag,
         // so the tag is not checked here
@@ -358,6 +376,10 @@ mod tests {
 
         // tagged value, incorrect tag -> Fail
         let input: &[u8] = &hex! {"8101ff"};
+        let _res = T::parse_ber(input.into()).expect_err("parsing should have failed");
+
+        // tagged value, correct tag but incorrect class -> Fail
+        let input: &[u8] = &hex! {"4001ff"};
         let _res = T::parse_ber(input.into()).expect_err("parsing should have failed");
     }
 
