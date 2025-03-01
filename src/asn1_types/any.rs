@@ -412,33 +412,8 @@ impl<'a> Any<'a> {
     /// Attempt to get value as `str`, for all known string types
     ///
     /// This function does not allocate data, so it supports all string types except
-    /// `UniversalString`.
-    pub fn as_any_str(&self) -> Result<String> {
-        match self.tag() {
-            Tag::GeneralString
-            | Tag::GraphicString
-            | Tag::Ia5String
-            | Tag::NumericString
-            | Tag::PrintableString
-            | Tag::T61String
-            | Tag::Utf8String
-            | Tag::VideotexString
-            | Tag::VisibleString => {
-                let res = core::str::from_utf8(self.data.as_bytes2())?;
-                Ok(res.to_string())
-            }
-            Tag::UniversalString => {
-                let us = UniversalString::try_from(self)?;
-                Ok(us.string())
-            }
-            _ => todo!(),
-        }
-    }
-
-    /// Attempt to get value as `String`, for all known string types
-    ///
-    /// This function allocates data
-    pub fn as_any_string(&self) -> Result<&str> {
+    /// `BmpString` and `UniversalString`.
+    pub fn as_any_str(&self) -> Result<&str> {
         match self.tag() {
             Tag::GeneralString
             | Tag::GraphicString
@@ -452,6 +427,35 @@ impl<'a> Any<'a> {
             | Tag::VisibleString => {
                 let res = core::str::from_utf8(self.data.as_bytes2())?;
                 Ok(res)
+            }
+            _ => todo!(),
+        }
+    }
+
+    /// Attempt to get value as `String`, for all known string types
+    ///
+    /// This function allocates data
+    pub fn as_any_string(&self) -> Result<String> {
+        match self.tag() {
+            Tag::GeneralString
+            | Tag::GraphicString
+            | Tag::Ia5String
+            | Tag::NumericString
+            | Tag::PrintableString
+            | Tag::T61String
+            | Tag::Utf8String
+            | Tag::VideotexString
+            | Tag::VisibleString => {
+                let res = core::str::from_utf8(self.data.as_bytes2())?;
+                Ok(res.to_string())
+            }
+            Tag::BmpString => {
+                let us = BmpString::try_from(self)?;
+                Ok(us.string())
+            }
+            Tag::UniversalString => {
+                let us = UniversalString::try_from(self)?;
+                Ok(us.string())
             }
             _ => todo!(),
         }
