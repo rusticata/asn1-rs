@@ -9,6 +9,7 @@ use crate::{BerParser, Input};
 use alloc::borrow::Cow;
 use alloc::vec::Vec;
 use core::convert::TryFrom;
+use core::hash::Hash;
 use nom::bytes::streaming::take;
 use nom::number::streaming::be_u8;
 use nom::{Err, IResult};
@@ -527,6 +528,16 @@ impl<'a> PartialEq<Header<'a>> for Header<'a> {
 }
 
 impl Eq for Header<'_> {}
+
+impl Hash for Header<'_> {
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.class.hash(state);
+        self.constructed.hash(state);
+        self.tag.hash(state);
+        self.length.hash(state);
+        self.raw_tag.hash(state);
+    }
+}
 
 pub(crate) fn parse_header<'a, I: nom::Input<Item = u8>>(
     input: I,

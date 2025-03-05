@@ -4,7 +4,7 @@ use crate::{SerializeResult, ToDer};
 use core::ops;
 
 /// BER Object Length
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum Length {
     /// Definite form (X.690 8.1.3.3)
     Definite(usize),

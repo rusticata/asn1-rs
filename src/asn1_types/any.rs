@@ -15,7 +15,7 @@ use self::debug::trace;
 /// It contains a header, and a reference to the object content.
 ///
 /// Note: this type is only provided in **borrowed** version (*i.e.* it cannot own the inner data).
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct Any<'a> {
     /// The object header
     pub header: Header<'a>,

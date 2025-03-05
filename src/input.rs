@@ -5,7 +5,7 @@ use core::slice::Iter;
 use nom::{AsBytes, Needed};
 
 /// BER/DER parser input type
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Input<'a> {
     data: &'a [u8],
     span: Range<usize>,

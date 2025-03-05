@@ -5,7 +5,7 @@ use core::fmt;
 pub struct BerClassFromIntError(pub(crate) ());
 
 /// BER Object class of tag
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 #[repr(u8)]
 pub enum Class {
     /// `Universal` class of tags (`0b00`)

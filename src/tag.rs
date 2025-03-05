@@ -7,7 +7,7 @@ use rusticata_macros::newtype_enum;
 ///
 /// X.690 doesn't specify the maximum tag size so we're assuming that people
 /// aren't going to need anything more than a u32.
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Tag(pub u32);
 
 newtype_enum! {
