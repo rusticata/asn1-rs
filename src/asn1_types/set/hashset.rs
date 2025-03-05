@@ -1,37 +1,42 @@
 #![cfg(feature = "std")]
 use crate::*;
 use core::fmt::Debug;
+use core::hash::BuildHasher;
 use std::collections::HashSet;
 use std::convert::TryFrom;
 use std::hash::Hash;
+use std::io;
+use std::io::Write;
 
 use self::debug::{trace, trace_generic};
 
-impl<T> Tagged for HashSet<T> {
+impl<T, S> Tagged for HashSet<T, S> {
     const CONSTRUCTED: bool = true;
     const TAG: Tag = Tag::Set;
 }
 
-impl<'a, T> TryFrom<Any<'a>> for HashSet<T>
+impl<'a, T, S> TryFrom<Any<'a>> for HashSet<T, S>
 where
     T: FromBer<'a>,
     T: Hash + Eq,
+    S: BuildHasher + Default,
 {
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<Self> {
         any.tag().assert_eq(Self::TAG)?;
         any.header.assert_constructed()?;
-        let items =
-            SetIterator::<T, BerMode>::new(any.data.as_bytes2()).collect::<Result<HashSet<T>>>()?;
+        let items = SetIterator::<T, BerMode>::new(any.data.as_bytes2())
+            .collect::<Result<HashSet<T, S>>>()?;
         Ok(items)
     }
 }
 
-impl<'a, T> BerParser<'a> for HashSet<T>
+impl<'a, T, S> BerParser<'a> for HashSet<T, S>
 where
     T: BerParser<'a>,
     T: Hash + Eq,
+    S: BuildHasher + Default,
 {
     type Error = <T as BerParser<'a>>::Error;
 
@@ -48,10 +53,11 @@ where
     }
 }
 
-impl<'a, T> DerParser<'a> for HashSet<T>
+impl<'a, T, S> DerParser<'a> for HashSet<T, S>
 where
     T: DerParser<'a>,
     T: Hash + Eq,
+    S: BuildHasher + Default,
 {
     type Error = <T as DerParser<'a>>::Error;
 
@@ -68,7 +74,7 @@ where
     }
 }
 
-impl<T> CheckDerConstraints for HashSet<T>
+impl<T, S> CheckDerConstraints for HashSet<T, S>
 where
     T: CheckDerConstraints,
 {
@@ -84,11 +90,12 @@ where
 }
 
 /// manual impl of FromDer, so we do not need to require `TryFrom<Any> + CheckDerConstraints`
-impl<'a, T, E> FromDer<'a, E> for HashSet<T>
+impl<'a, T, E, S> FromDer<'a, E> for HashSet<T, S>
 where
     T: FromDer<'a, E>,
     T: Hash + Eq,
     E: From<Error> + Debug,
+    S: BuildHasher + Default,
 {
     fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self, E> {
         trace_generic(
@@ -104,7 +111,7 @@ where
                     .assert_constructed()
                     .map_err(|e| Err::Error(e.into()))?;
                 let items = SetIterator::<T, DerMode, E>::new(any.data.as_bytes2())
-                    .collect::<Result<HashSet<T>, E>>()
+                    .collect::<Result<HashSet<T, S>, E>>()
                     .map_err(Err::Error)?;
                 Ok((rem, items))
             },
@@ -113,7 +120,7 @@ where
     }
 }
 
-impl<T> ToDer for HashSet<T>
+impl<T, S> ToDer for HashSet<T, S>
 where
     T: ToDer,
 {
@@ -126,7 +133,7 @@ where
         Ok(header.to_der_len()? + len)
     }
 
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+    fn write_der_header(&self, writer: &mut dyn Write) -> SerializeResult<usize> {
         let mut len = 0;
         for t in self.iter() {
             len += t.to_der_len().map_err(|_| SerializeError::InvalidLength)?;
@@ -135,12 +142,42 @@ where
         header.write_der_header(writer)
     }
 
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+    fn write_der_content(&self, writer: &mut dyn Write) -> SerializeResult<usize> {
         let mut sz = 0;
         for t in self.iter() {
             sz += t.write_der(writer)?;
         }
         Ok(sz)
+    }
+}
+
+impl<T, S> ToBer for HashSet<T, S>
+where
+    T: ToBer + DynTagged,
+{
+    type Encoder = Constructed<Self>;
+
+    fn content_len(&self) -> Length {
+        // content_len returns only the length of *content*, so we need header length for
+        // every object here
+        let len = self.iter().fold(Length::Definite(0), |acc, t| {
+            let content_length = t.content_len();
+            match (acc, content_length) {
+                (Length::Definite(a), Length::Definite(b)) => {
+                    let header_length = ber_header_length(t.tag(), content_length).unwrap_or(0);
+                    Length::Definite(a + header_length + b)
+                }
+                _ => Length::Indefinite,
+            }
+        });
+        len
+    }
+
+    fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+        self.iter().try_fold(0, |acc, t| {
+            let sz = t.encode(target)?;
+            Ok::<_, io::Error>(acc + sz)
+        })
     }
 }
 

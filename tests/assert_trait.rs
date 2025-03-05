@@ -333,6 +333,7 @@ fn assert_traits_tober() {
 
     test_assert!(Sequence, Set);
     test_assert!(AnySequence);
+    test_assert!(AnySet);
 
     test_assert!(&str, String);
     test_assert!(
@@ -350,14 +351,20 @@ fn assert_traits_tober() {
         VisibleString
     );
 
-    #[cfg(feature = "std")]
     #[allow(dead_code)]
     fn compound_wrapper_std<T>(_: T) {
-        // use std::collections::{BTreeSet, HashSet};
+        use std::collections::{BTreeSet, HashSet};
 
-        test_assert!(AnySet);
+        // test_assert!(SequenceOf<T>);
+        // test_assert!(SetOf<T>);
 
-        // test_assert!(HashSet<T>);
-        // test_assert!(BTreeSet<T>);
+        #[allow(dead_code)]
+        fn compound_wrapper_tober<T>(_: T)
+        where
+            T: ToBer + DynTagged,
+        {
+            test_assert!(HashSet<T>);
+            test_assert!(BTreeSet<T>);
+        }
     }
 }

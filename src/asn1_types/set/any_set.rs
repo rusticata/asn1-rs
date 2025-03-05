@@ -101,25 +101,13 @@ const _: () = {
     use std::io;
     use std::io::Write;
 
-    use crate::{ber_header_length, Constructed, Length, ToBer};
+    use crate::{Constructed, Length, ToBer};
 
     impl<S: BuildHasher> ToBer for AnySet<'_, S> {
         type Encoder = Constructed<Self>;
 
         fn content_len(&self) -> Length {
-            // content_len returns only the length of *content*, so we need header length for
-            // every object here
-            let len = self.iter().fold(Length::Definite(0), |acc, t| {
-                let content_length = t.content_len();
-                match (acc, content_length) {
-                    (Length::Definite(a), Length::Definite(b)) => {
-                        let header_length = ber_header_length(t.tag(), content_length).unwrap_or(0);
-                        Length::Definite(a + header_length + b)
-                    }
-                    _ => Length::Indefinite,
-                }
-            });
-            len
+            self.items.content_len()
         }
 
         fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
