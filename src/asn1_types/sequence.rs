@@ -5,10 +5,12 @@ use alloc::vec::Vec;
 use core::convert::TryFrom;
 use nom::{Input as _, Parser};
 
+mod any_sequence;
 mod iterator;
 mod sequence_of;
 mod vec;
 
+pub use any_sequence::*;
 pub use iterator::*;
 pub use sequence_of::*;
 
@@ -19,6 +21,9 @@ pub use sequence_of::*;
 /// - a list of similar objects (`SEQUENCE OF`, usually parsed as a `Vec<T>`)
 ///
 /// The current object covers the former. For the latter, see the [`SequenceOf`] documentation.
+///
+/// This object stores the raw (unparsed) bytes of the sequence. To parse the objects
+/// as `Any`, use [`AnySequence`].
 ///
 /// The `Sequence` object contains the (*unparsed*) encoded representation of its content. It provides
 /// methods to parse and iterate contained objects, or convert the sequence to other types.

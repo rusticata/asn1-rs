@@ -281,6 +281,7 @@ macro_rules! impl_any_as {
 }
 
 impl<'a> Any<'a> {
+    impl_any_into!(anysequence => AnySequence<'a>, "SEQUENCE");
     impl_any_into!(bitstring => BitString, "BIT STRING");
     impl_any_into!(bmpstring => BmpString<'a>, "BMPString");
     impl_any_into!(bool => bool, "BOOLEAN");
@@ -327,6 +328,7 @@ impl<'a> Any<'a> {
     impl_any_into!(videotexstring => VideotexString<'a>, "VideotexString");
     impl_any_into!(visiblestring => VisibleString<'a>, "VisibleString");
 
+    impl_any_as!(as_anysequence => AnySequence, "SEQUENCE");
     impl_any_as!(as_bitstring => BitString, "BITSTRING");
     impl_any_as!(as_bmpstring => BmpString, "BMPString");
     impl_any_as!(as_bool => bool, "BOOLEAN");

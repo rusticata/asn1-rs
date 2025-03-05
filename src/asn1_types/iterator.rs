@@ -47,6 +47,21 @@ where
 }
 
 impl<'a> AnyIterator<'a, BerMode> {
+    /// Iterate on sub-objects, returning a collection `B` of elements with type `Any`
+    ///
+    /// This is a simplifier (and faster) version of [`AnyIterator::try_parse_collect`] when `T = Any`.
+    pub fn try_collect<B>(&mut self) -> IResult<Input<'a>, B, BerError<Input<'a>>>
+    where
+        B: FromIterator<Any<'a>>,
+    {
+        let b = <Result<B, _>>::from_iter(self.map(|r| match r {
+            Ok((_, obj)) => Ok(obj),
+            Err(e) => Err(Err::Error(e)),
+        }));
+        // after iteration, self.input points at end of last object content
+        b.map(|obj| (self.input.clone(), obj))
+    }
+
     /// Try to iterate on sub-objects, returning a collection `B` of elements with type `T`
     ///
     /// Similarly to [`Iterator::collect`], this function requires type annotations.
@@ -96,6 +111,21 @@ impl<'a> AnyIterator<'a, BerMode> {
 }
 
 impl<'a> AnyIterator<'a, DerMode> {
+    /// Iterate on sub-objects, returning a collection `B` of elements with type `Any`
+    ///
+    /// This is a simplifier (and faster) version of [`AnyIterator::try_parse_collect`] when `T = Any`.
+    pub fn try_collect<B>(&mut self) -> IResult<Input<'a>, B, BerError<Input<'a>>>
+    where
+        B: FromIterator<Any<'a>>,
+    {
+        let b = <Result<B, _>>::from_iter(self.map(|r| match r {
+            Ok((_, obj)) => Ok(obj),
+            Err(e) => Err(Err::Error(e)),
+        }));
+        // after iteration, self.input points at end of last object content
+        b.map(|obj| (self.input.clone(), obj))
+    }
+
     /// Try to iterate on sub-objects, returning a collection `B` of elements with type `T`
     ///
     /// Similarly to [`Iterator::collect`], this function requires type annotations.
