@@ -38,6 +38,16 @@ impl Class {
             })
         }
     }
+
+    pub const fn new_unwrap(value: u8) -> Self {
+        match value {
+            0b00 => Class::Universal,
+            0b01 => Class::Application,
+            0b10 => Class::ContextSpecific,
+            0b11 => Class::Private,
+            _ => panic!("Value outside range"),
+        }
+    }
 }
 
 impl fmt::Display for Class {

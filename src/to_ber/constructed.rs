@@ -31,15 +31,7 @@ where
     }
 
     fn write_tag_info<W: Write>(&mut self, t: &T, target: &mut W) -> Result<usize, io::Error> {
-        const CONSTRUCTED_BIT: u8 = 0b0010_0000;
-        // write tag
-        let tag = t.tag().0;
-        if tag < 31 {
-            // tag is primitive, and uses one byte
-            target.write(&[tag as u8 | CONSTRUCTED_BIT])
-        } else {
-            todo!();
-        }
+        self.write_tag_generic(t.class(), true, t.tag(), target)
     }
 }
 

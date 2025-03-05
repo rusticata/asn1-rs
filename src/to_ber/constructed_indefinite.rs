@@ -1,7 +1,7 @@
 use std::io::Write;
 use std::{io, marker::PhantomData};
 
-use crate::{Length, Tag};
+use crate::{DynTagged, Length, Tag};
 
 use super::{BerEncoder, ToBer};
 
@@ -23,27 +23,36 @@ impl<T> Default for ConstructedIndefinite<T> {
     }
 }
 
-impl<T> BerEncoder<T> for ConstructedIndefinite<T> {
+impl<T> BerEncoder<T> for ConstructedIndefinite<T>
+where
+    T: DynTagged,
+{
     fn new() -> Self {
         ConstructedIndefinite::new()
     }
 
-    fn write_tag_info<W: Write>(&mut self, _t: &T, target: &mut W) -> Result<usize, io::Error> {
-        const CONSTRUCTED_BIT: u8 = 0b0010_0000;
-        // write tag
-        let tag = Tag::Sequence.0; // FIXME: hardcoded
-        if tag < 31 {
-            // tag is primitive, and uses one byte
-            target.write(&[tag as u8 | CONSTRUCTED_BIT])
-        } else {
-            todo!();
-        }
+    fn write_tag_info<W: Write>(&mut self, t: &T, target: &mut W) -> Result<usize, io::Error> {
+        self.write_tag_generic(t.class(), true, t.tag(), target)
     }
 }
 
 /// Wrapper for sequence, to force using Indefinite length when serializing
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct IndefiniteVec<T>(pub Vec<T>);
+
+impl<T> DynTagged for IndefiniteVec<T> {
+    fn constructed(&self) -> bool {
+        true
+    }
+
+    fn tag(&self) -> Tag {
+        Tag::Sequence
+    }
+
+    fn accept_tag(tag: Tag) -> bool {
+        tag == Tag::Sequence
+    }
+}
 
 impl<T> ToBer for IndefiniteVec<T>
 where

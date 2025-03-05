@@ -1,4 +1,4 @@
-use crate::{Class, Error, Tag, Tagged};
+use crate::{Class, Error, Tag};
 use core::marker::PhantomData;
 
 mod application;
@@ -79,7 +79,7 @@ impl<T, E, TagKind, const CLASS: u8, const TAG: u32> TaggedValue<T, E, TagKind, 
 
     /// Return the (outer) tag of this object
     pub const fn tag(&self) -> Tag {
-        Self::TAG
+        Tag(TAG)
     }
 
     /// Return the (outer) class of this object
@@ -119,10 +119,4 @@ impl<T, E, TagKind, const CLASS: u8, const TAG: u32> AsRef<T>
     fn as_ref(&self) -> &T {
         &self.inner
     }
-}
-
-impl<T, E, TagKind, const CLASS: u8, const TAG: u32> Tagged
-    for TaggedValue<T, E, TagKind, CLASS, TAG>
-{
-    const TAG: Tag = Tag(TAG);
 }

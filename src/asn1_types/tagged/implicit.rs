@@ -2,6 +2,27 @@ use crate::*;
 use core::convert::TryFrom;
 use core::marker::PhantomData;
 
+impl<T, E, const CLASS: u8, const TAG: u32> DynTagged for TaggedValue<T, E, Implicit, CLASS, TAG>
+where
+    T: DynTagged,
+{
+    fn class(&self) -> Class {
+        Class::try_from(CLASS).unwrap_or(Class::Private)
+    }
+
+    fn constructed(&self) -> bool {
+        self.inner.constructed()
+    }
+
+    fn tag(&self) -> Tag {
+        Tag(TAG)
+    }
+
+    fn accept_tag(tag: Tag) -> bool {
+        tag.0 == TAG
+    }
+}
+
 impl<'a, T, E, const CLASS: u8, const TAG: u32> TryFrom<Any<'a>>
     for TaggedValue<T, E, Implicit, CLASS, TAG>
 where
@@ -159,7 +180,7 @@ where
 #[cfg(feature = "std")]
 impl<T, E, const CLASS: u8, const TAG: u32> ToDer for TaggedValue<T, E, Implicit, CLASS, TAG>
 where
-    T: ToDer,
+    T: ToDer + DynTagged,
 {
     fn to_der_len(&self) -> Result<usize> {
         self.inner.to_der_len()
@@ -198,39 +219,7 @@ where
 
 #[cfg(feature = "std")]
 const _: () = {
-    use crate::{BerGenericEncoder, BerTagEncoder, Class, DynTagged, Length, ToBer};
-
-    impl<T, E, const CLASS: u8, const TAG: u32> BerTagEncoder
-        for TaggedValue<T, E, Implicit, CLASS, TAG>
-    where
-        T: DynTagged,
-    {
-        fn write_tag_info<W: std::io::Write>(
-            &self,
-            target: &mut W,
-        ) -> Result<usize, std::io::Error> {
-            let class = Class::ContextSpecific as u8;
-
-            // if inner value is constructed, then set constructed flag
-            const CONSTRUCTED_BIT: u8 = 0b0010_0000;
-            // let is_constructed = matches!(self.inner.tag(), Tag::Sequence | Tag::Set);
-            let cs = if self.inner.constructed() {
-                CONSTRUCTED_BIT
-            } else {
-                0
-            };
-
-            // write tag
-            let tag = TAG;
-            if tag < 31 {
-                // tag is primitive, and uses one byte
-                let b0 = (class << 6) | cs | (tag as u8);
-                target.write(&[b0])
-            } else {
-                todo!();
-            }
-        }
-    }
+    use crate::{BerGenericEncoder, DynTagged, Length, ToBer};
 
     impl<T, E, const CLASS: u8, const TAG: u32> ToBer for TaggedValue<T, E, Implicit, CLASS, TAG>
     where
@@ -481,6 +470,7 @@ mod tests {
     }
 }
 
+#[cfg(feature = "std")]
 #[cfg(test)]
 mod std_tests {
     use hex_literal::hex;

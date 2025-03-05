@@ -2,6 +2,8 @@ use std::io;
 use std::io::Write;
 use std::marker::PhantomData;
 
+use crate::{Class, Tag};
+
 use super::BerEncoder;
 
 #[allow(missing_debug_implementations)]
@@ -27,13 +29,6 @@ impl<T, const TAG: u32> BerEncoder<T> for Primitive<T, TAG> {
     }
 
     fn write_tag_info<W: Write>(&mut self, _t: &T, target: &mut W) -> Result<usize, io::Error> {
-        // write tag
-        let tag = TAG;
-        if tag < 31 {
-            // tag is primitive, and uses one byte
-            target.write(&[tag as u8])
-        } else {
-            todo!();
-        }
+        self.write_tag_generic(Class::Universal, false, Tag(TAG), target)
     }
 }

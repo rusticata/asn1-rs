@@ -41,7 +41,7 @@ fn assert_traits_berparser() {
     test_assert!(Real, f32, f64);
 
     test_assert!(Sequence, Set);
-    test_assert!(AnySequence, AnySet);
+    test_assert!(AnySequence);
 
     test_assert!(&str, String);
     test_assert!(
@@ -80,6 +80,8 @@ fn assert_traits_berparser() {
         fn compound_wrapper_requiring_ord<'a, T: BerParser<'a> + Ord>(_: T) {
             use std::collections::BTreeSet;
             test_assert!(BTreeSet<T>);
+
+            test_assert!(AnySet);
         }
 
         #[cfg(feature = "std")]
@@ -134,7 +136,7 @@ fn assert_traits_derparser() {
     test_assert!(Real, f32, f64);
 
     test_assert!(Sequence, Set);
-    test_assert!(AnySequence, AnySet);
+    test_assert!(AnySequence);
 
     test_assert!(&str, String);
     test_assert!(
@@ -171,6 +173,8 @@ fn assert_traits_derparser() {
         {
             use std::collections::BTreeSet;
             test_assert!(BTreeSet<T>);
+
+            test_assert!(AnySet);
         }
 
         #[cfg(feature = "std")]
@@ -233,7 +237,7 @@ fn assert_traits_dyntagged() {
     test_assert!(Real, f32, f64);
 
     test_assert!(Sequence, Set);
-    test_assert!(AnySequence, AnySet);
+    test_assert!(AnySequence);
 
     test_assert!(&str, String);
     test_assert!(
@@ -284,6 +288,8 @@ fn assert_traits_dyntagged() {
     #[allow(dead_code)]
     fn compound_wrapper_std<T>(_: T) {
         use std::collections::{BTreeSet, HashSet};
+
+        test_assert!(AnySet);
 
         test_assert!(HashSet<T>);
         test_assert!(BTreeSet<T>);

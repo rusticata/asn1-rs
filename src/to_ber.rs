@@ -51,7 +51,6 @@ pub trait ToBer {
     ///
     /// Returns the number of bytes written
     fn encode<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
-        // FIXME: encoder is not used in write_content
         let sz = self.write_header(target)? + self.write_content(target)?;
 
         Ok(sz)

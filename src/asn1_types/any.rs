@@ -546,6 +546,14 @@ impl CheckDerConstraints for Any<'_> {
 impl DerAutoDerive for Any<'_> {}
 
 impl DynTagged for Any<'_> {
+    fn class(&self) -> Class {
+        self.header.class
+    }
+
+    fn constructed(&self) -> bool {
+        self.header.constructed
+    }
+
     fn tag(&self) -> Tag {
         self.tag()
     }
