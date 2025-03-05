@@ -218,6 +218,27 @@ where
     }
 }
 
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    impl<T> ToBer for SequenceOf<T>
+    where
+        T: ToBer + DynTagged,
+    {
+        type Encoder = Constructed<Self>;
+
+        fn content_len(&self) -> Length {
+            self.items.content_len()
+        }
+
+        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+            self.items.write_content(target)
+        }
+    }
+};
+
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;

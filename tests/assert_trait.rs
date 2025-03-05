@@ -355,9 +355,6 @@ fn assert_traits_tober() {
     fn compound_wrapper_std<T>(_: T) {
         use std::collections::{BTreeSet, HashSet};
 
-        // test_assert!(SequenceOf<T>);
-        // test_assert!(SetOf<T>);
-
         #[allow(dead_code)]
         fn compound_wrapper_tober<T>(_: T)
         where
@@ -365,6 +362,19 @@ fn assert_traits_tober() {
         {
             test_assert!(HashSet<T>);
             test_assert!(BTreeSet<T>);
+
+            test_assert!(SequenceOf<T>);
+            test_assert!(SetOf<T>);
+
+            // TODO: test for custom error types
+            type E1<'a> = BerError<Input<'a>>;
+            test_assert!(TaggedExplicit<T, E1, 0>);
+            test_assert!(TaggedValue<T, E1, Explicit, {Class::Application as u8}, 0>);
+
+            // TODO: test for custom error types
+            type E2<'a> = BerError<Input<'a>>;
+            test_assert!(TaggedImplicit<T, E2, 0>);
+            test_assert!(TaggedValue<T, E2, Implicit, {Class::Application as u8}, 0>);
         }
     }
 }
