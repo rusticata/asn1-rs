@@ -4,7 +4,9 @@ use core::hash::BuildHasher;
 use core::iter::FromIterator;
 use nom::Err;
 use std::collections::HashSet;
-use std::hash::RandomState;
+// RandomState location for MSRV (rust 1.65)
+use std::collections::hash_map::RandomState;
+// use std::hash::RandomState;
 
 use crate::{
     Any, AnyIterator, BerError, BerMode, BerParser, DerMode, DerParser, Input, Tag, Tagged,
