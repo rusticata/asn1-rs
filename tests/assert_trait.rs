@@ -3,6 +3,7 @@ use asn1_rs::*;
 
 fn assert_trait_ber_parser<'a, T: BerParser<'a>>() {}
 fn assert_trait_der_parser<'a, T: DerParser<'a>>() {}
+fn assert_trait_dyntagged<'a, T: DynTagged>() {}
 
 /// Compile-time verification that all supported types implement FromBer
 #[test]
@@ -40,6 +41,7 @@ fn assert_traits_berparser() {
     test_assert!(Real, f32, f64);
 
     test_assert!(Sequence, Set);
+    test_assert!(AnySequence, AnySet);
 
     test_assert!(&str, String);
     test_assert!(
@@ -132,6 +134,7 @@ fn assert_traits_derparser() {
     test_assert!(Real, f32, f64);
 
     test_assert!(Sequence, Set);
+    test_assert!(AnySequence, AnySet);
 
     test_assert!(&str, String);
     test_assert!(
@@ -192,5 +195,97 @@ fn assert_traits_derparser() {
             test_assert!(TaggedImplicit<T, E, 0>);
             test_assert!(TaggedValue<T, E, Implicit, {Class::Application as u8}, 0>);
         }
+    }
+}
+
+/// Compile-time verification that all supported types implement FromDer
+#[test]
+fn assert_traits_dyntagged() {
+    macro_rules! test_assert {
+        ($($_type:ty),*) => {
+            $( test_assert!(_SINGLE $_type); )*
+        };
+
+        (_SINGLE $_type:ty) => {
+            assert_trait_dyntagged::<$_type>();
+        };
+    }
+
+    test_assert!(Header, Any);
+
+    test_assert!(BitString);
+    test_assert!(Boolean, bool);
+    test_assert!(Null, ());
+
+    test_assert!(Enumerated);
+
+    test_assert!(Integer);
+    test_assert!(u8, u16, u32, u64, u128);
+    test_assert!(i8, i16, i32, i64, i128);
+    test_assert!(isize, usize);
+
+    test_assert!(GeneralizedTime, UtcTime);
+
+    test_assert!(OctetString, &[u8]);
+
+    test_assert!(Oid);
+
+    test_assert!(Real, f32, f64);
+
+    test_assert!(Sequence, Set);
+    test_assert!(AnySequence, AnySet);
+
+    test_assert!(&str, String);
+    test_assert!(
+        BmpString,
+        GeneralString,
+        GraphicString,
+        Ia5String,
+        NumericString,
+        ObjectDescriptor,
+        PrintableString,
+        TeletexString,
+        UniversalString,
+        Utf8String,
+        VideotexString,
+        VisibleString
+    );
+
+    //------ compound types
+
+    // test traits that should provide DynTagged
+    #[allow(dead_code)]
+    fn compound_wrapper<T>(_: T) {
+        test_assert!(Vec<T>, SequenceOf<T>);
+
+        test_assert!(SetOf<T>);
+
+        // TODO: test for custom error types
+        type E<'a> = BerError<Input<'a>>;
+        test_assert!(TaggedExplicit<T, E, 0>);
+        test_assert!(TaggedValue<T, E, Explicit, {Class::Application as u8}, 0>);
+    }
+
+    // test traits that should provide DynTagged
+    #[allow(dead_code)]
+    fn compound_wrapper_dyntagged<T>(_: T)
+    where
+        T: DynTagged,
+    {
+        test_assert!(Option<T>);
+
+        // TODO: test for custom error types
+        type E<'a> = BerError<Input<'a>>;
+        test_assert!(TaggedImplicit<T, E, 0>);
+        test_assert!(TaggedValue<T, E, Implicit, {Class::Application as u8}, 0>);
+    }
+
+    #[cfg(feature = "std")]
+    #[allow(dead_code)]
+    fn compound_wrapper_std<T>(_: T) {
+        use std::collections::{BTreeSet, HashSet};
+
+        test_assert!(HashSet<T>);
+        test_assert!(BTreeSet<T>);
     }
 }
