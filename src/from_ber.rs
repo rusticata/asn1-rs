@@ -5,7 +5,7 @@ use nom::Input as _;
 use nom::{Err, IResult};
 
 use crate::ber::{GetObjectContent, MAX_RECURSION};
-use crate::{Any, BerError, BerMode, Error, Header, Input, ParseResult, Tag};
+use crate::{Any, BerError, BerMode, DynTagged, Error, Header, Input, ParseResult, Tag};
 
 /// Base trait for BER object parsers
 ///
@@ -69,6 +69,7 @@ where
 pub trait BerParser<'i>
 where
     Self: Sized,
+    Self: DynTagged,
 {
     /// The Error type for parsing errors.
     type Error: ParseError<Input<'i>> + From<BerError<Input<'i>>>;

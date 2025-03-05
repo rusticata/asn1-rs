@@ -103,16 +103,27 @@ where
     const TAG: Tag = T::TAG;
 }
 
+/// Common trait for all tagged objects
 pub trait DynTagged {
+    /// Return the class of the object
     fn class(&self) -> Class {
         Class::Universal
     }
 
+    /// Return `true` if the object is constructed
     fn constructed(&self) -> bool {
         false
     }
 
+    /// Return the tag number of the object
     fn tag(&self) -> Tag;
+
+    /// Return true if the tag number is acceptable for this object
+    ///
+    /// For most types, this is a static test (`tag == Self::TAG`). Examples of exceptions:
+    /// - type `Any` (accepts all tag numbers)
+    /// - ASN.1 type `CHOICE` (accept multiple tags)
+    fn accept_tag(tag: Tag) -> bool;
 }
 
 impl<T> DynTagged for T
@@ -129,5 +140,9 @@ where
 
     fn tag(&self) -> Tag {
         T::TAG
+    }
+
+    fn accept_tag(tag: Tag) -> bool {
+        tag == T::TAG
     }
 }

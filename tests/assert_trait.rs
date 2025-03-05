@@ -3,7 +3,7 @@ use asn1_rs::*;
 
 fn assert_trait_ber_parser<'a, T: BerParser<'a>>() {}
 fn assert_trait_der_parser<'a, T: DerParser<'a>>() {}
-fn assert_trait_dyntagged<'a, T: DynTagged>() {}
+fn assert_trait_dyntagged<T: DynTagged>() {}
 
 /// Compile-time verification that all supported types implement FromBer
 #[test]

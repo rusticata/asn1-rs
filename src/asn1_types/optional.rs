@@ -204,6 +204,10 @@ where
             Tag(0)
         }
     }
+
+    fn accept_tag(tag: Tag) -> bool {
+        T::accept_tag(tag)
+    }
 }
 
 #[cfg(feature = "std")]

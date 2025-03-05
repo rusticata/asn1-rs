@@ -117,6 +117,10 @@ impl DynTagged for Length {
     fn tag(&self) -> Tag {
         Tag(0)
     }
+
+    fn accept_tag(_: Tag) -> bool {
+        true
+    }
 }
 
 #[cfg(feature = "std")]

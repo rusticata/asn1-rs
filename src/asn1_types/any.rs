@@ -549,6 +549,11 @@ impl DynTagged for Any<'_> {
     fn tag(&self) -> Tag {
         self.tag()
     }
+
+    fn accept_tag(_: Tag) -> bool {
+        // For ANY, all tags are accepted
+        true
+    }
 }
 
 // impl<'a> ToStatic for Any<'a> {

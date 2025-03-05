@@ -7,7 +7,8 @@ use nom::{Err, IResult, Input as _};
 
 use crate::debug::{trace, trace_generic};
 use crate::{
-    parse_der_any, wrap_ber_parser, Any, BerError, Error, Header, Input, ParseResult, Result, Tag,
+    parse_der_any, wrap_ber_parser, Any, BerError, DynTagged, Error, Header, Input, ParseResult,
+    Result, Tag,
 };
 
 /// Base trait for DER object parsers
@@ -126,6 +127,7 @@ pub trait CheckDerConstraints {
 pub trait DerParser<'i>
 where
     Self: Sized,
+    Self: DynTagged,
 {
     /// The Error type for parsing errors.
     type Error: ParseError<Input<'i>> + From<BerError<Input<'i>>>;

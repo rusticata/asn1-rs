@@ -32,6 +32,11 @@ pub enum PdvIdentification<'a> {
     Fixed,
 }
 
+impl Tagged for EmbeddedPdv<'_> {
+    const CONSTRUCTED: bool = true;
+    const TAG: Tag = Tag::EmbeddedPdv;
+}
+
 impl_tryfrom_any!('i @ EmbeddedPdv<'i>);
 
 impl<'i> BerParser<'i> for EmbeddedPdv<'i> {

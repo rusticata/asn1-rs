@@ -401,6 +401,10 @@ impl DynTagged for (Class, bool, Tag) {
     fn tag(&self) -> Tag {
         self.2
     }
+
+    fn accept_tag(_: Tag) -> bool {
+        true
+    }
 }
 
 #[cfg(feature = "std")]
@@ -471,6 +475,10 @@ impl ToDer for (Class, bool, Tag) {
 impl DynTagged for Header<'_> {
     fn tag(&self) -> Tag {
         self.tag
+    }
+
+    fn accept_tag(_: Tag) -> bool {
+        true
     }
 }
 
