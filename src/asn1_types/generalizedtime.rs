@@ -243,7 +243,7 @@ impl<'i> DerParser<'i> for GeneralizedTime {
         // The seconds element shall always be present (X.690: 11.7.2)
         // XXX
         // The decimal point element, if present, shall be the point option "." (X.690: 11.7.4)
-        if data.iter_elements().any(|b| b == b',') {
+        if data.as_bytes2().contains(&b',') {
             return Err(BerError::nom_err_input(
                 &data,
                 InnerError::DerConstraintFailed(DerConstraint::MissingSeconds),
@@ -295,7 +295,7 @@ impl CheckDerConstraints for GeneralizedTime {
         // X.690 section 11.7.2: The seconds element shall always be present.
         // XXX
         // X.690 section 11.7.4: The decimal point element, if present, shall be the point option "."
-        if any.data.contains(&b',') {
+        if any.data.as_bytes2().contains(&b',') {
             return Err(Error::DerConstraintFailed(DerConstraint::MissingSeconds));
         }
         Ok(())
