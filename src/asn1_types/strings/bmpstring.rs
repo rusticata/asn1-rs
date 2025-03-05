@@ -163,6 +163,31 @@ impl ToDer for BmpString<'_> {
     }
 }
 
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    impl ToBer for BmpString<'_> {
+        type Encoder = Primitive<Self, { Tag::BmpString.0 }>;
+
+        fn content_len(&self) -> Length {
+            // compute the UTF-16 length
+            let sz = self.data.encode_utf16().count() * 2;
+            Length::Definite(sz)
+        }
+
+        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+            let mut v = Vec::new();
+            for u in self.data.encode_utf16() {
+                v.push((u >> 8) as u8);
+                v.push((u & 0xff) as u8);
+            }
+            target.write(&v)
+        }
+    }
+};
+
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
@@ -185,5 +210,20 @@ mod tests {
         let (rem, result) = BmpString::parse_der(input.into()).expect("parsing failed");
         assert!(rem.is_empty());
         assert_eq!(result.as_ref(), "User");
+    }
+
+    #[cfg(feature = "std")]
+    mod tests_std {
+        use hex_literal::hex;
+
+        use crate::{BmpString, ToBer};
+
+        #[test]
+        fn tober_bmpstring() {
+            let s = BmpString::new("User");
+            let mut v: Vec<u8> = Vec::new();
+            s.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex! {"1e 08 0055 0073 0065 0072"});
+        }
     }
 }

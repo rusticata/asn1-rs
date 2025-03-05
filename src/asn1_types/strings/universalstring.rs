@@ -161,6 +161,29 @@ impl ToDer for UniversalString<'_> {
     }
 }
 
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    impl ToBer for UniversalString<'_> {
+        type Encoder = Primitive<Self, { Tag::UniversalString.0 }>;
+
+        fn content_len(&self) -> Length {
+            // UCS-4: 4 bytes per character
+            let sz = self.data.len() * 4;
+            Length::Definite(sz)
+        }
+
+        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+            self.data
+                .chars()
+                .try_for_each(|c| target.write(&(c as u32).to_be_bytes()[..]).map(|_| ()))?;
+            Ok(self.data.len() * 4)
+        }
+    }
+};
+
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
@@ -181,5 +204,20 @@ mod tests {
         let (rem, result) = UniversalString::parse_der(input.into()).expect("parsing failed");
         assert!(rem.is_empty());
         assert_eq!(result.as_ref(), "abcd");
+    }
+
+    #[cfg(feature = "std")]
+    mod tests_std {
+        use hex_literal::hex;
+
+        use crate::{ToBer, UniversalString};
+
+        #[test]
+        fn tober_universalstring() {
+            let s = UniversalString::new("abcd");
+            let mut v: Vec<u8> = Vec::new();
+            s.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex! {"1C 10 00000061 00000062 00000063 00000064"});
+        }
     }
 }

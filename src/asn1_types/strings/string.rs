@@ -84,6 +84,24 @@ impl ToDer for String {
     }
 }
 
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    impl ToBer for String {
+        type Encoder = Primitive<Self, { Tag::Utf8String.0 }>;
+
+        fn content_len(&self) -> Length {
+            Length::Definite(self.len())
+        }
+
+        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+            target.write(self.as_bytes())
+        }
+    }
+};
+
 #[cfg(test)]
 mod tests {
     use alloc::string::String;

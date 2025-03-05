@@ -72,4 +72,19 @@ mod tests {
         let input = Input::from(VISIBLE_STRING_CONSTRUCTED1);
         let _ = VisibleString::parse_der(input).expect_err("constructed");
     }
+
+    #[cfg(feature = "std")]
+    mod tests_std {
+        use hex_literal::hex;
+
+        use crate::{ToBer, VisibleString};
+
+        #[test]
+        fn tober_visiblestring() {
+            let s = VisibleString::new("123");
+            let mut v: Vec<u8> = Vec::new();
+            s.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex! {"1a03 313233"});
+        }
+    }
 }

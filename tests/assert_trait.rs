@@ -334,21 +334,21 @@ fn assert_traits_tober() {
     test_assert!(Sequence, Set);
     test_assert!(AnySequence);
 
-    // test_assert!(&str, String);
-    // test_assert!(
-    //     BmpString,
-    //     GeneralString,
-    //     GraphicString,
-    //     Ia5String,
-    //     NumericString,
-    //     ObjectDescriptor,
-    //     PrintableString,
-    //     TeletexString,
-    //     UniversalString,
-    //     Utf8String,
-    //     VideotexString,
-    //     VisibleString
-    // );
+    test_assert!(&str, String);
+    test_assert!(
+        BmpString,
+        GeneralString,
+        GraphicString,
+        Ia5String,
+        NumericString,
+        ObjectDescriptor,
+        PrintableString,
+        TeletexString,
+        UniversalString,
+        Utf8String,
+        VideotexString,
+        VisibleString
+    );
 
     #[cfg(feature = "std")]
     #[allow(dead_code)]

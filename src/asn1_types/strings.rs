@@ -195,6 +195,24 @@ macro_rules! asn1_string {
                 writer.write(self.data.as_bytes()).map_err(Into::into)
             }
         }
+
+        #[cfg(feature = "std")]
+        const _: () = {
+            use std::io;
+            use std::io::Write;
+
+            impl $crate::ToBer for $name<'_> {
+                type Encoder = $crate::Primitive<Self, { $crate::Tag::$name.0 }>;
+
+                fn content_len(&self) -> $crate::Length {
+                    $crate::Length::Definite(self.data.len())
+                }
+
+                fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+                    target.write(self.data.as_bytes())
+                }
+            }
+        };
     };
     ($name:ident) => {
         asn1_string!(IMPL $name, stringify!($name));
