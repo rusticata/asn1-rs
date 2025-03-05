@@ -39,6 +39,16 @@ impl<'a> AnySequence<'a> {
     pub fn iter_mut(&mut self) -> impl Iterator<Item = &mut Any<'a>> {
         self.items.iter_mut()
     }
+
+    /// Append an item at sequence end
+    pub fn push(&mut self, item: Any<'a>) {
+        self.items.push(item);
+    }
+
+    /// Remove item at sequence end and return it
+    pub fn pop(&mut self) -> Option<Any<'a>> {
+        self.items.pop()
+    }
 }
 
 impl Tagged for AnySequence<'_> {
