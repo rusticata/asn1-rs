@@ -606,6 +606,24 @@ impl ToDer for Any<'_> {
     }
 }
 
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    impl ToBer for Any<'_> {
+        type Encoder = BerGenericEncoder<Self>;
+
+        fn content_len(&self) -> Length {
+            Length::Definite(self.data.len())
+        }
+
+        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+            target.write(self.data.as_bytes2())
+        }
+    }
+};
+
 #[cfg(test)]
 mod tests {
     use crate::*;

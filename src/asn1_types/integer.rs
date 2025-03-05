@@ -163,6 +163,26 @@ macro_rules! impl_int {
                 int.write_der_content(writer)
             }
         }
+
+        #[cfg(feature = "std")]
+        const _: () = {
+            use std::io;
+            use std::io::Write;
+
+            impl ToBer for $int {
+                type Encoder = Primitive<Self, { Tag::Integer.0 }>;
+
+                fn content_len(&self) -> Length {
+                    let int = Integer::from(*self);
+                    Length::Definite(int.data.len())
+                }
+
+                fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+                    let int = Integer::from(*self);
+                    target.write(&int.data)
+                }
+            }
+        };
     };
 }
 
@@ -239,6 +259,26 @@ macro_rules! impl_uint {
                 int.write_der_content(writer)
             }
         }
+
+        #[cfg(feature = "std")]
+        const _: () = {
+            use std::io;
+            use std::io::Write;
+
+            impl ToBer for $ty {
+                type Encoder = Primitive<Self, { Tag::Integer.0 }>;
+
+                fn content_len(&self) -> Length {
+                    let int = Integer::from(*self);
+                    Length::Definite(int.data.len())
+                }
+
+                fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+                    let int = Integer::from(*self);
+                    target.write(&int.data)
+                }
+            }
+        };
     };
 }
 
@@ -610,6 +650,24 @@ impl ToDer for Integer<'_> {
     }
 }
 
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    impl ToBer for Integer<'_> {
+        type Encoder = Primitive<Self, { Tag::Integer.0 }>;
+
+        fn content_len(&self) -> Length {
+            Length::Definite(self.data.len())
+        }
+
+        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+            target.write(&self.data)
+        }
+    }
+};
+
 /// Helper macro to declare integers at compile-time
 ///
 /// [`Integer`] stores the encoded representation of the integer, so declaring
@@ -932,5 +990,49 @@ mod tests {
         // some ff and a MSB 1 - keep only the non-zero part
         let input: &[u8] = &[0xff, 0xff, 0x80, 1];
         assert_eq!(&input[2..], trim_slice(input));
+    }
+
+    #[cfg(feature = "std")]
+    mod tests_std {
+        use hex_literal::hex;
+
+        use crate::{Integer, ToBer};
+
+        #[test]
+        fn tober_integer() {
+            // Ok: Integer
+            let i = Integer::from(4);
+            let mut v: Vec<u8> = Vec::new();
+            i.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex! {"020104"});
+
+            // Ok: integer with MSB set (must be encoded on 2 bytes)
+            let i = Integer::from(0x8f);
+            let mut v: Vec<u8> = Vec::new();
+            i.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex! {"0202008f"});
+
+            //---- u8
+            let i = 4_u8;
+            let mut v: Vec<u8> = Vec::new();
+            i.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex! {"020104"});
+
+            let i = 0x8f_u8;
+            let mut v: Vec<u8> = Vec::new();
+            i.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex! {"0202008f"});
+
+            //---- i8
+            let i = 4_i8;
+            let mut v: Vec<u8> = Vec::new();
+            i.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex! {"020104"});
+
+            let i = -4_i8;
+            let mut v: Vec<u8> = Vec::new();
+            i.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex! {"0201fc"});
+        }
     }
 }

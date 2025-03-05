@@ -76,6 +76,13 @@ impl AsRef<[u8]> for BitString {
 
 impl_tryfrom_any!(BitString);
 
+impl From<&BitSlice<u8, Msb0>> for BitString {
+    fn from(slice: &BitSlice<u8, Msb0>) -> Self {
+        let bitvec = BitVec::from_bitslice(slice);
+        Self { bitvec }
+    }
+}
+
 impl<'i> BerParser<'i> for BitString {
     type Error = BerError<Input<'i>>;
 
@@ -208,6 +215,32 @@ impl ToDer for BitString {
     }
 }
 
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    impl ToBer for BitString {
+        type Encoder = Primitive<BitString, { Tag::BitString.0 }>;
+
+        fn content_len(&self) -> Length {
+            let len = 1 + (self.len() / 8);
+            Length::Definite(len)
+        }
+
+        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+            let data = self.as_raw_slice();
+            // ignored bits
+            let ignored = (8 * data.len()) - self.len();
+            target.write_all(&[ignored as u8])?;
+            // content
+            target.write_all(data)?;
+
+            Ok(1 + data.len())
+        }
+    }
+};
+
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
@@ -275,5 +308,22 @@ mod tests {
         // Fail: hit recursion limit
         let (data, header) = Header::parse_ber(Input::from(bytes)).expect("header");
         let _ = parse_ber_segmented::<BitString>(&header, data, 1).expect_err("recursion limit");
+    }
+
+    #[cfg(feature = "std")]
+    mod tests_std {
+        use bitvec::{bits, order::Msb0};
+        use hex_literal::hex;
+
+        use crate::{BitString, ToBer};
+
+        #[test]
+        fn tober_bitstring() {
+            let immut = bits![u8, Msb0; 0, 1, 0, 0, 1, 0, 0, 1];
+            let bitstring = BitString::from(immut);
+            let mut v: Vec<u8> = Vec::new();
+            bitstring.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex! {"03020049"});
+        }
     }
 }

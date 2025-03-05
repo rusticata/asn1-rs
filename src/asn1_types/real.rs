@@ -449,6 +449,129 @@ impl ToDer for Real {
     }
 }
 
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    impl ToBer for Real {
+        type Encoder = Primitive<Self, { Tag::RealType.0 }>;
+
+        fn content_len(&self) -> Length {
+            match self {
+                Real::Zero => Length::Definite(0),
+                Real::Infinity | Real::NegInfinity => Length::Definite(1),
+                Real::Binary { .. } => {
+                    let mut sink = io::sink();
+                    let n = self.write_der_content(&mut sink).unwrap_or(0);
+                    Length::Definite(n)
+                }
+            }
+        }
+
+        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+            match self {
+                Real::Zero => Ok(0),
+                Real::Infinity => target.write(&[0x40]),
+                Real::NegInfinity => target.write(&[0x41]),
+                Real::Binary {
+                    mantissa,
+                    base,
+                    exponent,
+                    enc_base: _enc_base,
+                } => {
+                    if *base == 10 {
+                        // using character form
+                        let sign = if *exponent == 0 { "+" } else { "" };
+                        let s = format!("\x03{}E{}{}", mantissa, sign, exponent);
+                        return target.write(s.as_bytes());
+                    }
+                    if *base != 2 {
+                        // return Err(Self::TAG.invalid_value("Invalid base for REAL").into());
+                        return Err(io::Error::new(
+                            io::ErrorKind::Other,
+                            "Invalid base for REAL",
+                        ));
+                    }
+                    let mut first: u8 = 0x80;
+                    // choose encoding base
+                    let enc_base = *_enc_base;
+                    let (ms, mut m, enc_base, mut e) =
+                        drop_floating_point(*mantissa, enc_base, *exponent);
+                    assert!(m != 0);
+                    if ms < 0 {
+                        first |= 0x40
+                    };
+                    // exponent & mantissa normalization
+                    match enc_base {
+                        2 => {
+                            while m & 0x1 == 0 {
+                                m >>= 1;
+                                e += 1;
+                            }
+                        }
+                        8 => {
+                            while m & 0x7 == 0 {
+                                m >>= 3;
+                                e += 1;
+                            }
+                            first |= 0x10;
+                        }
+                        _ /* 16 */ => {
+                            while m & 0xf == 0 {
+                                m >>= 4;
+                                e += 1;
+                            }
+                            first |= 0x20;
+                        }
+                    }
+                    // scale factor
+                    // XXX in DER, sf is always 0 (11.3.1)
+                    let mut sf = 0;
+                    while m & 0x1 == 0 && sf < 4 {
+                        m >>= 1;
+                        sf += 1;
+                    }
+                    first |= sf << 2;
+                    // exponent length and bytes
+                    let len_e = match e.abs() {
+                        0..=0xff => 1,
+                        0x100..=0xffff => 2,
+                        0x1_0000..=0xff_ffff => 3,
+                        // e is an `i32` so it can't be longer than 4 bytes
+                        // use 4, so `first` is ORed with 3
+                        _ => 4,
+                    };
+                    first |= (len_e - 1) & 0x3;
+                    // write first byte
+                    let mut n = target.write(&[first])?;
+                    // write exponent
+                    // special case: number of bytes from exponent is > 3 and cannot fit in 2 bits
+                    #[allow(clippy::identity_op)]
+                    if len_e == 4 {
+                        let b = len_e & 0xff;
+                        n += target.write(&[b])?;
+                    }
+                    // we only need to write e.len() bytes
+                    let bytes = e.to_be_bytes();
+                    n += target.write(&bytes[(4 - len_e) as usize..])?;
+                    // write mantissa
+                    let bytes = m.to_be_bytes();
+                    let mut idx = 0;
+                    for &b in bytes.iter() {
+                        if b != 0 {
+                            break;
+                        }
+                        idx += 1;
+                    }
+                    n += target.write(&bytes[idx..])?;
+                    Ok(n)
+                }
+            }
+        }
+    }
+};
+
 impl From<f32> for Real {
     fn from(f: f32) -> Self {
         Real::new(f.into())
@@ -568,5 +691,91 @@ mod tests {
         let (rem, result) = Real::parse_ber(input).expect("parsing failed");
         assert_eq!(result, Real::from(3.14));
         assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
+    }
+
+    #[cfg(feature = "std")]
+    mod tests_std {
+        use hex_literal::hex;
+
+        use crate::{Real, ToBer};
+
+        #[test]
+        fn tober_real_binary() {
+            // base = 2, value = 4
+            let r = Real::binary(2.0, 2, 1);
+            let mut v = Vec::new();
+            r.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex!("09 03 80 02 01"));
+
+            // base = 2, value = 0.5
+            let r = Real::binary(0.5, 2, 0);
+            let mut v = Vec::new();
+            r.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex!("09 03 80 ff 01"));
+
+            // base = 2, value = 3.25, but change encoding base (8)
+            let r = Real::binary(3.25, 2, 0).with_enc_base(8);
+            let mut v = Vec::new();
+            r.encode(&mut v).expect("serialization failed");
+            // note: this encoding has a scale factor (not DER compliant)
+            assert_eq!(&v, &hex!("09 03 94 ff 0d"));
+
+            // base = 2, value = 0.00390625, but change encoding base (16)
+            let r = Real::binary(0.00390625, 2, 0).with_enc_base(16);
+            let mut v = Vec::new();
+            r.encode(&mut v).expect("serialization failed");
+            // note: this encoding has a scale factor (not DER compliant)
+            assert_eq!(&v, &hex!("09 03 a0 fe 01"));
+
+            // 2 octets for exponent, negative exponent and abs(exponent) is all 1's and fills the whole octet(s)
+            let r = Real::binary(3.0, 2, -1020);
+            let mut v = Vec::new();
+            r.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex!("09 04 81 fc 04 03"));
+
+            // 3 octets for exponent, and
+            // check that first 9 bits for exponent are not all 1's
+            let r = Real::binary(1.0, 2, 262140);
+            let mut v = Vec::new();
+            r.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex!("09 05 82 03 ff fc 01"));
+
+            // >3 octets for exponent, and
+            // mantissa < 0
+            let r = Real::binary(-1.0, 2, 76354972);
+            let mut v = Vec::new();
+            r.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex!("09 07 c3 04 04 8d 15 9c 01"));
+        }
+
+        #[test]
+        fn tober_real_special() {
+            // ZERO
+            let r = Real::Zero;
+            let mut v = Vec::new();
+            r.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex!("09 00"));
+
+            // INFINITY
+            let r = Real::Infinity;
+            let mut v = Vec::new();
+            r.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex!("09 01 40"));
+
+            // MINUS INFINITY
+            let r = Real::NegInfinity;
+            let mut v = Vec::new();
+            r.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex!("09 01 41"));
+        }
+
+        #[test]
+        fn tober_real_string() {
+            //  non-zero value, base 10
+            let r = Real::new(1.2345);
+            let mut v = Vec::new();
+            r.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &[&hex!("09 09 03") as &[u8], b"12345E-4"].concat());
+        }
     }
 }

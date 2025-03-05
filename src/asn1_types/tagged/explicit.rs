@@ -459,7 +459,7 @@ mod tests {
 mod std_tests {
     use hex_literal::hex;
 
-    use crate::{BerError, Input, TaggedExplicit, ToBer};
+    use crate::{BerError, BerParser, Input, TaggedExplicit, ToBer};
 
     #[test]
     fn tober_tagged_explicit() {
@@ -470,5 +470,10 @@ mod std_tests {
         v.clear();
         t.encode(&mut v).expect("serialization failed");
         assert_eq!(&v, &hex! {"a0 03 0101ff"});
+
+        // de-serialize to be sure
+        let (rem, t2) = T::parse_ber((&v).into()).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert_eq!(t, t2);
     }
 }

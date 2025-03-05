@@ -85,18 +85,27 @@ impl CheckDerConstraints for Oid<'_> {
 
 impl DerAutoDerive for Oid<'_> {}
 
-impl Tagged for Oid<'_> {
-    const TAG: Tag = Tag::Oid;
+impl DynTagged for Oid<'_> {
+    fn tag(&self) -> Tag {
+        if self.relative {
+            Tag::RelativeOid
+        } else {
+            Tag::Oid
+        }
+    }
+
+    fn accept_tag(tag: Tag) -> bool {
+        tag == Tag::Oid || tag == Tag::RelativeOid
+    }
 }
 
 #[cfg(feature = "std")]
 impl ToDer for Oid<'_> {
     fn to_der_len(&self) -> Result<usize> {
-        // OID/REL-OID tag will not change header size, so we don't care here
         let header = Header::new(
             Class::Universal,
             false,
-            Self::TAG,
+            self.tag(),
             Length::Definite(self.asn1.len()),
         );
         Ok(header.to_der_len()? + self.asn1.len())
@@ -121,6 +130,24 @@ impl ToDer for Oid<'_> {
         writer.write(&self.asn1).map_err(Into::into)
     }
 }
+
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    impl ToBer for Oid<'_> {
+        type Encoder = BerGenericEncoder<Self>;
+
+        fn content_len(&self) -> Length {
+            Length::Definite(self.asn1.len())
+        }
+
+        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+            target.write(&self.asn1)
+        }
+    }
+};
 
 fn encode_relative(ids: &'_ [u64]) -> impl Iterator<Item = u8> + '_ {
     ids.iter().flat_map(|id| {
@@ -557,5 +584,28 @@ mod tests {
         let expected = Oid::from(&[1, 2, 840, 113_549, 1, 1, 5]).unwrap();
         assert!(rem.is_empty());
         assert_eq!(result, expected);
+    }
+
+    #[cfg(feature = "std")]
+    mod tests_std {
+        use hex_literal::hex;
+
+        use crate::{Oid, ToBer};
+
+        #[test]
+        fn tober_oid() {
+            let oid = Oid::from(&[1, 2, 840, 113_549, 1, 1, 5]).unwrap();
+            let mut v: Vec<u8> = Vec::new();
+            oid.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex! {"06 09 2a864886f70d010105"});
+        }
+
+        #[test]
+        fn tober_rel_oid() {
+            let oid = oid!(rel 1.2);
+            let mut v: Vec<u8> = Vec::new();
+            oid.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex! {"0d 02 0102"});
+        }
     }
 }

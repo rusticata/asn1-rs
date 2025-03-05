@@ -2,6 +2,8 @@ use nom::{number::streaming::be_u8, AsBytes};
 
 use crate::*;
 
+//---- Boolean
+
 /// ASN.1 `BOOLEAN` type
 ///
 /// BER objects consider any non-zero value as `true`, and `0` as `false`.
@@ -110,6 +112,26 @@ impl ToDer for Boolean {
     }
 }
 
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    impl ToBer for Boolean {
+        type Encoder = Primitive<Self, { Tag::Boolean.0 }>;
+
+        fn content_len(&self) -> Length {
+            Length::Definite(1)
+        }
+
+        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+            target.write(&[self.value])
+        }
+    }
+};
+
+//---- bool
+
 impl_tryfrom_any!(bool);
 
 impl CheckDerConstraints for bool {
@@ -174,7 +196,7 @@ const _: () = {
     use std::io::Write;
 
     impl ToBer for bool {
-        type Encoder = Primitive<bool, { Tag::Boolean.0 }>;
+        type Encoder = Primitive<Self, { Tag::Boolean.0 }>;
 
         fn content_len(&self) -> Length {
             Length::Definite(1)
@@ -265,5 +287,26 @@ mod tests {
         // Fail: non-canonical boolean
         let input = Input::from_slice(&hex!("010101"));
         let _ = <bool>::parse_der(input).expect_err("non-canonical");
+    }
+
+    #[cfg(feature = "std")]
+    mod tests_std {
+        use hex_literal::hex;
+
+        use crate::{Boolean, ToBer};
+
+        #[test]
+        fn tober_bool() {
+            // Ok: Boolean
+            let b = Boolean::TRUE;
+            let mut v: Vec<u8> = Vec::new();
+            b.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex! {"0101ff"});
+
+            // Ok: bool
+            let mut v: Vec<u8> = Vec::new();
+            true.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex! {"0101ff"});
+        }
     }
 }

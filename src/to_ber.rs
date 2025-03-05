@@ -24,6 +24,8 @@ pub trait ToBer {
     type Encoder: BerEncoder<Self>;
 
     /// Returns the length of the encoded content of the object
+    ///
+    /// The length describes the _content_ only, not the header.
     fn content_len(&self) -> Length;
 
     /// Encode and write the content of the object to the writer `target`

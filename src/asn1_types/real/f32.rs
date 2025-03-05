@@ -46,3 +46,25 @@ impl DerAutoDerive for f32 {}
 impl Tagged for f32 {
     const TAG: Tag = Tag::RealType;
 }
+
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    use crate::{Length, Primitive, ToBer};
+
+    impl ToBer for f32 {
+        type Encoder = Primitive<Self, { Tag::RealType.0 }>;
+
+        fn content_len(&self) -> Length {
+            let r = Real::from(*self);
+            r.content_len()
+        }
+
+        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+            let r = Real::from(*self);
+            r.write_content(target)
+        }
+    }
+};

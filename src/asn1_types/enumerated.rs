@@ -78,6 +78,26 @@ impl ToDer for Enumerated {
     }
 }
 
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    impl ToBer for Enumerated {
+        type Encoder = Primitive<Self, { Tag::Enumerated.0 }>;
+
+        fn content_len(&self) -> Length {
+            let i = Integer::from(self.0);
+            Length::Definite(i.data.len())
+        }
+
+        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+            let i = Integer::from(self.0);
+            target.write(&i.data)
+        }
+    }
+};
+
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
@@ -112,5 +132,27 @@ mod tests {
         // Fail: non-canonical encoding of integer
         let input = Input::from_slice(&hex!("0a02ffff"));
         let _ = <Enumerated>::parse_ber(input).expect_err("non-canonical encoding");
+    }
+
+    #[cfg(feature = "std")]
+    mod tests_std {
+        use hex_literal::hex;
+
+        use crate::{Enumerated, ToBer};
+
+        #[test]
+        fn tober_enumerated() {
+            // Ok: Integer
+            let i = Enumerated::new(4);
+            let mut v: Vec<u8> = Vec::new();
+            i.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex! {"0a0104"});
+
+            // Ok: integer with MSB set (must be encoded on 2 bytes)
+            let i = Enumerated::new(0x8f);
+            let mut v: Vec<u8> = Vec::new();
+            i.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex! {"0a02008f"});
+        }
     }
 }

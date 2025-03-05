@@ -5,6 +5,8 @@ use nom::Input as _;
 
 pub(crate) const OCTETSTRING_MAX_RECURSION: usize = 5;
 
+//---- OctetString
+
 /// ASN.1 `OCTETSTRING` type
 ///
 /// This objects implements Copy-On-Write over data:
@@ -144,6 +146,26 @@ impl ToDer for OctetString<'_> {
     }
 }
 
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    impl ToBer for OctetString<'_> {
+        type Encoder = Primitive<Self, { Tag::OctetString.0 }>;
+
+        fn content_len(&self) -> Length {
+            Length::Definite(self.data.len())
+        }
+
+        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+            target.write(&self.data)
+        }
+    }
+};
+
+//---- &[u8]
+
 impl_tryfrom_any!('i @ &'i [u8]);
 
 impl<'i> BerParser<'i> for &'i [u8] {
@@ -219,6 +241,24 @@ impl ToDer for &'_ [u8] {
     }
 }
 
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    impl ToBer for &'_ [u8] {
+        type Encoder = Primitive<Self, { Tag::OctetString.0 }>;
+
+        fn content_len(&self) -> Length {
+            Length::Definite(self.len())
+        }
+
+        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+            target.write(self)
+        }
+    }
+};
+
 #[cfg(test)]
 mod tests {
     use alloc::borrow::Cow;
@@ -262,5 +302,21 @@ mod tests {
 
         // Fail: parsing as &[u8] can't be done, it would require an allocation
         let _ = <&[u8]>::parse_ber(Input::from(bytes)).expect_err("parsing as slice");
+    }
+
+    #[cfg(feature = "std")]
+    mod tests_std {
+        use hex_literal::hex;
+
+        use crate::{OctetString, ToBer};
+
+        #[test]
+        fn tober_octetstring() {
+            // Ok: Integer
+            let i = OctetString::new(&hex!("01020304"));
+            let mut v: Vec<u8> = Vec::new();
+            i.encode(&mut v).expect("serialization failed");
+            assert_eq!(&v, &hex! {"0404 01020304"});
+        }
     }
 }

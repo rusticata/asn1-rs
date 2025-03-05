@@ -1,5 +1,7 @@
 use crate::*;
 
+//---- Null
+
 /// ASN.1 `NULL` type
 #[derive(Debug, PartialEq, Eq)]
 pub struct Null {}
@@ -74,6 +76,26 @@ impl ToDer for Null {
     }
 }
 
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    impl ToBer for Null {
+        type Encoder = Primitive<Self, { Tag::Null.0 }>;
+
+        fn content_len(&self) -> Length {
+            Length::Definite(0)
+        }
+
+        fn write_content<W: Write>(&self, _: &mut W) -> Result<usize, io::Error> {
+            Ok(0)
+        }
+    }
+};
+
+//---- ()
+
 impl_tryfrom_any!(());
 
 impl<'i> BerParser<'i> for () {
@@ -124,6 +146,24 @@ impl ToDer for () {
         Ok(0)
     }
 }
+
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    impl ToBer for () {
+        type Encoder = Primitive<Self, { Tag::Null.0 }>;
+
+        fn content_len(&self) -> Length {
+            Length::Definite(0)
+        }
+
+        fn write_content<W: Write>(&self, _: &mut W) -> Result<usize, io::Error> {
+            Ok(0)
+        }
+    }
+};
 
 #[cfg(test)]
 mod tests {

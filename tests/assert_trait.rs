@@ -1,5 +1,4 @@
 use asn1_rs::*;
-// use nom::Input;
 
 fn assert_trait_ber_parser<'a, T: BerParser<'a>>() {}
 fn assert_trait_der_parser<'a, T: DerParser<'a>>() {}
@@ -294,4 +293,60 @@ fn assert_traits_dyntagged() {
         test_assert!(HashSet<T>);
         test_assert!(BTreeSet<T>);
     }
+}
+
+#[cfg(feature = "std")]
+#[test]
+fn assert_traits_tober() {
+    fn assert_trait_tober<T: ToBer>() {}
+
+    macro_rules! test_assert {
+        ($($_type:ty),*) => {
+            $( test_assert!(_SINGLE $_type); )*
+        };
+
+        (_SINGLE $_type:ty) => {
+            assert_trait_tober::<$_type>();
+        };
+    }
+
+    test_assert!(Any);
+
+    test_assert!(BitString);
+    test_assert!(Boolean, bool);
+    test_assert!(Null, ());
+
+    test_assert!(Enumerated);
+
+    test_assert!(Integer);
+    test_assert!(u8, u16, u32, u64, u128);
+    test_assert!(i8, i16, i32, i64, i128);
+    test_assert!(isize, usize);
+
+    // test_assert!(GeneralizedTime, UtcTime);
+
+    test_assert!(OctetString, &[u8]);
+
+    test_assert!(Oid);
+
+    test_assert!(Real, f32, f64);
+
+    // test_assert!(Sequence, Set);
+    // test_assert!(AnySequence);
+
+    // test_assert!(&str, String);
+    // test_assert!(
+    //     BmpString,
+    //     GeneralString,
+    //     GraphicString,
+    //     Ia5String,
+    //     NumericString,
+    //     ObjectDescriptor,
+    //     PrintableString,
+    //     TeletexString,
+    //     UniversalString,
+    //     Utf8String,
+    //     VideotexString,
+    //     VisibleString
+    // );
 }

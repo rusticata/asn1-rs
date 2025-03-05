@@ -96,6 +96,18 @@ impl<'a, const N: usize> From<&'a [u8; N]> for Input<'a> {
     }
 }
 
+impl<'a> From<&'a Vec<u8>> for Input<'a> {
+    fn from(data: &'a Vec<u8>) -> Self {
+        Input {
+            data,
+            span: Range {
+                start: 0,
+                end: data.len(),
+            },
+        }
+    }
+}
+
 impl<'a> nom::Input for Input<'a> {
     type Item = u8;
 
