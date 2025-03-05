@@ -1,8 +1,10 @@
 #![cfg(feature = "std")]
 
+use core::hash::BuildHasher;
 use core::iter::FromIterator;
 use nom::Err;
 use std::collections::HashSet;
+use std::hash::RandomState;
 
 use crate::{
     Any, AnyIterator, BerError, BerMode, BerParser, DerMode, DerParser, Input, Tag, Tagged,
@@ -16,15 +18,15 @@ use crate::{
 /// previous object.
 /// This is enforced by using a hash function internally.
 #[derive(Debug)]
-pub struct AnySet<'a> {
-    items: HashSet<Any<'a>>,
+pub struct AnySet<'a, S = RandomState> {
+    items: HashSet<Any<'a>, S>,
 }
 
-impl<'a> AnySet<'a> {
+impl<'a, S: BuildHasher> AnySet<'a, S> {
     /// Create a new `AnySequence` object.
     ///
     /// See also the [`FromIterator`] trait, implemented for this type.
-    pub const fn new(items: HashSet<Any<'a>>) -> Self {
+    pub const fn new(items: HashSet<Any<'a>, S>) -> Self {
         Self { items }
     }
 
@@ -54,11 +56,11 @@ impl<'a> AnySet<'a> {
     }
 }
 
-impl Tagged for AnySet<'_> {
+impl<S> Tagged for AnySet<'_, S> {
     const TAG: Tag = Tag::Set;
 }
 
-impl<'a> BerParser<'a> for AnySet<'a> {
+impl<'a, S: BuildHasher + Default> BerParser<'a> for AnySet<'a, S> {
     type Error = BerError<Input<'a>>;
 
     fn from_ber_content(
@@ -70,12 +72,12 @@ impl<'a> BerParser<'a> for AnySet<'a> {
             .assert_constructed_input(&input)
             .map_err(Err::Error)?;
 
-        let (rem, items) = AnyIterator::<BerMode>::new(input).try_collect::<HashSet<Any>>()?;
+        let (rem, items) = AnyIterator::<BerMode>::new(input).try_collect::<HashSet<Any, S>>()?;
         Ok((rem, Self { items }))
     }
 }
 
-impl<'a> DerParser<'a> for AnySet<'a> {
+impl<'a, S: BuildHasher + Default> DerParser<'a> for AnySet<'a, S> {
     type Error = BerError<Input<'a>>;
 
     fn from_der_content(
@@ -87,7 +89,7 @@ impl<'a> DerParser<'a> for AnySet<'a> {
             .assert_constructed_input(&input)
             .map_err(Err::Error)?;
 
-        let (rem, items) = AnyIterator::<DerMode>::new(input).try_collect::<HashSet<Any>>()?;
+        let (rem, items) = AnyIterator::<DerMode>::new(input).try_collect::<HashSet<Any, S>>()?;
         Ok((rem, Self { items }))
     }
 }
@@ -99,7 +101,7 @@ const _: () = {
 
     use crate::{ber_header_length, Constructed, Length, ToBer};
 
-    impl ToBer for AnySet<'_> {
+    impl<S: BuildHasher> ToBer for AnySet<'_, S> {
         type Encoder = Constructed<Self>;
 
         fn content_len(&self) -> Length {
@@ -176,6 +178,8 @@ mod tests {
     #[cfg(feature = "std")]
     mod tests_std {
         use core::iter::FromIterator;
+        use std::collections::HashSet;
+        use std::hash::{BuildHasherDefault, DefaultHasher};
 
         use hex_literal::hex;
 
@@ -187,14 +191,18 @@ mod tests {
                 Any::from_tag_and_data(Tag::OctetString, (&hex!("01020304")).into()),
                 Any::from_tag_and_data(Tag::Integer, (&hex!("010001")).into()),
             ];
-            let s = AnySet::from_iter(v.iter().cloned());
+            // build a hash table with fixed seed so unit tests will not fail randomly
+            type H<'a> = HashSet<Any<'a>, BuildHasherDefault<DefaultHasher>>;
+            let h = <H>::from_iter(v.iter().cloned());
+            let s = AnySet::new(h);
+
             let mut v: Vec<u8> = Vec::new();
             s.encode(&mut v).expect("serialization failed");
             assert_eq!(
                 &v,
                 &hex! {"31 0b
-                0404 01020304
-                0203 010001"}
+                0203 010001
+                0404 01020304"}
             );
         }
     }
