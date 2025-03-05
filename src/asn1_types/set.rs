@@ -404,6 +404,24 @@ impl ToDer for Set<'_> {
 }
 
 #[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    impl ToBer for Set<'_> {
+        type Encoder = Constructed<Self>;
+
+        fn content_len(&self) -> Length {
+            Length::Definite(self.content.len())
+        }
+
+        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+            target.write(&self.content)
+        }
+    }
+};
+
+#[cfg(feature = "std")]
 impl Set<'_> {
     /// Attempt to create a `Set` from an iterator over serializable objects (to DER)
     ///

@@ -331,8 +331,8 @@ fn assert_traits_tober() {
 
     test_assert!(Real, f32, f64);
 
-    // test_assert!(Sequence, Set);
-    // test_assert!(AnySequence);
+    test_assert!(Sequence, Set);
+    test_assert!(AnySequence);
 
     // test_assert!(&str, String);
     // test_assert!(
@@ -349,4 +349,15 @@ fn assert_traits_tober() {
     //     VideotexString,
     //     VisibleString
     // );
+
+    #[cfg(feature = "std")]
+    #[allow(dead_code)]
+    fn compound_wrapper_std<T>(_: T) {
+        // use std::collections::{BTreeSet, HashSet};
+
+        test_assert!(AnySet);
+
+        // test_assert!(HashSet<T>);
+        // test_assert!(BTreeSet<T>);
+    }
 }

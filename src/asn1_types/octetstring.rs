@@ -312,7 +312,6 @@ mod tests {
 
         #[test]
         fn tober_octetstring() {
-            // Ok: Integer
             let i = OctetString::new(&hex!("01020304"));
             let mut v: Vec<u8> = Vec::new();
             i.encode(&mut v).expect("serialization failed");
