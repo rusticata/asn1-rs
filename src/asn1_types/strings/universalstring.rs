@@ -163,7 +163,6 @@ impl ToDer for UniversalString<'_> {
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
     impl ToBer for UniversalString<'_> {
@@ -175,7 +174,7 @@ const _: () = {
             Length::Definite(sz)
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             self.data
                 .chars()
                 .try_for_each(|c| target.write(&(c as u32).to_be_bytes()[..]).map(|_| ()))?;

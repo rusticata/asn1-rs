@@ -133,7 +133,6 @@ impl ToDer for Oid<'_> {
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
     impl ToBer for Oid<'_> {
@@ -143,8 +142,8 @@ const _: () = {
             Length::Definite(self.asn1.len())
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
-            target.write(&self.asn1)
+        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            target.write(&self.asn1).map_err(Into::into)
         }
     }
 };

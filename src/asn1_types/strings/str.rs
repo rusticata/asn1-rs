@@ -96,7 +96,6 @@ impl ToDer for &'_ str {
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
     impl ToBer for &'_ str {
@@ -106,8 +105,8 @@ const _: () = {
             Length::Definite(self.len())
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
-            target.write(self.as_bytes())
+        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            target.write(self.as_bytes()).map_err(Into::into)
         }
     }
 };

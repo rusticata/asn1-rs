@@ -78,7 +78,6 @@ impl ToDer for Null {
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
     impl ToBer for Null {
@@ -88,7 +87,7 @@ const _: () = {
             Length::Definite(0)
         }
 
-        fn write_content<W: Write>(&self, _: &mut W) -> Result<usize, io::Error> {
+        fn write_content<W: Write>(&self, _: &mut W) -> SerializeResult<usize> {
             Ok(0)
         }
     }
@@ -149,7 +148,6 @@ impl ToDer for () {
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
     impl ToBer for () {
@@ -159,7 +157,7 @@ const _: () = {
             Length::Definite(0)
         }
 
-        fn write_content<W: Write>(&self, _: &mut W) -> Result<usize, io::Error> {
+        fn write_content<W: Write>(&self, _: &mut W) -> SerializeResult<usize> {
             Ok(0)
         }
     }

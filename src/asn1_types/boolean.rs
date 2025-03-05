@@ -114,7 +114,6 @@ impl ToDer for Boolean {
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
     impl ToBer for Boolean {
@@ -124,8 +123,8 @@ const _: () = {
             Length::Definite(1)
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
-            target.write(&[self.value])
+        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            target.write(&[self.value]).map_err(Into::into)
         }
     }
 };
@@ -192,7 +191,6 @@ impl ToDer for bool {
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
     impl ToBer for bool {
@@ -202,9 +200,9 @@ const _: () = {
             Length::Definite(1)
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             let value = if *self { 0xff } else { 0x00 };
-            target.write(&[value])
+            target.write(&[value]).map_err(Into::into)
         }
     }
 };

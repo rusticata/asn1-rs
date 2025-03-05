@@ -165,7 +165,6 @@ impl ToDer for BmpString<'_> {
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
     impl ToBer for BmpString<'_> {
@@ -177,13 +176,13 @@ const _: () = {
             Length::Definite(sz)
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             let mut v = Vec::new();
             for u in self.data.encode_utf16() {
                 v.push((u >> 8) as u8);
                 v.push((u & 0xff) as u8);
             }
-            target.write(&v)
+            target.write(&v).map_err(Into::into)
         }
     }
 };

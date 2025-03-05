@@ -217,7 +217,6 @@ impl ToDer for BitString {
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
     impl ToBer for BitString {
@@ -228,7 +227,7 @@ const _: () = {
             Length::Definite(len)
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             let data = self.as_raw_slice();
             // ignored bits
             let ignored = (8 * data.len()) - self.len();

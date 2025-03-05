@@ -49,10 +49,9 @@ impl Tagged for f32 {
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
-    use crate::{Length, Primitive, ToBer};
+    use crate::{Length, Primitive, SerializeResult, ToBer};
 
     impl ToBer for f32 {
         type Encoder = Primitive<Self, { Tag::RealType.0 }>;
@@ -62,7 +61,7 @@ const _: () = {
             r.content_len()
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             let r = Real::from(*self);
             r.write_content(target)
         }

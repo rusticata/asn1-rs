@@ -214,10 +214,7 @@ const _: () = {
             header_len + content_len
         }
 
-        fn write_content<W: std::io::Write>(
-            &self,
-            target: &mut W,
-        ) -> Result<usize, std::io::Error> {
+        fn write_content<W: std::io::Write>(&self, target: &mut W) -> SerializeResult<usize> {
             self.inner.encode(target)
         }
     }

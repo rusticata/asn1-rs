@@ -198,7 +198,6 @@ macro_rules! asn1_string {
 
         #[cfg(feature = "std")]
         const _: () = {
-            use std::io;
             use std::io::Write;
 
             impl $crate::ToBer for $name<'_> {
@@ -208,8 +207,8 @@ macro_rules! asn1_string {
                     $crate::Length::Definite(self.data.len())
                 }
 
-                fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
-                    target.write(self.data.as_bytes())
+                fn write_content<W: Write>(&self, target: &mut W) -> $crate::SerializeResult<usize> {
+                    target.write(self.data.as_bytes()).map_err(Into::into)
                 }
             }
         };

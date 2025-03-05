@@ -166,7 +166,6 @@ macro_rules! impl_int {
 
         #[cfg(feature = "std")]
         const _: () = {
-            use std::io;
             use std::io::Write;
 
             impl ToBer for $int {
@@ -177,9 +176,9 @@ macro_rules! impl_int {
                     Length::Definite(int.data.len())
                 }
 
-                fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+                fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
                     let int = Integer::from(*self);
-                    target.write(&int.data)
+                    target.write(&int.data).map_err(Into::into)
                 }
             }
         };
@@ -262,7 +261,6 @@ macro_rules! impl_uint {
 
         #[cfg(feature = "std")]
         const _: () = {
-            use std::io;
             use std::io::Write;
 
             impl ToBer for $ty {
@@ -273,9 +271,9 @@ macro_rules! impl_uint {
                     Length::Definite(int.data.len())
                 }
 
-                fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+                fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
                     let int = Integer::from(*self);
-                    target.write(&int.data)
+                    target.write(&int.data).map_err(Into::into)
                 }
             }
         };
@@ -652,7 +650,6 @@ impl ToDer for Integer<'_> {
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
     impl ToBer for Integer<'_> {
@@ -662,8 +659,8 @@ const _: () = {
             Length::Definite(self.data.len())
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
-            target.write(&self.data)
+        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            target.write(&self.data).map_err(Into::into)
         }
     }
 };

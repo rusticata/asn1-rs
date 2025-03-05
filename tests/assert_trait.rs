@@ -316,7 +316,9 @@ fn assert_traits_tober() {
     test_assert!(Boolean, bool);
     test_assert!(Null, ());
 
+    // not implemented for EmbeddedPdv
     test_assert!(Enumerated);
+    // EndOfContent?
 
     test_assert!(Integer);
     test_assert!(u8, u16, u32, u64, u128);

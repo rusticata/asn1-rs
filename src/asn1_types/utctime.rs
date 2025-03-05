@@ -257,7 +257,6 @@ impl ToDer for UtcTime {
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
     impl ToBer for UtcTime {
@@ -272,7 +271,7 @@ const _: () = {
             Length::Definite(13)
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             write!(
                 target,
                 "{:02}{:02}{:02}{:02}{:02}{:02}Z",

@@ -1,7 +1,8 @@
+use std::io;
 use std::io::Write;
-use std::{io, marker::PhantomData};
+use std::marker::PhantomData;
 
-use crate::{DynTagged, Length, Tag};
+use crate::{DynTagged, Length, SerializeError, SerializeResult, Tag};
 
 use super::{BerEncoder, ToBer};
 
@@ -64,10 +65,10 @@ where
         Length::Indefinite
     }
 
-    fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+    fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
         let sz = self.0.iter().try_fold(0, |acc, t| {
             let sz = t.encode(target)?;
-            Ok::<_, io::Error>(acc + sz)
+            Ok::<_, SerializeError>(acc + sz)
         })?;
         // write EndOfContent
         target.write_all(&[0, 0])?;

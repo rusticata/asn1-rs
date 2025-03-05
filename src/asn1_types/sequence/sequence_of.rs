@@ -220,7 +220,6 @@ where
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
     impl<T> ToBer for SequenceOf<T>
@@ -233,7 +232,7 @@ const _: () = {
             self.items.content_len()
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             self.items.write_content(target)
         }
     }

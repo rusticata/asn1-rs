@@ -469,11 +469,11 @@ const _: () = {
             }
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             match self {
                 Real::Zero => Ok(0),
-                Real::Infinity => target.write(&[0x40]),
-                Real::NegInfinity => target.write(&[0x41]),
+                Real::Infinity => target.write(&[0x40]).map_err(Into::into),
+                Real::NegInfinity => target.write(&[0x41]).map_err(Into::into),
                 Real::Binary {
                     mantissa,
                     base,
@@ -484,14 +484,10 @@ const _: () = {
                         // using character form
                         let sign = if *exponent == 0 { "+" } else { "" };
                         let s = format!("\x03{}E{}{}", mantissa, sign, exponent);
-                        return target.write(s.as_bytes());
+                        return target.write(s.as_bytes()).map_err(Into::into);
                     }
                     if *base != 2 {
-                        // return Err(Self::TAG.invalid_value("Invalid base for REAL").into());
-                        return Err(io::Error::new(
-                            io::ErrorKind::Other,
-                            "Invalid base for REAL",
-                        ));
+                        return Err(Self::TAG.invalid_value("Invalid base for REAL").into());
                     }
                     let mut first: u8 = 0x80;
                     // choose encoding base

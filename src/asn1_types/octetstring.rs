@@ -148,7 +148,6 @@ impl ToDer for OctetString<'_> {
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
     impl ToBer for OctetString<'_> {
@@ -158,8 +157,8 @@ const _: () = {
             Length::Definite(self.data.len())
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
-            target.write(&self.data)
+        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            target.write(&self.data).map_err(Into::into)
         }
     }
 };
@@ -243,7 +242,6 @@ impl ToDer for &'_ [u8] {
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
     impl ToBer for &'_ [u8] {
@@ -253,8 +251,8 @@ const _: () = {
             Length::Definite(self.len())
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
-            target.write(self)
+        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            target.write(self).map_err(Into::into)
         }
     }
 };

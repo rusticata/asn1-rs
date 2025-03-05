@@ -93,10 +93,9 @@ impl<'a> DerParser<'a> for AnySequence<'a> {
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
-    use crate::{ber_header_length, Constructed, Length, ToBer};
+    use crate::{ber_header_length, Constructed, Length, SerializeResult, ToBer};
 
     impl ToBer for AnySequence<'_> {
         type Encoder = Constructed<Self>;
@@ -117,10 +116,10 @@ const _: () = {
             len
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             self.iter().try_fold(0, |acc, t| {
                 let sz = t.encode(target)?;
-                Ok::<_, io::Error>(acc + sz)
+                Ok(acc + sz)
             })
         }
     }

@@ -98,10 +98,9 @@ impl<'a, S: BuildHasher + Default> DerParser<'a> for AnySet<'a, S> {
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
-    use crate::{Constructed, Length, ToBer};
+    use crate::{Constructed, Length, SerializeResult, ToBer};
 
     impl<S: BuildHasher> ToBer for AnySet<'_, S> {
         type Encoder = Constructed<Self>;
@@ -110,10 +109,10 @@ const _: () = {
             self.items.content_len()
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             self.iter().try_fold(0, |acc, t| {
                 let sz = t.encode(target)?;
-                Ok::<_, io::Error>(acc + sz)
+                Ok(acc + sz)
             })
         }
     }

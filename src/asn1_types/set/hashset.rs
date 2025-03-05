@@ -5,7 +5,6 @@ use core::hash::BuildHasher;
 use std::collections::HashSet;
 use std::convert::TryFrom;
 use std::hash::Hash;
-use std::io;
 use std::io::Write;
 
 use self::debug::{trace, trace_generic};
@@ -173,10 +172,10 @@ where
         len
     }
 
-    fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+    fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
         self.iter().try_fold(0, |acc, t| {
             let sz = t.encode(target)?;
-            Ok::<_, io::Error>(acc + sz)
+            Ok(acc + sz)
         })
     }
 }

@@ -80,7 +80,6 @@ impl ToDer for Enumerated {
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
     impl ToBer for Enumerated {
@@ -91,9 +90,9 @@ const _: () = {
             Length::Definite(i.data.len())
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             let i = Integer::from(self.0);
-            target.write(&i.data)
+            target.write(&i.data).map_err(Into::into)
         }
     }
 };

@@ -608,7 +608,6 @@ impl ToDer for Any<'_> {
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
     impl ToBer for Any<'_> {
@@ -618,8 +617,8 @@ const _: () = {
             Length::Definite(self.data.len())
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
-            target.write(self.data.as_bytes2())
+        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            target.write(self.data.as_bytes2()).map_err(Into::into)
         }
     }
 };

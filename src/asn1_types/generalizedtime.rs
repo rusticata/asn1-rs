@@ -356,7 +356,6 @@ impl ToDer for GeneralizedTime {
 
 #[cfg(feature = "std")]
 const _: () = {
-    use std::io;
     use std::io::Write;
 
     impl ToBer for GeneralizedTime {
@@ -377,7 +376,7 @@ const _: () = {
             Length::Definite(15 + num_digits)
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             let fractional = match self.0.millisecond {
                 None => "".to_string(),
                 Some(v) => format!(".{}", v),

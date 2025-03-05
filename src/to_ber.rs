@@ -1,8 +1,8 @@
 #![cfg(feature = "std")]
 
-use std::io::{self, Write};
+use std::io::Write;
 
-use crate::{InnerError, Length, Tag};
+use crate::{InnerError, Length, SerializeResult, Tag};
 
 mod constructed;
 mod constructed_indefinite;
@@ -31,12 +31,12 @@ pub trait ToBer {
     /// Encode and write the content of the object to the writer `target`
     ///
     /// Returns the number of bytes written
-    fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error>;
+    fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize>;
 
     /// Encode and write the header of the object to the writer `target`
     ///
     /// Returns the number of bytes written
-    fn write_header<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+    fn write_header<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
         let mut encoder = Self::Encoder::new();
 
         let mut sz = 0;
@@ -52,14 +52,14 @@ pub trait ToBer {
     /// Encode and write the object (header + content) to the writer `target`
     ///
     /// Returns the number of bytes written
-    fn encode<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+    fn encode<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
         let sz = self.write_header(target)? + self.write_content(target)?;
 
         Ok(sz)
     }
 
     /// Write the DER encoded representation to a newly allocated `Vec<u8>`
-    fn to_vec(&self) -> Result<Vec<u8>, io::Error> {
+    fn to_vec(&self) -> SerializeResult<Vec<u8>> {
         let mut v = Vec::new();
         self.encode(&mut v)?;
         Ok(v)
@@ -79,7 +79,7 @@ where
         (*self).content_len()
     }
 
-    fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+    fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
         (*self).write_content(target)
     }
 }
