@@ -228,8 +228,6 @@ const _: () = {
     use std::io;
     use std::io::Write;
 
-    use crate::{ber_header_length, Constructed, DynTagged, Length, ToBer};
-
     // NOTE: we need T::DynTagged (T can be a CHOICE)
     impl<T> ToBer for Vec<T>
     where

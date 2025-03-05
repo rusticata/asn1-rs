@@ -173,8 +173,6 @@ const _: () = {
     use std::io;
     use std::io::Write;
 
-    use crate::{Length, Primitive, Tag, ToBer};
-
     impl ToBer for bool {
         type Encoder = Primitive<bool, { Tag::Boolean.0 }>;
 

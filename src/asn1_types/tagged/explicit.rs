@@ -201,8 +201,6 @@ where
 
 #[cfg(feature = "std")]
 const _: () = {
-    use crate::{ber_header_length, BerGenericEncoder, DynTagged, Length, ToBer};
-
     impl<T, E, const CLASS: u8, const TAG: u32> ToBer for TaggedValue<T, E, Explicit, CLASS, TAG>
     where
         T: ToBer,
