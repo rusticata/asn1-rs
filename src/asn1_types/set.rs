@@ -5,11 +5,14 @@ use alloc::vec::Vec;
 use core::convert::TryFrom;
 use nom::{Input as _, Parser};
 
+mod any_set;
 mod btreeset;
 mod hashset;
 mod iterator;
 mod set_of;
 
+#[cfg(feature = "std")]
+pub use any_set::*;
 pub use iterator::*;
 pub use set_of::*;
 

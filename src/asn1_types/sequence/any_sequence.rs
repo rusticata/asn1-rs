@@ -16,6 +16,8 @@ pub struct AnySequence<'a> {
 
 impl<'a> AnySequence<'a> {
     /// Create a new `AnySequence` object.
+    ///
+    /// See also the [`FromIterator`] trait, implemented for this type.
     pub const fn new(items: Vec<Any<'a>>) -> Self {
         Self { items }
     }
@@ -108,7 +110,7 @@ impl<'a> FromIterator<Any<'a>> for AnySequence<'a> {
 mod tests {
     use hex_literal::hex;
 
-    use crate::{BerParser, Input};
+    use crate::{BerParser, DerParser, Input};
 
     use super::AnySequence;
 
@@ -120,5 +122,27 @@ mod tests {
         assert_eq!(result.len(), 1);
 
         assert_eq!(result.iter().next().unwrap().as_u32(), Ok(65537));
+
+        // Ok: indefinite length
+        let input = &hex!("30 80 0203010001 0000");
+        let (rem, result) = <AnySequence>::parse_ber(Input::from(input)).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert_eq!(result.len(), 1);
+
+        assert_eq!(result.iter().next().unwrap().as_u32(), Ok(65537));
+    }
+
+    #[test]
+    fn parse_der_anysequence() {
+        let input = &hex!("30 05 02 03 01 00 01");
+        let (rem, result) = <AnySequence>::parse_der(Input::from(input)).expect("parsing failed");
+        assert!(rem.is_empty());
+        assert_eq!(result.len(), 1);
+
+        assert_eq!(result.iter().next().unwrap().as_u32(), Ok(65537));
+
+        // Fail: indefinite length
+        let input = &hex!("30 80 0203010001 0000");
+        let _ = <AnySequence>::parse_der(Input::from(input)).expect_err("indefinite length");
     }
 }
