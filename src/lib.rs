@@ -213,8 +213,10 @@ pub use from_der::*;
 pub use header::*;
 pub use length::*;
 pub use tag::*;
-pub use to_ber::*;
 pub use traits::*;
+
+#[cfg(feature = "std")]
+pub use to_ber::*;
 
 pub use nom;
 pub use nom::{Err, IResult, Needed};
