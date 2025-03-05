@@ -1,3 +1,4 @@
+use alloc::vec::Vec;
 use core::iter::{Cloned, Enumerate};
 use core::ops::Range;
 use core::slice::Iter;
