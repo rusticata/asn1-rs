@@ -323,7 +323,7 @@ fn assert_traits_tober() {
     test_assert!(i8, i16, i32, i64, i128);
     test_assert!(isize, usize);
 
-    // test_assert!(GeneralizedTime, UtcTime);
+    test_assert!(GeneralizedTime, UtcTime);
 
     test_assert!(OctetString, &[u8]);
 

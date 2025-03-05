@@ -354,6 +354,52 @@ impl ToDer for GeneralizedTime {
     }
 }
 
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    impl ToBer for GeneralizedTime {
+        type Encoder = Primitive<Self, { Tag::GeneralizedTime.0 }>;
+
+        fn content_len(&self) -> Length {
+            // data:
+            // - 8 bytes for YYYYMMDD
+            // - 6 for hhmmss in DER (X.690 section 11.7.2)
+            // - (variable) the fractional part, without trailing zeros, with a point "."
+            // - 1 for the character Z in DER (X.690 section 11.7.1)
+            // data length: 15 + fractional part
+            let num_digits = match self.0.millisecond {
+                None => 0,
+                Some(v) => 1 + v.to_string().len(),
+            };
+
+            Length::Definite(15 + num_digits)
+        }
+
+        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+            let fractional = match self.0.millisecond {
+                None => "".to_string(),
+                Some(v) => format!(".{}", v),
+            };
+            let num_digits = fractional.len();
+            write!(
+                target,
+                "{:04}{:02}{:02}{:02}{:02}{:02}{}Z",
+                self.0.year,
+                self.0.month,
+                self.0.day,
+                self.0.hour,
+                self.0.minute,
+                self.0.second,
+                fractional,
+            )?;
+            // write_fmt returns (), see above for length value
+            Ok(15 + num_digits)
+        }
+    }
+};
+
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
@@ -403,5 +449,31 @@ mod tests {
             nom::Err::Error(e) if *e.inner() == InnerError::DerConstraintFailed(DerConstraint::MissingTimeZone)
 
         ));
+    }
+
+    #[cfg(feature = "std")]
+    mod tests_std {
+        use hex_literal::hex;
+
+        use crate::{ASN1DateTime, ASN1TimeZone, GeneralizedTime, ToBer};
+
+        #[test]
+        fn tober_generalizedtime() {
+            // universal time, no millisecond
+            let datetime = ASN1DateTime::new(2013, 12, 2, 14, 29, 23, None, ASN1TimeZone::Z);
+            let time = GeneralizedTime::new(datetime);
+            let mut v: Vec<u8> = Vec::new();
+            time.encode(&mut v).expect("serialization failed");
+            let expected = &[&hex!("18 0f") as &[u8], b"20131202142923Z"].concat();
+            assert_eq!(&v, expected);
+
+            // universal time with millisecond
+            let datetime = ASN1DateTime::new(1999, 12, 31, 23, 59, 59, Some(123), ASN1TimeZone::Z);
+            let time = GeneralizedTime::new(datetime);
+            let mut v: Vec<u8> = Vec::new();
+            time.encode(&mut v).expect("serialization failed");
+            let expected = &[&hex!("18 13") as &[u8], b"19991231235959.123Z"].concat();
+            assert_eq!(&v, expected);
+        }
     }
 }

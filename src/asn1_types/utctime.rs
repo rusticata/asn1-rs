@@ -255,6 +255,35 @@ impl ToDer for UtcTime {
     }
 }
 
+#[cfg(feature = "std")]
+const _: () = {
+    use std::io;
+    use std::io::Write;
+
+    impl ToBer for UtcTime {
+        type Encoder = Primitive<Self, { Tag::UtcTime.0 }>;
+
+        fn content_len(&self) -> Length {
+            // data:
+            // - 6 bytes for YYMMDD
+            // - 6 for hhmmss in DER (X.690 section 11.8.2)
+            // - 1 for the character Z in DER (X.690 section 11.8.1)
+            // data length: 13
+            Length::Definite(13)
+        }
+
+        fn write_content<W: Write>(&self, target: &mut W) -> Result<usize, io::Error> {
+            write!(
+                target,
+                "{:02}{:02}{:02}{:02}{:02}{:02}Z",
+                self.0.year, self.0.month, self.0.day, self.0.hour, self.0.minute, self.0.second,
+            )?;
+            // write_fmt returns (), see above for length value
+            Ok(13)
+        }
+    }
+};
+
 #[cfg(test)]
 mod tests {
     use hex_literal::hex;
@@ -304,5 +333,22 @@ mod tests {
         #[cfg(feature = "std")]
         let _ = result.to_string();
         let _ = result;
+    }
+
+    #[cfg(feature = "std")]
+    mod tests_std {
+        use hex_literal::hex;
+
+        use crate::{ASN1DateTime, ToBer, UtcTime};
+
+        #[test]
+        fn tober_utctime() {
+            let datetime = ASN1DateTime::new(13, 12, 2, 14, 29, 23, None, crate::ASN1TimeZone::Z);
+            let time = UtcTime::new(datetime);
+            let mut v: Vec<u8> = Vec::new();
+            time.encode(&mut v).expect("serialization failed");
+            let expected = &[&hex!("17 0d") as &[u8], b"131202142923Z"].concat();
+            assert_eq!(&v, expected);
+        }
     }
 }
