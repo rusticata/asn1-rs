@@ -30,10 +30,6 @@ impl_tryfrom_any!(EndOfContent);
 impl<'i> BerParser<'i> for EndOfContent {
     type Error = BerError<Input<'i>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::EndOfContent
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,

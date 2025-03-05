@@ -55,10 +55,6 @@ where
 {
     type Error = T::Error;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Self::TAG
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,
@@ -89,10 +85,6 @@ where
     // E: ParseError<Input<'a>> + From<BerError<Input<'a>>>,
 {
     type Error = T::Error;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Self::TAG
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,

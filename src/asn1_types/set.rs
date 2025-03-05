@@ -320,10 +320,6 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Set<'a> {
 impl<'i> BerParser<'i> for Set<'i> {
     type Error = BerError<Input<'i>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Set
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,
@@ -345,10 +341,6 @@ impl<'i> BerParser<'i> for Set<'i> {
 
 impl<'i> DerParser<'i> for Set<'i> {
     type Error = BerError<Input<'i>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Set
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,

@@ -60,10 +60,6 @@ impl Tagged for AnySequence<'_> {
 impl<'a> BerParser<'a> for AnySequence<'a> {
     type Error = BerError<Input<'a>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Self::TAG
-    }
-
     fn from_ber_content(
         header: &'_ crate::Header<'a>,
         input: Input<'a>,
@@ -80,10 +76,6 @@ impl<'a> BerParser<'a> for AnySequence<'a> {
 
 impl<'a> DerParser<'a> for AnySequence<'a> {
     type Error = BerError<Input<'a>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Self::TAG
-    }
 
     fn from_der_content(
         header: &'_ crate::Header<'a>,

@@ -36,10 +36,6 @@ impl_tryfrom_any!(Boolean);
 impl<'i> BerParser<'i> for Boolean {
     type Error = BerError<Input<'i>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Boolean
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,
@@ -57,10 +53,6 @@ impl<'i> BerParser<'i> for Boolean {
 
 impl<'i> DerParser<'i> for Boolean {
     type Error = BerError<Input<'i>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Boolean
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,
@@ -134,10 +126,6 @@ impl CheckDerConstraints for bool {
 impl<'i> BerParser<'i> for bool {
     type Error = BerError<Input<'i>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Boolean
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,
@@ -148,10 +136,6 @@ impl<'i> BerParser<'i> for bool {
 
 impl<'i> DerParser<'i> for bool {
     type Error = BerError<Input<'i>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Boolean
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,

@@ -87,10 +87,6 @@ macro_rules! impl_int {
         impl<'i> BerParser<'i> for $int {
             type Error = BerError<Input<'i>>;
 
-            fn check_tag(tag: Tag) -> bool {
-                tag == Tag::Integer
-            }
-
             fn from_ber_content(
                 header: &'_ Header<'i>,
                 input: Input<'i>,
@@ -119,10 +115,6 @@ macro_rules! impl_int {
 
         impl<'i> DerParser<'i> for $int {
             type Error = BerError<Input<'i>>;
-
-            fn check_tag(tag: Tag) -> bool {
-                tag == Tag::Integer
-            }
 
             fn from_der_content(
                 header: &'_ Header<'i>,
@@ -181,10 +173,6 @@ macro_rules! impl_uint {
         impl<'i> BerParser<'i> for $ty {
             type Error = BerError<Input<'i>>;
 
-            fn check_tag(tag: Tag) -> bool {
-                tag == Tag::Integer
-            }
-
             fn from_ber_content(
                 header: &'_ Header<'i>,
                 input: Input<'i>,
@@ -203,10 +191,6 @@ macro_rules! impl_uint {
 
         impl<'i> DerParser<'i> for $ty {
             type Error = BerError<Input<'i>>;
-
-            fn check_tag(tag: Tag) -> bool {
-                tag == Tag::Integer
-            }
 
             fn from_der_content(
                 header: &'_ Header<'i>,
@@ -514,10 +498,6 @@ impl_tryfrom_any!('i @ Integer<'i>);
 impl<'i> BerParser<'i> for Integer<'i> {
     type Error = BerError<Input<'i>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Integer
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,
@@ -545,10 +525,6 @@ impl<'i> BerParser<'i> for Integer<'i> {
 
 impl<'i> DerParser<'i> for Integer<'i> {
     type Error = BerError<Input<'i>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Integer
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,

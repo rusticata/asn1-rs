@@ -16,10 +16,6 @@ impl CheckDerConstraints for String {
 impl<'i> BerParser<'i> for String {
     type Error = BerError<Input<'i>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Utf8String
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,
@@ -33,10 +29,6 @@ impl<'i> BerParser<'i> for String {
 
 impl<'i> DerParser<'i> for String {
     type Error = BerError<Input<'i>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Utf8String
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,

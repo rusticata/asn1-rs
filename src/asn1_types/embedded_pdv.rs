@@ -42,10 +42,6 @@ impl_tryfrom_any!('i @ EmbeddedPdv<'i>);
 impl<'i> BerParser<'i> for EmbeddedPdv<'i> {
     type Error = BerError<Input<'i>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::EmbeddedPdv
-    }
-
     fn from_ber_content(
         _header: &'_ Header<'i>,
         input: Input<'i>,
@@ -136,10 +132,6 @@ impl<'i> BerParser<'i> for EmbeddedPdv<'i> {
 
 impl<'i> DerParser<'i> for EmbeddedPdv<'i> {
     type Error = BerError<Input<'i>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::EmbeddedPdv
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,

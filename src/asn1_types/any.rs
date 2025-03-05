@@ -199,7 +199,7 @@ macro_rules! impl_tryfrom_any {
             fn try_from(any: $crate::Any<$lft>) -> Result<Self> {
                 use $crate::BerParser;
 
-                if !<Self as $crate::BerParser>::check_tag(any.tag()) {
+                if !<Self as $crate::DynTagged>::accept_tag(any.tag()) {
                     Err($crate::Error::unexpected_tag(None, any.tag()).into())
                 } else {
                     let (_, obj) = Self::from_ber_content(&any.header, any.data)
@@ -215,7 +215,7 @@ macro_rules! impl_tryfrom_any {
             fn try_from(any: &'b $crate::Any<$lft>) -> Result<Self> {
                 use $crate::BerParser;
 
-                if !<Self as $crate::BerParser>::check_tag(any.tag()) {
+                if !<Self as $crate::DynTagged>::accept_tag(any.tag()) {
                     Err($crate::Error::unexpected_tag(None, any.tag()).into())
                 } else {
                     let (_, obj) = Self::from_ber_content(&any.header, any.data.clone())

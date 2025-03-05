@@ -39,10 +39,6 @@ where
 {
     type Error = <T as BerParser<'a>>::Error;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Self::TAG
-    }
-
     fn from_ber_content(
         header: &'_ Header<'a>,
         input: Input<'a>,
@@ -62,10 +58,6 @@ where
     T: Ord,
 {
     type Error = <T as DerParser<'a>>::Error;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Self::TAG
-    }
 
     fn from_der_content(
         header: &'_ Header<'a>,

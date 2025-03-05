@@ -19,10 +19,6 @@ impl_tryfrom_any!(Enumerated);
 impl<'i> BerParser<'i> for Enumerated {
     type Error = BerError<Input<'i>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Enumerated
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,
@@ -37,10 +33,6 @@ impl<'i> BerParser<'i> for Enumerated {
 
 impl<'i> DerParser<'i> for Enumerated {
     type Error = BerError<Input<'i>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Enumerated
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,

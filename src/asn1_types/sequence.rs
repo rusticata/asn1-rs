@@ -335,10 +335,6 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Sequence<'a> {
 impl<'i> BerParser<'i> for Sequence<'i> {
     type Error = BerError<Input<'i>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Sequence
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,
@@ -360,10 +356,6 @@ impl<'i> BerParser<'i> for Sequence<'i> {
 
 impl<'i> DerParser<'i> for Sequence<'i> {
     type Error = BerError<Input<'i>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Sequence
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,

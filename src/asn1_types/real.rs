@@ -155,10 +155,6 @@ impl_tryfrom_any!(Real);
 impl<'i> BerParser<'i> for Real {
     type Error = BerError<Input<'i>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::RealType
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,
@@ -176,10 +172,6 @@ impl<'i> BerParser<'i> for Real {
 
 impl<'i> DerParser<'i> for Real {
     type Error = BerError<Input<'i>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::RealType
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,

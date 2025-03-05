@@ -48,10 +48,6 @@ where
 {
     type Error = T::Error;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Self::TAG
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,
@@ -73,7 +69,7 @@ where
         // note: we check tag here, because the only way to have a different tag
         // would be to be IMPLICIT, and we already know we are EXPLICIT
         // This is an exception!
-        if !Self::check_tag(header.tag) {
+        if !Self::accept_tag(header.tag) {
             return Err(Err::Error(
                 BerError::unexpected_tag(input, Some(TAG.into()), header.tag).into(),
             ));
@@ -94,10 +90,6 @@ where
     // E: ParseError<Input<'a>> + From<BerError<Input<'a>>>,
 {
     type Error = T::Error;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Self::TAG
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,
@@ -120,7 +112,7 @@ where
         // note: we check tag here, because the only way to have a different tag
         // would be to be IMPLICIT, and we already know we are EXPLICIT
         // This is an exception!
-        if !Self::check_tag(header.tag) {
+        if !Self::accept_tag(header.tag) {
             return Err(Err::Error(
                 BerError::unexpected_tag(input, Some(TAG.into()), header.tag).into(),
             ));

@@ -79,10 +79,6 @@ impl_tryfrom_any!(BitString);
 impl<'i> BerParser<'i> for BitString {
     type Error = BerError<Input<'i>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::BitString
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,
@@ -125,10 +121,6 @@ impl<'i> BerParser<'i> for BitString {
 
 impl<'i> DerParser<'i> for BitString {
     type Error = BerError<Input<'i>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::BitString
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,

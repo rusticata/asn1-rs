@@ -21,10 +21,6 @@ impl_tryfrom_any!(Null);
 impl<'i> BerParser<'i> for Null {
     type Error = BerError<Input<'i>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Null
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,
@@ -41,10 +37,6 @@ impl<'i> BerParser<'i> for Null {
 
 impl<'i> DerParser<'i> for Null {
     type Error = BerError<Input<'i>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Null
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,
@@ -87,10 +79,6 @@ impl_tryfrom_any!(());
 impl<'i> BerParser<'i> for () {
     type Error = BerError<Input<'i>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Null
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,
@@ -101,10 +89,6 @@ impl<'i> BerParser<'i> for () {
 
 impl<'i> DerParser<'i> for () {
     type Error = BerError<Input<'i>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Null
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,

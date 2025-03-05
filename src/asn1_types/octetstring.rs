@@ -55,10 +55,6 @@ impl_tryfrom_any!('i @ OctetString<'i>);
 impl<'i> BerParser<'i> for OctetString<'i> {
     type Error = BerError<Input<'i>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::OctetString
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,
@@ -80,10 +76,6 @@ impl<'i> BerParser<'i> for OctetString<'i> {
 
 impl<'i> DerParser<'i> for OctetString<'i> {
     type Error = BerError<Input<'i>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::OctetString
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,
@@ -157,10 +149,6 @@ impl_tryfrom_any!('i @ &'i [u8]);
 impl<'i> BerParser<'i> for &'i [u8] {
     type Error = BerError<Input<'i>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::OctetString
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,
@@ -178,10 +166,6 @@ impl<'i> BerParser<'i> for &'i [u8] {
 
 impl<'i> DerParser<'i> for &'i [u8] {
     type Error = BerError<Input<'i>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::OctetString
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,

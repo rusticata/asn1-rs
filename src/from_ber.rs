@@ -5,7 +5,7 @@ use nom::Input as _;
 use nom::{Err, IResult};
 
 use crate::ber::{GetObjectContent, MAX_RECURSION};
-use crate::{Any, BerError, BerMode, DynTagged, Error, Header, Input, ParseResult, Tag};
+use crate::{Any, BerError, BerMode, DynTagged, Error, Header, Input, ParseResult};
 
 /// Base trait for BER object parsers
 ///
@@ -63,9 +63,9 @@ where
 
 /// Base trait for BER object parsers
 ///
-/// Implementers should provide a definition (or validate the default one) for the following methods:
-/// - [`from_ber_content`](BerParser::from_ber_content): Parse BER content, given a header and data
-/// - [`check_tag`](BerParser::check_tag): check if a tag is acceptable for this object (default: all tags are accepted)
+/// Implementers should provide a definition (or validate the default one) for the following:
+/// - method [`from_ber_content`](BerParser::from_ber_content): Parse BER content, given a header and data
+/// - trait [`DynTagged`]
 pub trait BerParser<'i>
 where
     Self: Sized,
@@ -79,7 +79,7 @@ where
     /// Header tag must match expected tag
     fn parse_ber(input: Input<'i>) -> IResult<Input<'i>, Self, Self::Error> {
         let (rem, header) = Header::parse_ber(input.clone()).map_err(Err::convert)?;
-        if !Self::check_tag(header.tag) {
+        if !Self::accept_tag(header.tag) {
             return Err(Err::Error(
                 // FIXME: expected Tag is `None`, so the error will not be helpful
                 BerError::unexpected_tag(input, None, header.tag).into(),
@@ -89,14 +89,6 @@ where
             BerMode::get_object_content(&header, rem, MAX_RECURSION).map_err(Err::convert)?;
         let (_, obj) = Self::from_ber_content(&header, data).map_err(Err::convert)?;
         Ok((rem, obj))
-    }
-
-    /// Check if provided tag is acceptable
-    ///
-    /// Return `true` if tag can match current object.
-    fn check_tag(tag: Tag) -> bool {
-        let _ = tag;
-        true
     }
 
     /// Parse a new BER object from header and data.
@@ -115,7 +107,7 @@ where
             return Ok((input, None));
         }
         let (rem, header) = Header::parse_ber(input.clone()).map_err(Err::convert)?;
-        if !Self::check_tag(header.tag) {
+        if !Self::accept_tag(header.tag) {
             return Ok((input, None));
         }
         let (rem, data) =

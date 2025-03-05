@@ -46,10 +46,6 @@ impl_tryfrom_any!('i @ Oid<'i>);
 impl<'i> BerParser<'i> for Oid<'i> {
     type Error = BerError<Input<'i>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Oid
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,
@@ -69,10 +65,6 @@ impl<'i> BerParser<'i> for Oid<'i> {
 
 impl<'i> DerParser<'i> for Oid<'i> {
     type Error = BerError<Input<'i>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::Oid
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,

@@ -55,10 +55,6 @@ impl_tryfrom_any!('i @ UniversalString<'i>);
 impl<'i> BerParser<'i> for UniversalString<'i> {
     type Error = BerError<Input<'i>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::UniversalString
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,
@@ -107,10 +103,6 @@ impl<'i> BerParser<'i> for UniversalString<'i> {
 
 impl<'i> DerParser<'i> for UniversalString<'i> {
     type Error = BerError<Input<'i>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::UniversalString
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,

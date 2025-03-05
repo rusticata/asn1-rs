@@ -192,7 +192,18 @@ impl Container {
         let tag = if self.container_type == ContainerType::Alias {
             // special case: is this an alias for Any
             if self.is_any {
-                return quote! {};
+                return quote! {
+                    gen impl<'ber> asn1_rs::DynTagged for @Self {
+                        fn tag(&self) -> asn1_rs::Tag {
+                            self.tag()
+                        }
+
+                        fn accept_tag(_: asn1_rs::Tag) -> bool {
+                            // For ANY, all tags are accepted
+                            true
+                        }
+                    }
+                };
             }
             // find type of sub-item
             let ty = &self.fields[0].type_;
@@ -229,21 +240,6 @@ impl Container {
         // For ex: `pub struct AA<'a>` will require a bound `impl[..] BerParser[..] where 'i: 'a`
         // Container::from_datastruct takes care of this.
         let wh = &self.where_predicates;
-
-        // If Self is an alias, check for special case Any
-        let impl_checktag = if self.container_type == ContainerType::Alias && self.is_any {
-            quote! {
-                fn check_tag(tag: asn1_rs::Tag) -> bool {
-                    true // Any accepts all tags
-                }
-            }
-        } else {
-            quote! {
-                fn check_tag(tag: asn1_rs::Tag) -> bool {
-                    tag == Self::TAG // requires Self::Tagged
-                }
-            }
-        };
 
         // TODO: assert constructed (only for Sequence/Set)
 
@@ -297,8 +293,6 @@ impl Container {
             gen impl<#lft> BerParser<#lft> for @Self where #(#wh)+* {
                 type Error = #error;
 
-                #impl_checktag
-
                 fn from_ber_content(header: &'_ Header<#lft>, input: Input<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
                     #fn_content
                 }
@@ -329,21 +323,6 @@ impl Container {
         // For ex: `pub struct AA<'a>` will require a bound `impl[..] DerParser[..] where 'i: 'a`
         // Container::from_datastruct takes care of this.
         let wh = &self.where_predicates;
-
-        // If Self is an alias, check for special case Any
-        let impl_checktag = if self.container_type == ContainerType::Alias && self.is_any {
-            quote! {
-                fn check_tag(tag: asn1_rs::Tag) -> bool {
-                    true // Any accepts all tags
-                }
-            }
-        } else {
-            quote! {
-                fn check_tag(tag: asn1_rs::Tag) -> bool {
-                    tag == Self::TAG // requires Self::Tagged
-                }
-            }
-        };
 
         let fn_content = if self.container_type == ContainerType::Alias {
             // special case: is this an alias for Any
@@ -394,8 +373,6 @@ impl Container {
 
             gen impl<#lft> DerParser<#lft> for @Self where #(#wh)+* {
                 type Error = #error;
-
-                #impl_checktag
 
                 fn from_der_content(header: &'_ Header<#lft>, input: Input<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
                     #fn_content

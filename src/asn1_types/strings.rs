@@ -96,11 +96,6 @@ macro_rules! asn1_string {
         impl<'i> $crate::BerParser<'i> for $name<'i> {
             type Error = $crate::BerError<$crate::Input<'i>>;
 
-            fn check_tag(tag: $crate::Tag) -> bool {
-                use $crate::Tagged;
-                tag == Self::TAG
-            }
-
             fn from_ber_content(header: &'_ $crate::Header<'i>, input: $crate::Input<'i>) -> $crate::nom::IResult<$crate::Input<'i>, Self, Self::Error> {
                 use alloc::borrow::Cow;
                 // Encoding shall either be primitive or constructed (X.690: 8.20)
@@ -141,11 +136,6 @@ macro_rules! asn1_string {
 
         impl<'i> $crate::DerParser<'i> for $name<'i> {
             type Error = $crate::BerError<$crate::Input<'i>>;
-
-            fn check_tag(tag: $crate::Tag) -> bool {
-                use $crate::Tagged;
-                tag == Self::TAG
-            }
 
             fn from_der_content(header: &'_ $crate::Header<'i>, input: $crate::Input<'i>) -> $crate::nom::IResult<$crate::Input<'i>, Self, Self::Error> {
                 use $crate::BerParser;

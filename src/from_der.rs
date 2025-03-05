@@ -8,7 +8,7 @@ use nom::{Err, IResult, Input as _};
 use crate::debug::{trace, trace_generic};
 use crate::{
     parse_der_any, wrap_ber_parser, Any, BerError, DynTagged, Error, Header, Input, ParseResult,
-    Result, Tag,
+    Result,
 };
 
 /// Base trait for DER object parsers
@@ -121,9 +121,9 @@ pub trait CheckDerConstraints {
 
 /// Base trait for DER object parsers
 ///
-/// Implementers should provide a definition (or validate the default one) for the following methods:
-/// - [`from_der_content`](DerParser::from_der_content): Parse DER content, given a header and data
-/// - [`check_tag`](DerParser::check_tag): check if a tag is acceptable for this object (default: all tags are accepted)
+/// Implementers should provide a definition (or validate the default one) for the following:
+/// - method [`from_der_content`](DerParser::from_der_content): Parse DER content, given a header and data
+/// - trait [`DynTagged`]
 pub trait DerParser<'i>
 where
     Self: Sized,
@@ -142,7 +142,7 @@ where
             .length
             .definite_inner()
             .map_err(BerError::convert_into(input.clone()))?;
-        if !Self::check_tag(header.tag) {
+        if !Self::accept_tag(header.tag) {
             return Err(Err::Error(
                 // TODO: expected Tag is `None`, so the error will not be helpful
                 BerError::unexpected_tag(input, None, header.tag).into(),
@@ -151,14 +151,6 @@ where
         let (rem, data) = take(length)(rem)?;
         let (_, obj) = Self::from_der_content(&header, data).map_err(Err::convert)?;
         Ok((rem, obj))
-    }
-
-    /// Check if provided tag is acceptable
-    ///
-    /// Return `true` if tag can match current object.
-    fn check_tag(tag: Tag) -> bool {
-        let _ = tag;
-        true
     }
 
     /// Parse a new DER object from header and data.
@@ -183,7 +175,7 @@ where
             return Ok((input, None));
         }
         let (rem, header) = Header::parse_der(input.clone()).map_err(Err::convert)?;
-        if !Self::check_tag(header.tag) {
+        if !Self::accept_tag(header.tag) {
             return Ok((input, None));
         }
         // get length, rejecting indefinite (invalid for DER)

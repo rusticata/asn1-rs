@@ -49,10 +49,6 @@ where
 {
     type Error = E;
 
-    fn check_tag(_tag: Tag) -> bool {
-        true
-    }
-
     fn parse_ber(input: Input<'a>) -> IResult<Input<'a>, Self, Self::Error> {
         if input.is_empty() {
             return Ok((input, None));
@@ -62,14 +58,8 @@ where
         // if tag does not match
 
         let (rem, header) = Header::parse_ber(input.clone()).map_err(Err::convert)?;
-        // FIXME: this will not check anything, Option<T>::check_tag always return true
-        if !Self::check_tag(header.tag) {
-            return Err(Err::Error(
-                BerError::unexpected_tag(input, None, header.tag).into(),
-            ));
-        }
         // NOTE: we add this to default trait impl
-        if !T::check_tag(header.tag) {
+        if !T::accept_tag(header.tag) {
             return Ok((input, None));
         }
         // NOTE: end
@@ -86,7 +76,7 @@ where
         if input.is_empty() {
             return Ok((input, None));
         }
-        if !T::check_tag(header.tag) {
+        if !T::accept_tag(header.tag) {
             return Ok((input, None));
         }
         let (rem, data) =
@@ -103,10 +93,6 @@ where
 {
     type Error = E;
 
-    fn check_tag(_tag: Tag) -> bool {
-        true
-    }
-
     fn parse_der(input: Input<'a>) -> IResult<Input<'a>, Self, Self::Error> {
         if input.is_empty() {
             return Ok((input, None));
@@ -116,14 +102,8 @@ where
         // if tag does not match
 
         let (rem, header) = Header::parse_der(input.clone()).map_err(Err::convert)?;
-        // FIXME: this will not check anything, Option<T>::check_tag always return true
-        if !Self::check_tag(header.tag) {
-            return Err(Err::Error(
-                BerError::unexpected_tag(input, None, header.tag).into(),
-            ));
-        }
         // NOTE: we add this to default trait impl
-        if !T::check_tag(header.tag) {
+        if !T::accept_tag(header.tag) {
             return Ok((input, None));
         }
         // NOTE: end
@@ -140,7 +120,7 @@ where
         if input.is_empty() {
             return Ok((input, None));
         }
-        if !T::check_tag(header.tag) {
+        if !T::accept_tag(header.tag) {
             return Ok((input, None));
         }
         let (rem, data) =

@@ -1,6 +1,8 @@
 use nom::{Err, IResult, Input as _};
 
-use crate::{Any, AnyIterator, BerError, BerMode, BerParser, Header, InnerError, Input, Tag};
+use crate::{
+    Any, AnyIterator, BerError, BerMode, BerParser, DynTagged, Header, InnerError, Input, Tag,
+};
 
 use super::ber_get_content;
 
@@ -47,7 +49,7 @@ where
                 header: h2,
                 data: data2,
             } = obj;
-            if !<T as BerParser>::check_tag(h2.tag()) {
+            if !<T as DynTagged>::accept_tag(h2.tag()) {
                 return Err(BerError::nom_err_input(&data2, InnerError::InvalidTag));
             }
             // Empty segments are sometimes allowed (for ex: OctetStrings). Just skip recursion if empty

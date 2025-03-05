@@ -94,7 +94,7 @@ impl<'a> AnyIterator<'a, BerMode> {
     {
         let b = <Result<B, Err<T::Error, T::Error>>>::from_iter(self.map(|r| match r {
             Ok((_, obj)) => {
-                if !T::check_tag(obj.tag()) {
+                if !T::accept_tag(obj.tag()) {
                     Err(Err::Error(
                         BerError::unexpected_tag(obj.data.clone(), None, obj.tag()).into(),
                     ))
@@ -158,7 +158,7 @@ impl<'a> AnyIterator<'a, DerMode> {
     {
         let b = <Result<B, Err<T::Error, T::Error>>>::from_iter(self.map(|r| match r {
             Ok((_, obj)) => {
-                if !T::check_tag(obj.tag()) {
+                if !T::accept_tag(obj.tag()) {
                     Err(Err::Error(
                         BerError::unexpected_tag(obj.data.clone(), None, obj.tag()).into(),
                     ))

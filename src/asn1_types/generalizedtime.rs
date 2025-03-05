@@ -176,10 +176,6 @@ impl_tryfrom_any!(GeneralizedTime);
 impl<'i> BerParser<'i> for GeneralizedTime {
     type Error = BerError<Input<'i>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::GeneralizedTime
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,
@@ -209,10 +205,6 @@ impl<'i> BerParser<'i> for GeneralizedTime {
 
 impl<'i> DerParser<'i> for GeneralizedTime {
     type Error = BerError<Input<'i>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::GeneralizedTime
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,

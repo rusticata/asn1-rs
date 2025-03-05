@@ -135,10 +135,6 @@ impl_tryfrom_any!(UtcTime);
 impl<'i> BerParser<'i> for UtcTime {
     type Error = BerError<Input<'i>>;
 
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::UtcTime
-    }
-
     fn from_ber_content(
         header: &'_ Header<'i>,
         input: Input<'i>,
@@ -168,10 +164,6 @@ impl<'i> BerParser<'i> for UtcTime {
 
 impl<'i> DerParser<'i> for UtcTime {
     type Error = BerError<Input<'i>>;
-
-    fn check_tag(tag: Tag) -> bool {
-        tag == Tag::UtcTime
-    }
 
     fn from_der_content(
         header: &'_ Header<'i>,
