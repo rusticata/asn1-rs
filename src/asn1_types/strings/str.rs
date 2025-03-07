@@ -101,15 +101,15 @@ const _: () = {
     impl ToBer for &'_ str {
         type Encoder = Primitive<{ Tag::Utf8String.0 }>;
 
-        fn content_len(&self) -> Length {
+        fn ber_content_len(&self) -> Length {
             Length::Definite(self.len())
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             target.write(self.as_bytes()).map_err(Into::into)
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, false, Self::TAG)
         }
     }

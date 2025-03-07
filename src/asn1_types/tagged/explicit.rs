@@ -208,17 +208,17 @@ const _: () = {
     {
         type Encoder = BerGenericEncoder;
 
-        fn content_len(&self) -> Length {
-            let content_len = self.inner.content_len();
+        fn ber_content_len(&self) -> Length {
+            let content_len = self.inner.ber_content_len();
             let header_len = ber_header_length(self.inner.tag(), content_len).unwrap_or(0);
             header_len + content_len
         }
 
-        fn write_content<W: std::io::Write>(&self, target: &mut W) -> SerializeResult<usize> {
-            self.inner.encode(target)
+        fn ber_write_content<W: std::io::Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            self.inner.ber_encode(target)
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, true, Self::TAG)
         }
     }
@@ -469,7 +469,7 @@ mod std_tests {
         type T<'a> = TaggedExplicit<bool, BerError<Input<'a>>, 0>;
         let t = T::explicit(true);
         v.clear();
-        t.encode(&mut v).expect("serialization failed");
+        t.ber_encode(&mut v).expect("serialization failed");
         assert_eq!(&v, &hex! {"a0 03 0101ff"});
 
         // de-serialize to be sure

@@ -613,15 +613,15 @@ const _: () = {
     impl ToBer for Any<'_> {
         type Encoder = BerGenericEncoder;
 
-        fn content_len(&self) -> Length {
+        fn ber_content_len(&self) -> Length {
             Length::Definite(self.data.len())
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             target.write(self.data.as_bytes2()).map_err(Into::into)
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (self.class(), self.constructed(), self.tag())
         }
     }

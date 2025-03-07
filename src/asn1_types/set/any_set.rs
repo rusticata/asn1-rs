@@ -105,18 +105,18 @@ const _: () = {
     impl<S: BuildHasher> ToBer for AnySet<'_, S> {
         type Encoder = Constructed;
 
-        fn content_len(&self) -> Length {
-            self.items.content_len()
+        fn ber_content_len(&self) -> Length {
+            self.items.ber_content_len()
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             self.iter().try_fold(0, |acc, t| {
-                let sz = t.encode(target)?;
+                let sz = t.ber_encode(target)?;
                 Ok(acc + sz)
             })
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, true, Self::TAG)
         }
     }
@@ -190,7 +190,7 @@ mod tests {
             let s = AnySet::new(h);
 
             let mut v: Vec<u8> = Vec::new();
-            s.encode(&mut v).expect("serialization failed");
+            s.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(
                 &v,
                 &hex! {"31 0b

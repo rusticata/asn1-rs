@@ -170,13 +170,13 @@ const _: () = {
     impl ToBer for BmpString<'_> {
         type Encoder = Primitive<{ Tag::BmpString.0 }>;
 
-        fn content_len(&self) -> Length {
+        fn ber_content_len(&self) -> Length {
             // compute the UTF-16 length
             let sz = self.data.encode_utf16().count() * 2;
             Length::Definite(sz)
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             let mut v = Vec::new();
             for u in self.data.encode_utf16() {
                 v.push((u >> 8) as u8);
@@ -185,7 +185,7 @@ const _: () = {
             target.write(&v).map_err(Into::into)
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, false, Self::TAG)
         }
     }
@@ -225,7 +225,7 @@ mod tests {
         fn tober_bmpstring() {
             let s = BmpString::new("User");
             let mut v: Vec<u8> = Vec::new();
-            s.encode(&mut v).expect("serialization failed");
+            s.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex! {"1e 08 0055 0073 0065 0072"});
         }
     }

@@ -100,11 +100,11 @@ const _: () = {
     impl ToBer for AnySequence<'_> {
         type Encoder = Constructed;
 
-        fn content_len(&self) -> Length {
+        fn ber_content_len(&self) -> Length {
             // content_len returns only the length of *content*, so we need header length for
             // every object here
             let len = self.iter().fold(Length::Definite(0), |acc, t| {
-                let content_length = t.content_len();
+                let content_length = t.ber_content_len();
                 match (acc, content_length) {
                     (Length::Definite(a), Length::Definite(b)) => {
                         let header_length = ber_header_length(t.tag(), content_length).unwrap_or(0);
@@ -116,14 +116,14 @@ const _: () = {
             len
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             self.iter().try_fold(0, |acc, t| {
-                let sz = t.encode(target)?;
+                let sz = t.ber_encode(target)?;
                 Ok(acc + sz)
             })
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, true, Self::TAG)
         }
     }
@@ -192,7 +192,7 @@ mod tests {
             ];
             let s = AnySequence::from_iter(v.iter().cloned());
             let mut v: Vec<u8> = Vec::new();
-            s.encode(&mut v).expect("serialization failed");
+            s.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(
                 &v,
                 &hex! {"30 0b

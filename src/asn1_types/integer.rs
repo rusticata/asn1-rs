@@ -171,17 +171,17 @@ macro_rules! impl_int {
             impl ToBer for $int {
                 type Encoder = Primitive<{ Tag::Integer.0 }>;
 
-                fn content_len(&self) -> Length {
+                fn ber_content_len(&self) -> Length {
                     let int = Integer::from(*self);
                     Length::Definite(int.data.len())
                 }
 
-                fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+                fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
                     let int = Integer::from(*self);
                     target.write(&int.data).map_err(Into::into)
                 }
 
-                fn tag_info(&self) -> (Class, bool, Tag) {
+                fn ber_tag_info(&self) -> (Class, bool, Tag) {
                     use $crate::Tagged;
                     (Self::CLASS, false, Self::TAG)
                 }
@@ -271,17 +271,17 @@ macro_rules! impl_uint {
             impl ToBer for $ty {
                 type Encoder = Primitive<{ Tag::Integer.0 }>;
 
-                fn content_len(&self) -> Length {
+                fn ber_content_len(&self) -> Length {
                     let int = Integer::from(*self);
                     Length::Definite(int.data.len())
                 }
 
-                fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+                fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
                     let int = Integer::from(*self);
                     target.write(&int.data).map_err(Into::into)
                 }
 
-                fn tag_info(&self) -> (Class, bool, Tag) {
+                fn ber_tag_info(&self) -> (Class, bool, Tag) {
                     use $crate::Tagged;
                     (Self::CLASS, false, Self::TAG)
                 }
@@ -665,15 +665,15 @@ const _: () = {
     impl ToBer for Integer<'_> {
         type Encoder = Primitive<{ Tag::Integer.0 }>;
 
-        fn content_len(&self) -> Length {
+        fn ber_content_len(&self) -> Length {
             Length::Definite(self.data.len())
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             target.write(&self.data).map_err(Into::into)
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, false, Self::TAG)
         }
     }
@@ -1014,35 +1014,35 @@ mod tests {
             // Ok: Integer
             let i = Integer::from(4);
             let mut v: Vec<u8> = Vec::new();
-            i.encode(&mut v).expect("serialization failed");
+            i.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex! {"020104"});
 
             // Ok: integer with MSB set (must be encoded on 2 bytes)
             let i = Integer::from(0x8f);
             let mut v: Vec<u8> = Vec::new();
-            i.encode(&mut v).expect("serialization failed");
+            i.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex! {"0202008f"});
 
             //---- u8
             let i = 4_u8;
             let mut v: Vec<u8> = Vec::new();
-            i.encode(&mut v).expect("serialization failed");
+            i.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex! {"020104"});
 
             let i = 0x8f_u8;
             let mut v: Vec<u8> = Vec::new();
-            i.encode(&mut v).expect("serialization failed");
+            i.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex! {"0202008f"});
 
             //---- i8
             let i = 4_i8;
             let mut v: Vec<u8> = Vec::new();
-            i.encode(&mut v).expect("serialization failed");
+            i.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex! {"020104"});
 
             let i = -4_i8;
             let mut v: Vec<u8> = Vec::new();
-            i.encode(&mut v).expect("serialization failed");
+            i.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex! {"0201fc"});
         }
     }

@@ -203,15 +203,15 @@ macro_rules! asn1_string {
             impl $crate::ToBer for $name<'_> {
                 type Encoder = $crate::Primitive< { $crate::Tag::$name.0 }>;
 
-                fn content_len(&self) -> $crate::Length {
+                fn ber_content_len(&self) -> $crate::Length {
                     $crate::Length::Definite(self.data.len())
                 }
 
-                fn write_content<W: Write>(&self, target: &mut W) -> $crate::SerializeResult<usize> {
+                fn ber_write_content<W: Write>(&self, target: &mut W) -> $crate::SerializeResult<usize> {
                     target.write(self.data.as_bytes()).map_err(Into::into)
                 }
 
-                fn tag_info(&self) -> ($crate::Class, bool, $crate::Tag) {
+                fn ber_tag_info(&self) -> ($crate::Class, bool, $crate::Tag) {
                     use $crate::Tagged;
                     (Self::CLASS, false, Self::TAG)
                 }

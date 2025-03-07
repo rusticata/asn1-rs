@@ -228,15 +228,15 @@ const _: () = {
     {
         type Encoder = Constructed;
 
-        fn content_len(&self) -> Length {
-            self.items.content_len()
+        fn ber_content_len(&self) -> Length {
+            self.items.ber_content_len()
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
-            self.items.write_content(target)
+        fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            self.items.ber_write_content(target)
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, true, Self::TAG)
         }
     }

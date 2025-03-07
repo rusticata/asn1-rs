@@ -83,15 +83,15 @@ const _: () = {
     impl ToBer for Null {
         type Encoder = Primitive<{ Tag::Null.0 }>;
 
-        fn content_len(&self) -> Length {
+        fn ber_content_len(&self) -> Length {
             Length::Definite(0)
         }
 
-        fn write_content<W: Write>(&self, _: &mut W) -> SerializeResult<usize> {
+        fn ber_write_content<W: Write>(&self, _: &mut W) -> SerializeResult<usize> {
             Ok(0)
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, false, Self::TAG)
         }
     }
@@ -157,15 +157,15 @@ const _: () = {
     impl ToBer for () {
         type Encoder = Primitive<{ Tag::Null.0 }>;
 
-        fn content_len(&self) -> Length {
+        fn ber_content_len(&self) -> Length {
             Length::Definite(0)
         }
 
-        fn write_content<W: Write>(&self, _: &mut W) -> SerializeResult<usize> {
+        fn ber_write_content<W: Write>(&self, _: &mut W) -> SerializeResult<usize> {
             Ok(0)
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, false, Self::TAG)
         }
     }

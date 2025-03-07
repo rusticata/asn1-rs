@@ -26,28 +26,28 @@ pub trait ToBer {
     /// Returns the length of the encoded content of the object
     ///
     /// The length describes the _content_ only, not the header.
-    fn content_len(&self) -> Length;
+    fn ber_content_len(&self) -> Length;
 
     /// Return the tag information to be encoded in header
-    fn tag_info(&self) -> (Class, bool, Tag);
+    fn ber_tag_info(&self) -> (Class, bool, Tag);
 
     /// Encode and write the content of the object to the writer `target`
     ///
     /// Returns the number of bytes written
-    fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize>;
+    fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize>;
 
     /// Encode and write the header of the object to the writer `target`
     ///
     /// Returns the number of bytes written
-    fn write_header<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+    fn ber_write_header<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
         let mut encoder = Self::Encoder::new();
 
         let mut sz = 0;
-        let (class, constructed, tag) = self.tag_info();
+        let (class, constructed, tag) = self.ber_tag_info();
         sz += encoder.write_tag_info(class, constructed, tag, target)?;
 
         // write length
-        let length = self.content_len();
+        let length = self.ber_content_len();
         sz += encoder.write_length(length, target)?;
 
         Ok(sz)
@@ -56,16 +56,16 @@ pub trait ToBer {
     /// Encode and write the object (header + content) to the writer `target`
     ///
     /// Returns the number of bytes written
-    fn encode<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
-        let sz = self.write_header(target)? + self.write_content(target)?;
+    fn ber_encode<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        let sz = self.ber_write_header(target)? + self.ber_write_content(target)?;
 
         Ok(sz)
     }
 
     /// Write the DER encoded representation to a newly allocated `Vec<u8>`
-    fn to_vec(&self) -> SerializeResult<Vec<u8>> {
+    fn to_ber_vec(&self) -> SerializeResult<Vec<u8>> {
         let mut v = Vec::new();
-        self.encode(&mut v)?;
+        self.ber_encode(&mut v)?;
         Ok(v)
     }
 }
@@ -79,16 +79,16 @@ where
 {
     type Encoder = <T as ToBer>::Encoder;
 
-    fn content_len(&self) -> Length {
-        (*self).content_len()
+    fn ber_content_len(&self) -> Length {
+        (*self).ber_content_len()
     }
 
-    fn tag_info(&self) -> (Class, bool, Tag) {
-        (*self).tag_info()
+    fn ber_tag_info(&self) -> (Class, bool, Tag) {
+        (*self).ber_tag_info()
     }
 
-    fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
-        (*self).write_content(target)
+    fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        (*self).ber_write_content(target)
     }
 }
 

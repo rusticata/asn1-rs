@@ -457,7 +457,7 @@ const _: () = {
     impl ToBer for Real {
         type Encoder = Primitive<{ Tag::RealType.0 }>;
 
-        fn content_len(&self) -> Length {
+        fn ber_content_len(&self) -> Length {
             match self {
                 Real::Zero => Length::Definite(0),
                 Real::Infinity | Real::NegInfinity => Length::Definite(1),
@@ -469,7 +469,7 @@ const _: () = {
             }
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             match self {
                 Real::Zero => Ok(0),
                 Real::Infinity => target.write(&[0x40]).map_err(Into::into),
@@ -566,7 +566,7 @@ const _: () = {
             }
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, false, Self::TAG)
         }
     }
@@ -704,47 +704,47 @@ mod tests {
             // base = 2, value = 4
             let r = Real::binary(2.0, 2, 1);
             let mut v = Vec::new();
-            r.encode(&mut v).expect("serialization failed");
+            r.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex!("09 03 80 02 01"));
 
             // base = 2, value = 0.5
             let r = Real::binary(0.5, 2, 0);
             let mut v = Vec::new();
-            r.encode(&mut v).expect("serialization failed");
+            r.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex!("09 03 80 ff 01"));
 
             // base = 2, value = 3.25, but change encoding base (8)
             let r = Real::binary(3.25, 2, 0).with_enc_base(8);
             let mut v = Vec::new();
-            r.encode(&mut v).expect("serialization failed");
+            r.ber_encode(&mut v).expect("serialization failed");
             // note: this encoding has a scale factor (not DER compliant)
             assert_eq!(&v, &hex!("09 03 94 ff 0d"));
 
             // base = 2, value = 0.00390625, but change encoding base (16)
             let r = Real::binary(0.00390625, 2, 0).with_enc_base(16);
             let mut v = Vec::new();
-            r.encode(&mut v).expect("serialization failed");
+            r.ber_encode(&mut v).expect("serialization failed");
             // note: this encoding has a scale factor (not DER compliant)
             assert_eq!(&v, &hex!("09 03 a0 fe 01"));
 
             // 2 octets for exponent, negative exponent and abs(exponent) is all 1's and fills the whole octet(s)
             let r = Real::binary(3.0, 2, -1020);
             let mut v = Vec::new();
-            r.encode(&mut v).expect("serialization failed");
+            r.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex!("09 04 81 fc 04 03"));
 
             // 3 octets for exponent, and
             // check that first 9 bits for exponent are not all 1's
             let r = Real::binary(1.0, 2, 262140);
             let mut v = Vec::new();
-            r.encode(&mut v).expect("serialization failed");
+            r.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex!("09 05 82 03 ff fc 01"));
 
             // >3 octets for exponent, and
             // mantissa < 0
             let r = Real::binary(-1.0, 2, 76354972);
             let mut v = Vec::new();
-            r.encode(&mut v).expect("serialization failed");
+            r.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex!("09 07 c3 04 04 8d 15 9c 01"));
         }
 
@@ -753,19 +753,19 @@ mod tests {
             // ZERO
             let r = Real::Zero;
             let mut v = Vec::new();
-            r.encode(&mut v).expect("serialization failed");
+            r.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex!("09 00"));
 
             // INFINITY
             let r = Real::Infinity;
             let mut v = Vec::new();
-            r.encode(&mut v).expect("serialization failed");
+            r.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex!("09 01 40"));
 
             // MINUS INFINITY
             let r = Real::NegInfinity;
             let mut v = Vec::new();
-            r.encode(&mut v).expect("serialization failed");
+            r.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex!("09 01 41"));
         }
 
@@ -774,7 +774,7 @@ mod tests {
             //  non-zero value, base 10
             let r = Real::new(1.2345);
             let mut v = Vec::new();
-            r.encode(&mut v).expect("serialization failed");
+            r.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &[&hex!("09 09 03") as &[u8], b"12345E-4"].concat());
         }
     }

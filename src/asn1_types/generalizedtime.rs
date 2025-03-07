@@ -361,7 +361,7 @@ const _: () = {
     impl ToBer for GeneralizedTime {
         type Encoder = Primitive<{ Tag::GeneralizedTime.0 }>;
 
-        fn content_len(&self) -> Length {
+        fn ber_content_len(&self) -> Length {
             // data:
             // - 8 bytes for YYYYMMDD
             // - 6 for hhmmss in DER (X.690 section 11.7.2)
@@ -376,7 +376,7 @@ const _: () = {
             Length::Definite(15 + num_digits)
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             let fractional = match self.0.millisecond {
                 None => "".to_string(),
                 Some(v) => format!(".{}", v),
@@ -397,7 +397,7 @@ const _: () = {
             Ok(15 + num_digits)
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, false, Self::TAG)
         }
     }
@@ -466,7 +466,7 @@ mod tests {
             let datetime = ASN1DateTime::new(2013, 12, 2, 14, 29, 23, None, ASN1TimeZone::Z);
             let time = GeneralizedTime::new(datetime);
             let mut v: Vec<u8> = Vec::new();
-            time.encode(&mut v).expect("serialization failed");
+            time.ber_encode(&mut v).expect("serialization failed");
             let expected = &[&hex!("18 0f") as &[u8], b"20131202142923Z"].concat();
             assert_eq!(&v, expected);
 
@@ -474,7 +474,7 @@ mod tests {
             let datetime = ASN1DateTime::new(1999, 12, 31, 23, 59, 59, Some(123), ASN1TimeZone::Z);
             let time = GeneralizedTime::new(datetime);
             let mut v: Vec<u8> = Vec::new();
-            time.encode(&mut v).expect("serialization failed");
+            time.ber_encode(&mut v).expect("serialization failed");
             let expected = &[&hex!("18 13") as &[u8], b"19991231235959.123Z"].concat();
             assert_eq!(&v, expected);
         }

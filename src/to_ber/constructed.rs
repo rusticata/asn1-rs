@@ -47,7 +47,7 @@ mod tests {
         let mut v: Vec<u8> = Vec::new();
 
         let value = vec![true, false];
-        value.encode(&mut v).expect("serialization failed");
+        value.ber_encode(&mut v).expect("serialization failed");
         // eprintln!("encoding for {:?}:\n{}", &value, v.to_hex(16));
         assert_eq!(&v, &hex!("30 06 0101ff 010100"));
 

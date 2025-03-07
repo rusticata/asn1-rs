@@ -138,15 +138,15 @@ const _: () = {
     impl ToBer for Oid<'_> {
         type Encoder = BerGenericEncoder;
 
-        fn content_len(&self) -> Length {
+        fn ber_content_len(&self) -> Length {
             Length::Definite(self.asn1.len())
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             target.write(&self.asn1).map_err(Into::into)
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (self.class(), self.constructed(), self.tag())
         }
     }
@@ -599,7 +599,7 @@ mod tests {
         fn tober_oid() {
             let oid = Oid::from(&[1, 2, 840, 113_549, 1, 1, 5]).unwrap();
             let mut v: Vec<u8> = Vec::new();
-            oid.encode(&mut v).expect("serialization failed");
+            oid.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex! {"06 09 2a864886f70d010105"});
         }
 
@@ -607,7 +607,7 @@ mod tests {
         fn tober_rel_oid() {
             let oid = oid!(rel 1.2);
             let mut v: Vec<u8> = Vec::new();
-            oid.encode(&mut v).expect("serialization failed");
+            oid.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex! {"0d 02 0102"});
         }
     }

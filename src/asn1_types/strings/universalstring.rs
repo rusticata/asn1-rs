@@ -168,20 +168,20 @@ const _: () = {
     impl ToBer for UniversalString<'_> {
         type Encoder = Primitive<{ Tag::UniversalString.0 }>;
 
-        fn content_len(&self) -> Length {
+        fn ber_content_len(&self) -> Length {
             // UCS-4: 4 bytes per character
             let sz = self.data.len() * 4;
             Length::Definite(sz)
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             self.data
                 .chars()
                 .try_for_each(|c| target.write(&(c as u32).to_be_bytes()[..]).map(|_| ()))?;
             Ok(self.data.len() * 4)
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, false, Self::TAG)
         }
     }
@@ -219,7 +219,7 @@ mod tests {
         fn tober_universalstring() {
             let s = UniversalString::new("abcd");
             let mut v: Vec<u8> = Vec::new();
-            s.encode(&mut v).expect("serialization failed");
+            s.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex! {"1C 10 00000061 00000062 00000063 00000064"});
         }
     }

@@ -85,17 +85,17 @@ const _: () = {
     impl ToBer for Enumerated {
         type Encoder = Primitive<{ Tag::Enumerated.0 }>;
 
-        fn content_len(&self) -> Length {
+        fn ber_content_len(&self) -> Length {
             let i = Integer::from(self.0);
             Length::Definite(i.data.len())
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             let i = Integer::from(self.0);
             target.write(&i.data).map_err(Into::into)
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, false, Self::TAG)
         }
     }
@@ -148,13 +148,13 @@ mod tests {
             // Ok: Integer
             let i = Enumerated::new(4);
             let mut v: Vec<u8> = Vec::new();
-            i.encode(&mut v).expect("serialization failed");
+            i.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex! {"0a0104"});
 
             // Ok: integer with MSB set (must be encoded on 2 bytes)
             let i = Enumerated::new(0x8f);
             let mut v: Vec<u8> = Vec::new();
-            i.encode(&mut v).expect("serialization failed");
+            i.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex! {"0a02008f"});
         }
     }

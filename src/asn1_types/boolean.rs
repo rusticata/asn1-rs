@@ -119,15 +119,15 @@ const _: () = {
     impl ToBer for Boolean {
         type Encoder = Primitive<{ Tag::Boolean.0 }>;
 
-        fn content_len(&self) -> Length {
+        fn ber_content_len(&self) -> Length {
             Length::Definite(1)
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             target.write(&[self.value]).map_err(Into::into)
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (self.class(), self.constructed(), self.tag())
         }
     }
@@ -200,16 +200,16 @@ const _: () = {
     impl ToBer for bool {
         type Encoder = Primitive<{ Tag::Boolean.0 }>;
 
-        fn content_len(&self) -> Length {
+        fn ber_content_len(&self) -> Length {
             Length::Definite(1)
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             let value = if *self { 0xff } else { 0x00 };
             target.write(&[value]).map_err(Into::into)
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, false, Self::TAG)
         }
     }
@@ -306,12 +306,12 @@ mod tests {
             // Ok: Boolean
             let b = Boolean::TRUE;
             let mut v: Vec<u8> = Vec::new();
-            b.encode(&mut v).expect("serialization failed");
+            b.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex! {"0101ff"});
 
             // Ok: bool
             let mut v: Vec<u8> = Vec::new();
-            true.encode(&mut v).expect("serialization failed");
+            true.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex! {"0101ff"});
         }
     }

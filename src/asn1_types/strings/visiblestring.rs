@@ -83,7 +83,7 @@ mod tests {
         fn tober_visiblestring() {
             let s = VisibleString::new("123");
             let mut v: Vec<u8> = Vec::new();
-            s.encode(&mut v).expect("serialization failed");
+            s.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex! {"1a03 313233"});
         }
     }

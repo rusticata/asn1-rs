@@ -153,15 +153,15 @@ const _: () = {
     impl ToBer for OctetString<'_> {
         type Encoder = Primitive<{ Tag::OctetString.0 }>;
 
-        fn content_len(&self) -> Length {
+        fn ber_content_len(&self) -> Length {
             Length::Definite(self.data.len())
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             target.write(&self.data).map_err(Into::into)
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, false, Self::TAG)
         }
     }
@@ -251,15 +251,15 @@ const _: () = {
     impl ToBer for &'_ [u8] {
         type Encoder = Primitive<{ Tag::OctetString.0 }>;
 
-        fn content_len(&self) -> Length {
+        fn ber_content_len(&self) -> Length {
             Length::Definite(self.len())
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             target.write(self).map_err(Into::into)
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, false, Self::TAG)
         }
     }
@@ -320,7 +320,7 @@ mod tests {
         fn tober_octetstring() {
             let i = OctetString::new(&hex!("01020304"));
             let mut v: Vec<u8> = Vec::new();
-            i.encode(&mut v).expect("serialization failed");
+            i.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex! {"0404 01020304"});
         }
     }

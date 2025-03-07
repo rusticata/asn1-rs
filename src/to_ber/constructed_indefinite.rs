@@ -61,13 +61,13 @@ where
 {
     type Encoder = ConstructedIndefinite;
 
-    fn content_len(&self) -> Length {
+    fn ber_content_len(&self) -> Length {
         Length::Indefinite
     }
 
-    fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+    fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
         let sz = self.0.iter().try_fold(0, |acc, t| {
-            let sz = t.encode(target)?;
+            let sz = t.ber_encode(target)?;
             Ok::<_, SerializeError>(acc + sz)
         })?;
         // write EndOfContent
@@ -75,7 +75,7 @@ where
         Ok(sz + 2)
     }
 
-    fn tag_info(&self) -> (Class, bool, Tag) {
+    fn ber_tag_info(&self) -> (Class, bool, Tag) {
         (self.class(), true, self.tag())
     }
 }
@@ -92,7 +92,7 @@ mod tests {
         let mut v: Vec<u8> = Vec::new();
 
         let value = IndefiniteVec(vec![true, false]);
-        value.encode(&mut v).expect("serialization failed");
+        value.ber_encode(&mut v).expect("serialization failed");
         // eprintln!("encoding for {:?}:\n{}", &value, v.to_hex(16));
         assert_eq!(&v, &hex!("30 80 0101ff 010100 0000"));
 

@@ -222,12 +222,12 @@ const _: () = {
     impl ToBer for BitString {
         type Encoder = Primitive<{ Tag::BitString.0 }>;
 
-        fn content_len(&self) -> Length {
+        fn ber_content_len(&self) -> Length {
             let len = 1 + (self.len() / 8);
             Length::Definite(len)
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             let data = self.as_raw_slice();
             // ignored bits
             let ignored = (8 * data.len()) - self.len();
@@ -238,7 +238,7 @@ const _: () = {
             Ok(1 + data.len())
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, false, Self::TAG)
         }
     }
@@ -325,7 +325,7 @@ mod tests {
             let immut = bits![u8, Msb0; 0, 1, 0, 0, 1, 0, 0, 1];
             let bitstring = BitString::from(immut);
             let mut v: Vec<u8> = Vec::new();
-            bitstring.encode(&mut v).expect("serialization failed");
+            bitstring.ber_encode(&mut v).expect("serialization failed");
             assert_eq!(&v, &hex! {"03020049"});
         }
     }

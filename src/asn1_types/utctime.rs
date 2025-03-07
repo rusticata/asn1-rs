@@ -262,7 +262,7 @@ const _: () = {
     impl ToBer for UtcTime {
         type Encoder = Primitive<{ Tag::UtcTime.0 }>;
 
-        fn content_len(&self) -> Length {
+        fn ber_content_len(&self) -> Length {
             // data:
             // - 6 bytes for YYMMDD
             // - 6 for hhmmss in DER (X.690 section 11.8.2)
@@ -271,7 +271,7 @@ const _: () = {
             Length::Definite(13)
         }
 
-        fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             write!(
                 target,
                 "{:02}{:02}{:02}{:02}{:02}{:02}Z",
@@ -281,7 +281,7 @@ const _: () = {
             Ok(13)
         }
 
-        fn tag_info(&self) -> (Class, bool, Tag) {
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, false, Self::TAG)
         }
     }
@@ -349,7 +349,7 @@ mod tests {
             let datetime = ASN1DateTime::new(13, 12, 2, 14, 29, 23, None, crate::ASN1TimeZone::Z);
             let time = UtcTime::new(datetime);
             let mut v: Vec<u8> = Vec::new();
-            time.encode(&mut v).expect("serialization failed");
+            time.ber_encode(&mut v).expect("serialization failed");
             let expected = &[&hex!("17 0d") as &[u8], b"131202142923Z"].concat();
             assert_eq!(&v, expected);
         }
