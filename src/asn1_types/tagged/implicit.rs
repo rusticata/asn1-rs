@@ -342,10 +342,9 @@ where
 
 #[cfg(feature = "std")]
 const _: () = {
-    impl<T> ToBer for TaggedParser<'_, Implicit, T>
+    impl<T, E> ToBer for TaggedParser<'_, Implicit, T, E>
     where
         T: ToBer,
-        T: DynTagged,
     {
         type Encoder = BerGenericEncoder;
 
@@ -362,10 +361,9 @@ const _: () = {
         }
     }
 
-    impl<T> ToDer for TaggedParser<'_, Implicit, T>
+    impl<T, E> ToDer for TaggedParser<'_, Implicit, T, E>
     where
         T: ToDer,
-        T: DynTagged,
     {
         type Encoder = BerGenericEncoder;
 

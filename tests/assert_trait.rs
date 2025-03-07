@@ -383,8 +383,8 @@ fn assert_traits_tober() {
             test_assert!(TaggedImplicit<T, E2, 0>);
             test_assert!(TaggedValue<T, E2, Implicit, {Class::Application as u8}, 0>);
 
-            // test_assert!(TaggedParser<Implicit, T, E2>);
-            // test_assert!(TaggedParser<Implicit, &T, E2>);
+            test_assert!(TaggedParser<Implicit, T, E2>);
+            test_assert!(TaggedParser<Implicit, &T, E2>);
         }
     }
 }
@@ -477,8 +477,8 @@ fn assert_traits_toder() {
             test_assert!(TaggedImplicit<T, E2, 0>);
             test_assert!(TaggedValue<T, E2, Implicit, {Class::Application as u8}, 0>);
 
-            // test_assert!(TaggedParser<Implicit, T, E2>);
-            // test_assert!(TaggedParser<Implicit, &T, E2>);
+            test_assert!(TaggedParser<Implicit, T, E2>);
+            test_assert!(TaggedParser<Implicit, &T, E2>);
         }
     }
 }
