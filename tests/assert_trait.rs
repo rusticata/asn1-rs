@@ -375,10 +375,110 @@ fn assert_traits_tober() {
             test_assert!(TaggedExplicit<T, E1, 0>);
             test_assert!(TaggedValue<T, E1, Explicit, {Class::Application as u8}, 0>);
 
+            test_assert!(TaggedParser<Explicit, T, E1>);
+            test_assert!(TaggedParser<Explicit, &T, E1>);
+
             // TODO: test for custom error types
             type E2<'a> = BerError<Input<'a>>;
             test_assert!(TaggedImplicit<T, E2, 0>);
             test_assert!(TaggedValue<T, E2, Implicit, {Class::Application as u8}, 0>);
+
+            // test_assert!(TaggedParser<Implicit, T, E2>);
+            // test_assert!(TaggedParser<Implicit, &T, E2>);
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+#[test]
+fn assert_traits_toder() {
+    fn assert_trait_toder<T: ToDer>() {}
+
+    macro_rules! test_assert {
+        ($($_type:ty),*) => {
+            $( test_assert!(_SINGLE $_type); )*
+        };
+
+        (_SINGLE $_type:ty) => {
+            assert_trait_toder::<$_type>();
+        };
+    }
+
+    test_assert!(Any);
+
+    test_assert!(BitString);
+    test_assert!(Boolean, bool);
+    test_assert!(Null, ());
+
+    // not implemented for EmbeddedPdv
+    test_assert!(Enumerated);
+    // EndOfContent?
+
+    test_assert!(Integer);
+    test_assert!(u8, u16, u32, u64, u128);
+    test_assert!(i8, i16, i32, i64, i128);
+    test_assert!(isize, usize);
+
+    test_assert!(GeneralizedTime, UtcTime);
+
+    test_assert!(OctetString, &[u8]);
+
+    test_assert!(Oid);
+
+    test_assert!(Real, f32, f64);
+
+    test_assert!(Sequence, Set);
+    test_assert!(AnySequence);
+    test_assert!(AnySet);
+
+    test_assert!(&str, String);
+    test_assert!(
+        BmpString,
+        GeneralString,
+        GraphicString,
+        Ia5String,
+        NumericString,
+        ObjectDescriptor,
+        PrintableString,
+        TeletexString,
+        UniversalString,
+        Utf8String,
+        VideotexString,
+        VisibleString
+    );
+
+    #[allow(dead_code)]
+    fn compound_wrapper_std<T>(_: T) {
+        use std::collections::{BTreeSet, HashSet};
+
+        #[allow(dead_code)]
+        fn compound_wrapper_tober<T>(_: T)
+        where
+            T: ToDer + DynTagged,
+        {
+            test_assert!(&T);
+
+            test_assert!(HashSet<T>);
+            test_assert!(BTreeSet<T>);
+
+            test_assert!(SequenceOf<T>);
+            test_assert!(SetOf<T>);
+
+            // TODO: test for custom error types
+            type E1<'a> = BerError<Input<'a>>;
+            test_assert!(TaggedExplicit<T, E1, 0>);
+            test_assert!(TaggedValue<T, E1, Explicit, {Class::Application as u8}, 0>);
+
+            test_assert!(TaggedParser<Explicit, T, E1>);
+            test_assert!(TaggedParser<Explicit, &T, E1>);
+
+            // TODO: test for custom error types
+            type E2<'a> = BerError<Input<'a>>;
+            test_assert!(TaggedImplicit<T, E2, 0>);
+            test_assert!(TaggedValue<T, E2, Implicit, {Class::Application as u8}, 0>);
+
+            // test_assert!(TaggedParser<Implicit, T, E2>);
+            // test_assert!(TaggedParser<Implicit, &T, E2>);
         }
     }
 }

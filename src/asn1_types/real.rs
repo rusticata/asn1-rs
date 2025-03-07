@@ -326,130 +326,6 @@ fn decode_real(header: &Header, bytes: &[u8]) -> Result<Real, InnerError> {
 }
 
 #[cfg(feature = "std")]
-impl ToDer for Real {
-    fn to_der_len(&self) -> Result<usize> {
-        match self {
-            Real::Zero => Ok(0),
-            Real::Infinity | Real::NegInfinity => Ok(1),
-            Real::Binary { .. } => {
-                let mut sink = std::io::sink();
-                let n = self
-                    .write_der_content(&mut sink)
-                    .map_err(|_| Self::TAG.invalid_value("Serialization of REAL failed"))?;
-                Ok(n)
-            }
-        }
-    }
-
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let header = Header::new(
-            Class::Universal,
-            false,
-            Self::TAG,
-            Length::Definite(self.to_der_len()?),
-        );
-        header.write_der_header(writer)
-    }
-
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        match self {
-            Real::Zero => Ok(0),
-            Real::Infinity => writer.write(&[0x40]).map_err(Into::into),
-            Real::NegInfinity => writer.write(&[0x41]).map_err(Into::into),
-            Real::Binary {
-                mantissa,
-                base,
-                exponent,
-                enc_base: _enc_base,
-            } => {
-                if *base == 10 {
-                    // using character form
-                    let sign = if *exponent == 0 { "+" } else { "" };
-                    let s = format!("\x03{}E{}{}", mantissa, sign, exponent);
-                    return writer.write(s.as_bytes()).map_err(Into::into);
-                }
-                if *base != 2 {
-                    return Err(Self::TAG.invalid_value("Invalid base for REAL").into());
-                }
-                let mut first: u8 = 0x80;
-                // choose encoding base
-                let enc_base = *_enc_base;
-                let (ms, mut m, enc_base, mut e) =
-                    drop_floating_point(*mantissa, enc_base, *exponent);
-                assert!(m != 0);
-                if ms < 0 {
-                    first |= 0x40
-                };
-                // exponent & mantissa normalization
-                match enc_base {
-                    2 => {
-                        while m & 0x1 == 0 {
-                            m >>= 1;
-                            e += 1;
-                        }
-                    }
-                    8 => {
-                        while m & 0x7 == 0 {
-                            m >>= 3;
-                            e += 1;
-                        }
-                        first |= 0x10;
-                    }
-                    _ /* 16 */ => {
-                        while m & 0xf == 0 {
-                            m >>= 4;
-                            e += 1;
-                        }
-                        first |= 0x20;
-                    }
-                }
-                // scale factor
-                // XXX in DER, sf is always 0 (11.3.1)
-                let mut sf = 0;
-                while m & 0x1 == 0 && sf < 4 {
-                    m >>= 1;
-                    sf += 1;
-                }
-                first |= sf << 2;
-                // exponent length and bytes
-                let len_e = match e.abs() {
-                    0..=0xff => 1,
-                    0x100..=0xffff => 2,
-                    0x1_0000..=0xff_ffff => 3,
-                    // e is an `i32` so it can't be longer than 4 bytes
-                    // use 4, so `first` is ORed with 3
-                    _ => 4,
-                };
-                first |= (len_e - 1) & 0x3;
-                // write first byte
-                let mut n = writer.write(&[first])?;
-                // write exponent
-                // special case: number of bytes from exponent is > 3 and cannot fit in 2 bits
-                #[allow(clippy::identity_op)]
-                if len_e == 4 {
-                    let b = len_e & 0xff;
-                    n += writer.write(&[b])?;
-                }
-                // we only need to write e.len() bytes
-                let bytes = e.to_be_bytes();
-                n += writer.write(&bytes[(4 - len_e) as usize..])?;
-                // write mantissa
-                let bytes = m.to_be_bytes();
-                let mut idx = 0;
-                for &b in bytes.iter() {
-                    if b != 0 {
-                        break;
-                    }
-                    idx += 1;
-                }
-                n += writer.write(&bytes[idx..])?;
-                Ok(n)
-            }
-        }
-    }
-}
-
-#[cfg(feature = "std")]
 const _: () = {
     use std::io;
     use std::io::Write;
@@ -463,7 +339,7 @@ const _: () = {
                 Real::Infinity | Real::NegInfinity => Length::Definite(1),
                 Real::Binary { .. } => {
                     let mut sink = io::sink();
-                    let n = self.write_der_content(&mut sink).unwrap_or(0);
+                    let n = self.ber_write_content(&mut sink).unwrap_or(0);
                     Length::Definite(n)
                 }
             }
@@ -570,6 +446,8 @@ const _: () = {
             (Self::CLASS, false, Self::TAG)
         }
     }
+
+    impl_toder_from_tober!(TY Real);
 };
 
 impl From<f32> for Real {

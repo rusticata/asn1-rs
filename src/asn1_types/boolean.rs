@@ -90,29 +90,6 @@ impl Tagged for Boolean {
 }
 
 #[cfg(feature = "std")]
-impl ToDer for Boolean {
-    fn to_der_len(&self) -> Result<usize> {
-        // 3 = 1 (tag) + 1 (length) + 1 (value)
-        Ok(3)
-    }
-
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        writer.write(&[Self::TAG.0 as u8, 0x01]).map_err(Into::into)
-    }
-
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let b = if self.value != 0 { 0xff } else { 0x00 };
-        writer.write(&[b]).map_err(Into::into)
-    }
-
-    /// Similar to using `to_der`, but uses header without computing length value
-    fn write_der_raw(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let sz = writer.write(&[Self::TAG.0 as u8, 0x01, self.value])?;
-        Ok(sz)
-    }
-}
-
-#[cfg(feature = "std")]
 const _: () = {
     use std::io::Write;
 
@@ -128,6 +105,23 @@ const _: () = {
         }
 
         fn ber_tag_info(&self) -> (Class, bool, Tag) {
+            (self.class(), self.constructed(), self.tag())
+        }
+    }
+
+    impl ToDer for Boolean {
+        type Encoder = Primitive<{ Tag::Boolean.0 }>;
+
+        fn der_content_len(&self) -> Length {
+            Length::Definite(1)
+        }
+
+        fn der_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            let value = if self.value != 0 { 0xff } else { 0x00 };
+            target.write(&[value]).map_err(Into::into)
+        }
+
+        fn der_tag_info(&self) -> (Class, bool, Tag) {
             (self.class(), self.constructed(), self.tag())
         }
     }
@@ -177,23 +171,6 @@ impl Tagged for bool {
 }
 
 #[cfg(feature = "std")]
-impl ToDer for bool {
-    fn to_der_len(&self) -> Result<usize> {
-        // 3 = 1 (tag) + 1 (length) + 1 (value)
-        Ok(3)
-    }
-
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        writer.write(&[Self::TAG.0 as u8, 0x01]).map_err(Into::into)
-    }
-
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let b = if *self { 0xff } else { 0x00 };
-        writer.write(&[b]).map_err(Into::into)
-    }
-}
-
-#[cfg(feature = "std")]
 const _: () = {
     use std::io::Write;
 
@@ -211,6 +188,23 @@ const _: () = {
 
         fn ber_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, false, Self::TAG)
+        }
+    }
+
+    impl ToDer for bool {
+        type Encoder = Primitive<{ Tag::Boolean.0 }>;
+
+        fn der_content_len(&self) -> Length {
+            Length::Definite(1)
+        }
+
+        fn der_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            let value = if *self { 0xff } else { 0x00 };
+            target.write(&[value]).map_err(Into::into)
+        }
+
+        fn der_tag_info(&self) -> (Class, bool, Tag) {
+            (self.class(), self.constructed(), self.tag())
         }
     }
 };

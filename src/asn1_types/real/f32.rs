@@ -51,7 +51,7 @@ impl Tagged for f32 {
 const _: () = {
     use std::io::Write;
 
-    use crate::{Class, Length, Primitive, SerializeResult, ToBer};
+    use crate::{impl_toder_from_tober, Class, Length, Primitive, SerializeResult, ToBer};
 
     impl ToBer for f32 {
         type Encoder = Primitive<{ Tag::RealType.0 }>;
@@ -70,4 +70,6 @@ const _: () = {
             (Self::CLASS, false, Self::TAG)
         }
     }
+
+    impl_toder_from_tober!(TY f32);
 };

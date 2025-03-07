@@ -44,17 +44,3 @@ impl<'i> BerParser<'i> for EndOfContent {
 impl Tagged for EndOfContent {
     const TAG: Tag = Tag::EndOfContent;
 }
-
-// impl ToDer for EndOfContent {
-//     fn to_der_len(&self) -> Result<usize> {
-//         Ok(2)
-//     }
-
-//     fn write_der_header(&self, writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
-//         writer.write(&[Self::TAG.0 as u8, 0x00]).map_err(Into::into)
-//     }
-
-//     fn write_der_content(&self, _writer: &mut dyn std::io::Write) -> crate::SerializeResult<usize> {
-//         Ok(0)
-//     }
-// }

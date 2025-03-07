@@ -182,40 +182,6 @@ impl Appendable for BitString {
 }
 
 #[cfg(feature = "std")]
-impl ToDer for BitString {
-    fn to_der_len(&self) -> Result<usize> {
-        let sz = self.as_raw_slice().len();
-        if sz < 127 {
-            // 1 (class+tag) + 1 (length) +  1 (unused bits) + len
-            Ok(3 + sz)
-        } else {
-            // 1 (class+tag) + n (length) + 1 (unused bits) + len
-            let n = Length::Definite(sz + 1).to_der_len()?;
-            Ok(2 + n + sz)
-        }
-    }
-
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let header = Header::new(
-            Class::Universal,
-            false,
-            Self::TAG,
-            Length::Definite(1 + self.as_raw_slice().len()),
-        );
-        header.write_der_header(writer)
-    }
-
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let bit_length = self.bitvec.len();
-        let data = self.as_raw_slice();
-        let unused_bits = data.len() * 8 - bit_length;
-        let sz = writer.write(&[unused_bits as u8])?;
-        let sz = sz + writer.write(data)?;
-        Ok(sz)
-    }
-}
-
-#[cfg(feature = "std")]
 const _: () = {
     use std::io::Write;
 
@@ -223,7 +189,7 @@ const _: () = {
         type Encoder = Primitive<{ Tag::BitString.0 }>;
 
         fn ber_content_len(&self) -> Length {
-            let len = 1 + (self.len() / 8);
+            let len = 1 + ((self.len() + 7) / 8);
             Length::Definite(len)
         }
 
@@ -242,6 +208,8 @@ const _: () = {
             (Self::CLASS, false, Self::TAG)
         }
     }
+
+    impl_toder_from_tober!(TY BitString);
 };
 
 #[cfg(test)]

@@ -576,37 +576,6 @@ impl DynTagged for Any<'_> {
 // }
 
 #[cfg(feature = "std")]
-impl ToDer for Any<'_> {
-    fn to_der_len(&self) -> Result<usize> {
-        let hdr_len = self.header.to_der_len()?;
-        Ok(hdr_len + self.data.len())
-    }
-
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        // create fake header to have correct length
-        let header = Header::new(
-            self.header.class,
-            self.header.constructed,
-            self.header.tag,
-            Length::Definite(self.data.len()),
-        );
-        let sz = header.write_der_header(writer)?;
-        Ok(sz)
-    }
-
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        writer.write(self.data.as_bytes2()).map_err(Into::into)
-    }
-
-    /// Similar to using `to_der`, but uses header without computing length value
-    fn write_der_raw(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let sz = self.header.write_der_header(writer)?;
-        let sz = sz + writer.write(self.data.as_bytes2())?;
-        Ok(sz)
-    }
-}
-
-#[cfg(feature = "std")]
 const _: () = {
     use std::io::Write;
 
@@ -625,6 +594,8 @@ const _: () = {
             (self.class(), self.constructed(), self.tag())
         }
     }
+
+    impl_toder_from_tober!(LFT 'a, Any<'a>);
 };
 
 #[cfg(test)]

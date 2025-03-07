@@ -375,35 +375,6 @@ impl Tagged for Set<'_> {
 }
 
 #[cfg(feature = "std")]
-impl ToDer for Set<'_> {
-    fn to_der_len(&self) -> Result<usize> {
-        let sz = self.content.len();
-        if sz < 127 {
-            // 1 (class+tag) + 1 (length) + len
-            Ok(2 + sz)
-        } else {
-            // 1 (class+tag) + n (length) + len
-            let n = Length::Definite(sz).to_der_len()?;
-            Ok(1 + n + sz)
-        }
-    }
-
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let header = Header::new(
-            Class::Universal,
-            true,
-            Self::TAG,
-            Length::Definite(self.content.len()),
-        );
-        header.write_der_header(writer)
-    }
-
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        writer.write(&self.content).map_err(Into::into)
-    }
-}
-
-#[cfg(feature = "std")]
 const _: () = {
     use std::io::Write;
 
@@ -422,6 +393,8 @@ const _: () = {
             (Self::CLASS, true, Self::TAG)
         }
     }
+
+    impl_toder_from_tober!(LFT 'a, Set<'a>);
 };
 
 #[cfg(feature = "std")]

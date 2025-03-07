@@ -216,7 +216,7 @@ pub use tag::*;
 pub use traits::*;
 
 #[cfg(feature = "std")]
-pub use to_ber::*;
+pub use {to_ber::*, to_der::*};
 
 pub use nom;
 pub use nom::{Err, IResult, Needed};

@@ -100,7 +100,7 @@ impl<'a, S: BuildHasher + Default> DerParser<'a> for AnySet<'a, S> {
 const _: () = {
     use std::io::Write;
 
-    use crate::{Class, Constructed, Length, SerializeResult, ToBer};
+    use crate::{Class, Constructed, Length, SerializeResult, ToBer, ToDer};
 
     impl<S: BuildHasher> ToBer for AnySet<'_, S> {
         type Encoder = Constructed;
@@ -117,6 +117,25 @@ const _: () = {
         }
 
         fn ber_tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, true, Self::TAG)
+        }
+    }
+
+    impl<S: BuildHasher> ToDer for AnySet<'_, S> {
+        type Encoder = Constructed;
+
+        fn der_content_len(&self) -> Length {
+            self.items.der_content_len()
+        }
+
+        fn der_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            self.iter().try_fold(0, |acc, t| {
+                let sz = t.der_encode(target)?;
+                Ok(acc + sz)
+            })
+        }
+
+        fn der_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, true, Self::TAG)
         }
     }

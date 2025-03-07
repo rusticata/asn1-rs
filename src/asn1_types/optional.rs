@@ -167,31 +167,73 @@ where
 }
 
 #[cfg(feature = "std")]
-impl<T> ToDer for Option<T>
-where
-    T: ToDer,
-{
-    fn to_der_len(&self) -> Result<usize> {
-        match self {
-            None => Ok(0),
-            Some(t) => t.to_der_len(),
+const _: () = {
+    use std::io::Write;
+
+    impl<T> ToBer for Option<T>
+    where
+        T: ToBer + DynTagged,
+    {
+        type Encoder = BerGenericEncoder;
+
+        fn ber_content_len(&self) -> Length {
+            match self {
+                Some(t) => t.ber_content_len(),
+                None => Length::Definite(0),
+            }
+        }
+
+        fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            match self {
+                Some(t) => t.ber_write_content(target),
+                None => Ok(0),
+            }
+        }
+
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
+            (self.class(), self.constructed(), self.tag())
+        }
+
+        fn ber_encode<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            match self {
+                Some(t) => t.ber_encode(target),
+                None => Ok(0),
+            }
         }
     }
 
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        match self {
-            None => Ok(0),
-            Some(t) => t.write_der_header(writer),
-        }
-    }
+    impl<T> ToDer for Option<T>
+    where
+        T: ToDer + DynTagged,
+    {
+        type Encoder = BerGenericEncoder;
 
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        match self {
-            None => Ok(0),
-            Some(t) => t.write_der_content(writer),
+        fn der_content_len(&self) -> Length {
+            match self {
+                Some(t) => t.der_content_len(),
+                None => Length::Definite(0),
+            }
+        }
+
+        fn der_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            match self {
+                Some(t) => t.der_write_content(target),
+                None => Ok(0),
+            }
+        }
+
+        fn der_tag_info(&self) -> (Class, bool, Tag) {
+            (self.class(), self.constructed(), self.tag())
+        }
+
+        fn der_encode<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            match self {
+                Some(t) => t.der_encode(target),
+                None => Ok(0),
+            }
         }
     }
-}
+};
 
 #[cfg(test)]
 mod tests {

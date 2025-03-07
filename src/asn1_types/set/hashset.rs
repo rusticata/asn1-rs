@@ -119,37 +119,6 @@ where
     }
 }
 
-impl<T, S> ToDer for HashSet<T, S>
-where
-    T: ToDer,
-{
-    fn to_der_len(&self) -> Result<usize> {
-        let mut len = 0;
-        for t in self.iter() {
-            len += t.to_der_len()?;
-        }
-        let header = Header::new(Class::Universal, true, Self::TAG, Length::Definite(len));
-        Ok(header.to_der_len()? + len)
-    }
-
-    fn write_der_header(&self, writer: &mut dyn Write) -> SerializeResult<usize> {
-        let mut len = 0;
-        for t in self.iter() {
-            len += t.to_der_len().map_err(|_| SerializeError::InvalidLength)?;
-        }
-        let header = Header::new(Class::Universal, true, Self::TAG, Length::Definite(len));
-        header.write_der_header(writer)
-    }
-
-    fn write_der_content(&self, writer: &mut dyn Write) -> SerializeResult<usize> {
-        let mut sz = 0;
-        for t in self.iter() {
-            sz += t.write_der(writer)?;
-        }
-        Ok(sz)
-    }
-}
-
 impl<T, S> ToBer for HashSet<T, S>
 where
     T: ToBer + DynTagged,
@@ -157,19 +126,7 @@ where
     type Encoder = Constructed;
 
     fn ber_content_len(&self) -> Length {
-        // content_len returns only the length of *content*, so we need header length for
-        // every object here
-        let len = self.iter().fold(Length::Definite(0), |acc, t| {
-            let content_length = t.ber_content_len();
-            match (acc, content_length) {
-                (Length::Definite(a), Length::Definite(b)) => {
-                    let header_length = ber_header_length(t.tag(), content_length).unwrap_or(0);
-                    Length::Definite(a + header_length + b)
-                }
-                _ => Length::Indefinite,
-            }
-        });
-        len
+        ber_length_constructed_items(self.iter())
     }
 
     fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
@@ -180,6 +137,28 @@ where
     }
 
     fn ber_tag_info(&self) -> (Class, bool, Tag) {
+        (Self::CLASS, true, Self::TAG)
+    }
+}
+
+impl<T, S> ToDer for HashSet<T, S>
+where
+    T: ToDer + DynTagged,
+{
+    type Encoder = Constructed;
+
+    fn der_content_len(&self) -> Length {
+        der_length_constructed_items(self.iter())
+    }
+
+    fn der_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+        self.iter().try_fold(0, |acc, t| {
+            let sz = t.der_encode(target)?;
+            Ok(acc + sz)
+        })
+    }
+
+    fn der_tag_info(&self) -> (Class, bool, Tag) {
         (Self::CLASS, true, Self::TAG)
     }
 }
@@ -210,7 +189,7 @@ mod tests {
 
         assert_eq!(h.len(), 2);
 
-        assert_eq!(h.to_der_len(), Ok(8));
+        assert_eq!(h.der_content_len(), Length::Definite(6));
         let v = h.to_der_vec().expect("could not serialize");
         let (_, h2) = SetOf::<u32>::from_der(&v).unwrap();
         assert!(h.iter().eq(h2.iter()));

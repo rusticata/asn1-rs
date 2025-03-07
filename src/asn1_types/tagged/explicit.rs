@@ -170,36 +170,6 @@ where
 }
 
 #[cfg(feature = "std")]
-impl<T, E, const CLASS: u8, const TAG: u32> ToDer for TaggedValue<T, E, Explicit, CLASS, TAG>
-where
-    T: ToDer,
-{
-    fn to_der_len(&self) -> Result<usize> {
-        let sz = self.inner.to_der_len()?;
-        if sz < 127 {
-            // 1 (class+tag) + 1 (length) + len
-            Ok(2 + sz)
-        } else {
-            // 1 (class+tag) + n (length) + len
-            let n = Length::Definite(sz).to_der_len()?;
-            Ok(1 + n + sz)
-        }
-    }
-
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let inner_len = self.inner.to_der_len()?;
-        let class =
-            Class::try_from(CLASS).map_err(|_| SerializeError::InvalidClass { class: CLASS })?;
-        let header = Header::new(class, true, self.tag(), Length::Definite(inner_len));
-        header.write_der_header(writer)
-    }
-
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        self.inner.write_der(writer)
-    }
-}
-
-#[cfg(feature = "std")]
 const _: () = {
     impl<T, E, const CLASS: u8, const TAG: u32> ToBer for TaggedValue<T, E, Explicit, CLASS, TAG>
     where
@@ -219,6 +189,28 @@ const _: () = {
         }
 
         fn ber_tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, true, Self::TAG)
+        }
+    }
+
+    impl<T, E, const CLASS: u8, const TAG: u32> ToDer for TaggedValue<T, E, Explicit, CLASS, TAG>
+    where
+        T: ToDer,
+        T: DynTagged,
+    {
+        type Encoder = BerGenericEncoder;
+
+        fn der_content_len(&self) -> Length {
+            let content_len = self.inner.der_content_len();
+            let header_len = ber_header_length(self.inner.tag(), content_len).unwrap_or(0);
+            header_len + content_len
+        }
+
+        fn der_write_content<W: std::io::Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            self.inner.der_encode(target)
+        }
+
+        fn der_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, true, Self::TAG)
         }
     }
@@ -351,32 +343,45 @@ where
 }
 
 #[cfg(feature = "std")]
-impl<T> ToDer for TaggedParser<'_, Explicit, T>
-where
-    T: ToDer,
-{
-    fn to_der_len(&self) -> Result<usize> {
-        let sz = self.inner.to_der_len()?;
-        if sz < 127 {
-            // 1 (class+tag) + 1 (length) + len
-            Ok(2 + sz)
-        } else {
-            // 1 (class+tag) + n (length) + len
-            let n = Length::Definite(sz).to_der_len()?;
-            Ok(1 + n + sz)
+const _: () = {
+    impl<T, E> ToBer for TaggedParser<'_, Explicit, T, E>
+    where
+        T: ToBer,
+    {
+        type Encoder = BerGenericEncoder;
+
+        fn ber_content_len(&self) -> Length {
+            self.inner.ber_total_len()
+        }
+
+        fn ber_write_content<W: std::io::Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            self.inner.ber_encode(target)
+        }
+
+        fn ber_tag_info(&self) -> (Class, bool, Tag) {
+            (self.class(), true, self.tag())
         }
     }
 
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let inner_len = self.inner.to_der_len()?;
-        let header = Header::new(self.class(), true, self.tag(), Length::Definite(inner_len));
-        header.write_der_header(writer)
-    }
+    impl<T, E> ToDer for TaggedParser<'_, Explicit, T, E>
+    where
+        T: ToDer,
+    {
+        type Encoder = BerGenericEncoder;
 
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        self.inner.write_der(writer)
+        fn der_content_len(&self) -> Length {
+            self.inner.der_total_len()
+        }
+
+        fn der_write_content<W: std::io::Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            self.inner.der_encode(target)
+        }
+
+        fn der_tag_info(&self) -> (Class, bool, Tag) {
+            (self.class(), true, self.tag())
+        }
     }
-}
+};
 
 #[cfg(test)]
 mod tests {

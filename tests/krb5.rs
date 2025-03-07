@@ -30,6 +30,7 @@ pub type KerberosString<'a> = GeneralString<'a>;
 pub type KerberosStringList<'a> = Vec<KerberosString<'a>>;
 
 impl Tagged for PrincipalName {
+    const CONSTRUCTED: bool = true;
     const TAG: Tag = Tag::Sequence;
 }
 
@@ -56,33 +57,37 @@ impl<'a> FromDer<'a> for PrincipalName {
 }
 
 impl ToDer for PrincipalName {
-    fn to_der_len(&self) -> Result<usize> {
-        let sz = self.name_type.0.to_der_len()? + 2 /* tagged */;
-        let sz = sz + self.name_string.to_der_len()? + 2 /* tagged */;
-        Ok(sz)
+    type Encoder = Constructed;
+
+    // allow the `sz` alone on last line
+    #[allow(clippy::let_and_return)]
+    fn der_content_len(&self) -> Length {
+        let sz1 =  self.name_type.0.der_total_len() + 2 /* tagged explicit */;
+        let sz2 = self.name_string.der_total_len() + 2 /* tagged explicit */;
+        sz1 + sz2
     }
 
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let len = self.to_der_len()?;
-        let header = Header::new(Class::Universal, true, Self::TAG, Length::Definite(len));
-        header.write_der_header(writer)
-    }
-
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
+    fn der_write_content<W: std::io::Write>(&self, target: &mut W) -> SerializeResult<usize> {
         // build DER sequence content
         let sz1 = self
             .name_type
             .0
             .explicit(Class::ContextSpecific, 0)
-            .write_der(writer)?;
+            .write_der(target)?;
+
         let sz2 = self
             .name_string
             .iter()
             .map(|s| KerberosString::from(s.as_ref()))
             .collect::<Vec<_>>()
             .explicit(Class::ContextSpecific, 1)
-            .write_der(writer)?;
+            .write_der(target)?;
+
         Ok(sz1 + sz2)
+    }
+
+    fn der_tag_info(&self) -> (Class, bool, Tag) {
+        (self.class(), self.constructed(), self.tag())
     }
 }
 
@@ -105,7 +110,7 @@ fn to_der_krb5_principalname() {
         name_string: vec!["Jones".to_string()],
     };
     let v = PrincipalName::to_der_vec(&principal).expect("serialization failed");
-    std::fs::write("/tmp/out.bin", &v).unwrap();
+    // std::fs::write("/tmp/out.bin", &v).unwrap();
     let (_, principal2) = PrincipalName::from_der(&v).expect("parsing failed");
     assert!(principal.eq(&principal2));
 }

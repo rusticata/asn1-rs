@@ -3,8 +3,10 @@
 use asn1_rs::*;
 use hex_literal::hex;
 
-#[derive(Debug, PartialEq, DerSequence, ToDerSequence)]
-// #[debug_derive]
+#[derive(Debug, PartialEq)]
+//
+#[derive(DerSequence, ToDerSequence)]
+#[debug_derive]
 pub struct T1 {
     a: u32,
     b: u16,

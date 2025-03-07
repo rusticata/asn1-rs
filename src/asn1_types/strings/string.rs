@@ -56,35 +56,6 @@ impl Tagged for String {
 }
 
 #[cfg(feature = "std")]
-impl ToDer for String {
-    fn to_der_len(&self) -> Result<usize> {
-        let sz = self.len();
-        if sz < 127 {
-            // 1 (class+tag) + 1 (length) + len
-            Ok(2 + sz)
-        } else {
-            // 1 (class+tag) + n (length) + len
-            let n = Length::Definite(sz).to_der_len()?;
-            Ok(1 + n + sz)
-        }
-    }
-
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let header = Header::new(
-            Class::Universal,
-            false,
-            Self::TAG,
-            Length::Definite(self.len()),
-        );
-        header.write_der_header(writer)
-    }
-
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        writer.write(self.as_ref()).map_err(Into::into)
-    }
-}
-
-#[cfg(feature = "std")]
 const _: () = {
     use std::io::Write;
 
@@ -103,6 +74,8 @@ const _: () = {
             (Self::CLASS, false, Self::TAG)
         }
     }
+
+    impl_toder_from_tober!(TY String);
 };
 
 #[cfg(test)]

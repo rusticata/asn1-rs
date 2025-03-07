@@ -193,9 +193,9 @@ pub fn derive_toder_sequence(s: synstructure::Structure) -> proc_macro2::TokenSt
         _ => true,
     });
 
-    let impl_to_der_len = container.gen_to_der_len();
-    let impl_write_der_header = container.gen_write_der_header();
-    let impl_write_der_content = container.gen_write_der_content();
+    let impl_der_content_len = container.gen_der_content_len();
+    let impl_der_tag_info = container.gen_der_tag_info();
+    let impl_der_write_content = container.gen_der_write_content();
 
     // note: `gen impl` in synstructure takes care of appending extra where clauses if any, and removing
     // the `where` statement if there are none.
@@ -204,9 +204,11 @@ pub fn derive_toder_sequence(s: synstructure::Structure) -> proc_macro2::TokenSt
 
         #[cfg(feature = "std")]
         gen impl asn1_rs::ToDer for @Self where #(#wh)+* {
-            #impl_to_der_len
-            #impl_write_der_header
-            #impl_write_der_content
+            type Encoder = asn1_rs::BerGenericEncoder;
+
+            #impl_der_content_len
+            #impl_der_tag_info
+            #impl_der_write_content
         }
     });
     if debug_derive {

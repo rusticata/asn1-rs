@@ -201,24 +201,6 @@ impl<T> Tagged for SequenceOf<T> {
 }
 
 #[cfg(feature = "std")]
-impl<T> ToDer for SequenceOf<T>
-where
-    T: ToDer,
-{
-    fn to_der_len(&self) -> Result<usize> {
-        self.items.to_der_len()
-    }
-
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        self.items.write_der_header(writer)
-    }
-
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        self.items.write_der_content(writer)
-    }
-}
-
-#[cfg(feature = "std")]
 const _: () = {
     use std::io::Write;
 
@@ -237,6 +219,25 @@ const _: () = {
         }
 
         fn ber_tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, true, Self::TAG)
+        }
+    }
+
+    impl<T> ToDer for SequenceOf<T>
+    where
+        T: ToDer + DynTagged,
+    {
+        type Encoder = Constructed;
+
+        fn der_content_len(&self) -> Length {
+            self.items.der_content_len()
+        }
+
+        fn der_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            self.items.der_write_content(target)
+        }
+
+        fn der_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, true, Self::TAG)
         }
     }

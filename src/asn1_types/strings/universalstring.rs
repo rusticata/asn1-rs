@@ -129,39 +129,6 @@ impl Tagged for UniversalString<'_> {
 }
 
 #[cfg(feature = "std")]
-impl ToDer for UniversalString<'_> {
-    fn to_der_len(&self) -> Result<usize> {
-        // UCS-4: 4 bytes per character
-        let sz = self.data.len() * 4;
-        if sz < 127 {
-            // 1 (class+tag) + 1 (length) + len
-            Ok(2 + sz)
-        } else {
-            // 1 (class+tag) + n (length) + len
-            let n = Length::Definite(sz).to_der_len()?;
-            Ok(1 + n + sz)
-        }
-    }
-
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let header = Header::new(
-            Class::Universal,
-            false,
-            Self::TAG,
-            Length::Definite(self.data.len() * 4),
-        );
-        header.write_der_header(writer)
-    }
-
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        self.data
-            .chars()
-            .try_for_each(|c| writer.write(&(c as u32).to_be_bytes()[..]).map(|_| ()))?;
-        Ok(self.data.len() * 4)
-    }
-}
-
-#[cfg(feature = "std")]
 const _: () = {
     use std::io::Write;
 
@@ -185,6 +152,8 @@ const _: () = {
             (Self::CLASS, false, Self::TAG)
         }
     }
+
+    impl_toder_from_tober!(LFT 'a, UniversalString<'a>);
 };
 
 #[cfg(test)]

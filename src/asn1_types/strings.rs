@@ -161,42 +161,6 @@ macro_rules! asn1_string {
         }
 
         #[cfg(feature = "std")]
-        impl $crate::ToDer for $name<'_> {
-            fn to_der_len(&self) -> Result<usize> {
-                let sz = self.data.as_bytes().len();
-                if sz < 127 {
-                    // 1 (class+tag) + 1 (length) + len
-                    Ok(2 + sz)
-                } else {
-                    // 1 (class+tag) + n (length) + len
-                    let n = $crate::Length::Definite(sz).to_der_len()?;
-                    Ok(1 + n + sz)
-                }
-            }
-
-            fn write_der_header(
-                &self,
-                writer: &mut dyn std::io::Write,
-            ) -> $crate::SerializeResult<usize> {
-                use $crate::Tagged;
-                let header = $crate::Header::new(
-                    $crate::Class::Universal,
-                    false,
-                    Self::TAG,
-                    $crate::Length::Definite(self.data.len()),
-                );
-                header.write_der_header(writer).map_err(Into::into)
-            }
-
-            fn write_der_content(
-                &self,
-                writer: &mut dyn std::io::Write,
-            ) -> $crate::SerializeResult<usize> {
-                writer.write(self.data.as_bytes()).map_err(Into::into)
-            }
-        }
-
-        #[cfg(feature = "std")]
         const _: () = {
             use std::io::Write;
 
@@ -212,6 +176,23 @@ macro_rules! asn1_string {
                 }
 
                 fn ber_tag_info(&self) -> ($crate::Class, bool, $crate::Tag) {
+                    use $crate::Tagged;
+                    (Self::CLASS, false, Self::TAG)
+                }
+            }
+
+            impl $crate::ToDer for $name<'_> {
+                type Encoder = $crate::Primitive<{ $crate::Tag::$name.0 }>;
+
+                fn der_content_len(&self) -> $crate::Length {
+                    $crate::Length::Definite(self.data.len())
+                }
+
+                fn der_write_content<W: Write>(&self, target: &mut W) -> $crate::SerializeResult<usize> {
+                    target.write(self.data.as_bytes()).map_err(Into::into)
+                }
+
+                fn der_tag_info(&self) -> ($crate::Class, bool, $crate::Tag) {
                     use $crate::Tagged;
                     (Self::CLASS, false, Self::TAG)
                 }

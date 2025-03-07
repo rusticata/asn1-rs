@@ -60,25 +60,6 @@ impl Tagged for Enumerated {
 }
 
 #[cfg(feature = "std")]
-impl ToDer for Enumerated {
-    fn to_der_len(&self) -> Result<usize> {
-        Integer::from(self.0).to_der_len()
-    }
-
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let i = Integer::from(self.0);
-        let len = i.data.len();
-        let header = Header::new(Class::Universal, false, Self::TAG, Length::Definite(len));
-        header.write_der_header(writer)
-    }
-
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let int = Integer::from(self.0);
-        int.write_der_content(writer)
-    }
-}
-
-#[cfg(feature = "std")]
 const _: () = {
     use std::io::Write;
 
@@ -99,6 +80,8 @@ const _: () = {
             (Self::CLASS, false, Self::TAG)
         }
     }
+
+    impl_toder_from_tober!(TY Enumerated);
 };
 
 #[cfg(test)]

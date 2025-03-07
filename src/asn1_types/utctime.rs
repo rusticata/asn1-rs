@@ -224,38 +224,6 @@ impl Tagged for UtcTime {
 }
 
 #[cfg(feature = "std")]
-impl ToDer for UtcTime {
-    fn to_der_len(&self) -> Result<usize> {
-        // data:
-        // - 6 bytes for YYMMDD
-        // - 6 for hhmmss in DER (X.690 section 11.8.2)
-        // - 1 for the character Z in DER (X.690 section 11.8.1)
-        // data length: 13
-        //
-        // thus, length will always be on 1 byte (short length) and
-        // class+structure+tag also on 1
-        //
-        // total: 15 = 1 (class+constructed+tag) + 1 (length) + 13
-        Ok(15)
-    }
-
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        // see above for length value
-        writer.write(&[Self::TAG.0 as u8, 13]).map_err(Into::into)
-    }
-
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        write!(
-            writer,
-            "{:02}{:02}{:02}{:02}{:02}{:02}Z",
-            self.0.year, self.0.month, self.0.day, self.0.hour, self.0.minute, self.0.second,
-        )?;
-        // write_fmt returns (), see above for length value
-        Ok(13)
-    }
-}
-
-#[cfg(feature = "std")]
 const _: () = {
     use std::io::Write;
 
@@ -285,6 +253,8 @@ const _: () = {
             (Self::CLASS, false, Self::TAG)
         }
     }
+
+    impl_toder_from_tober!(TY UtcTime);
 };
 
 #[cfg(test)]

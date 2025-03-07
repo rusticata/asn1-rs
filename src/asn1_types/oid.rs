@@ -100,38 +100,6 @@ impl DynTagged for Oid<'_> {
 }
 
 #[cfg(feature = "std")]
-impl ToDer for Oid<'_> {
-    fn to_der_len(&self) -> Result<usize> {
-        let header = Header::new(
-            Class::Universal,
-            false,
-            self.tag(),
-            Length::Definite(self.asn1.len()),
-        );
-        Ok(header.to_der_len()? + self.asn1.len())
-    }
-
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let tag = if self.relative {
-            Tag::RelativeOid
-        } else {
-            Tag::Oid
-        };
-        let header = Header::new(
-            Class::Universal,
-            false,
-            tag,
-            Length::Definite(self.asn1.len()),
-        );
-        header.write_der_header(writer)
-    }
-
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        writer.write(&self.asn1).map_err(Into::into)
-    }
-}
-
-#[cfg(feature = "std")]
 const _: () = {
     use std::io::Write;
 
@@ -150,6 +118,8 @@ const _: () = {
             (self.class(), self.constructed(), self.tag())
         }
     }
+
+    impl_toder_from_tober!(LFT 'a, Oid<'a>);
 };
 
 fn encode_relative(ids: &'_ [u64]) -> impl Iterator<Item = u8> + '_ {
@@ -511,7 +481,7 @@ macro_rules! oid {
 
 #[cfg(all(test, feature = "std"))]
 mod tests {
-    use crate::{BerParser, DerParser, FromDer, Input, Oid, ToDer};
+    use crate::{BerParser, DerParser, FromDer, Input, Length, Oid, ToDer};
     use hex_literal::hex;
 
     #[test]
@@ -542,7 +512,7 @@ mod tests {
     #[test]
     fn oid_to_der() {
         let oid = super::oid! {1.2.840.113549.1};
-        assert_eq!(oid.to_der_len(), Ok(9));
+        assert_eq!(oid.der_content_len(), Length::Definite(7));
         let v = oid.to_der_vec().expect("could not serialize");
         assert_eq!(&v, &hex! {"06 07 2a 86 48 86 f7 0d 01"});
         let (_, oid2) = Oid::from_der(&v).expect("could not re-parse");

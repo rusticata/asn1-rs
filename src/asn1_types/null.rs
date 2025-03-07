@@ -62,21 +62,6 @@ impl Tagged for Null {
 }
 
 #[cfg(feature = "std")]
-impl ToDer for Null {
-    fn to_der_len(&self) -> Result<usize> {
-        Ok(2)
-    }
-
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        writer.write(&[0x05, 0x00]).map_err(Into::into)
-    }
-
-    fn write_der_content(&self, _writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        Ok(0)
-    }
-}
-
-#[cfg(feature = "std")]
 const _: () = {
     use std::io::Write;
 
@@ -95,6 +80,8 @@ const _: () = {
             (Self::CLASS, false, Self::TAG)
         }
     }
+
+    impl_toder_from_tober!(TY Null);
 };
 
 //---- ()
@@ -136,21 +123,6 @@ impl Tagged for () {
 }
 
 #[cfg(feature = "std")]
-impl ToDer for () {
-    fn to_der_len(&self) -> Result<usize> {
-        Ok(2)
-    }
-
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        writer.write(&[0x05, 0x00]).map_err(Into::into)
-    }
-
-    fn write_der_content(&self, _writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        Ok(0)
-    }
-}
-
-#[cfg(feature = "std")]
 const _: () = {
     use std::io::Write;
 
@@ -169,6 +141,8 @@ const _: () = {
             (Self::CLASS, false, Self::TAG)
         }
     }
+
+    impl_toder_from_tober!(TY());
 };
 
 #[cfg(test)]

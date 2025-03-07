@@ -95,25 +95,16 @@ impl<'a> DerParser<'a> for AnySequence<'a> {
 const _: () = {
     use std::io::Write;
 
-    use crate::{ber_header_length, Class, Constructed, Length, SerializeResult, ToBer};
+    use crate::{
+        ber_length_constructed_items, der_length_constructed_items, Class, Constructed, Length,
+        SerializeResult, ToBer, ToDer,
+    };
 
     impl ToBer for AnySequence<'_> {
         type Encoder = Constructed;
 
         fn ber_content_len(&self) -> Length {
-            // content_len returns only the length of *content*, so we need header length for
-            // every object here
-            let len = self.iter().fold(Length::Definite(0), |acc, t| {
-                let content_length = t.ber_content_len();
-                match (acc, content_length) {
-                    (Length::Definite(a), Length::Definite(b)) => {
-                        let header_length = ber_header_length(t.tag(), content_length).unwrap_or(0);
-                        Length::Definite(a + header_length + b)
-                    }
-                    _ => Length::Indefinite,
-                }
-            });
-            len
+            ber_length_constructed_items(self.iter())
         }
 
         fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
@@ -124,6 +115,25 @@ const _: () = {
         }
 
         fn ber_tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, true, Self::TAG)
+        }
+    }
+
+    impl ToDer for AnySequence<'_> {
+        type Encoder = Constructed;
+
+        fn der_content_len(&self) -> Length {
+            der_length_constructed_items(self.iter())
+        }
+
+        fn der_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
+            self.iter().try_fold(0, |acc, t| {
+                let sz = t.der_encode(target)?;
+                Ok(acc + sz)
+            })
+        }
+
+        fn der_tag_info(&self) -> (Class, bool, Tag) {
             (Self::CLASS, true, Self::TAG)
         }
     }

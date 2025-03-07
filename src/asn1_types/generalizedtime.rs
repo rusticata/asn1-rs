@@ -301,60 +301,6 @@ impl Tagged for GeneralizedTime {
 }
 
 #[cfg(feature = "std")]
-impl ToDer for GeneralizedTime {
-    fn to_der_len(&self) -> Result<usize> {
-        // data:
-        // - 8 bytes for YYYYMMDD
-        // - 6 for hhmmss in DER (X.690 section 11.7.2)
-        // - (variable) the fractional part, without trailing zeros, with a point "."
-        // - 1 for the character Z in DER (X.690 section 11.7.1)
-        // data length: 15 + fractional part
-        //
-        // thus, length will always be on 1 byte (short length) and
-        // class+structure+tag also on 1
-        //
-        // total: = 1 (class+constructed+tag) + 1 (length) + 15 + fractional
-        let num_digits = match self.0.millisecond {
-            None => 0,
-            Some(v) => 1 + v.to_string().len(),
-        };
-        Ok(2 + 15 + num_digits)
-    }
-
-    fn write_der_header(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        // see above for length value
-        let num_digits = match self.0.millisecond {
-            None => 0,
-            Some(v) => 1 + v.to_string().len() as u8,
-        };
-        writer
-            .write(&[Self::TAG.0 as u8, 15 + num_digits])
-            .map_err(Into::into)
-    }
-
-    fn write_der_content(&self, writer: &mut dyn std::io::Write) -> SerializeResult<usize> {
-        let fractional = match self.0.millisecond {
-            None => "".to_string(),
-            Some(v) => format!(".{}", v),
-        };
-        let num_digits = fractional.len();
-        write!(
-            writer,
-            "{:04}{:02}{:02}{:02}{:02}{:02}{}Z",
-            self.0.year,
-            self.0.month,
-            self.0.day,
-            self.0.hour,
-            self.0.minute,
-            self.0.second,
-            fractional,
-        )?;
-        // write_fmt returns (), see above for length value
-        Ok(15 + num_digits)
-    }
-}
-
-#[cfg(feature = "std")]
 const _: () = {
     use std::io::Write;
 
@@ -401,6 +347,8 @@ const _: () = {
             (Self::CLASS, false, Self::TAG)
         }
     }
+
+    impl_toder_from_tober!(TY GeneralizedTime);
 };
 
 #[cfg(test)]

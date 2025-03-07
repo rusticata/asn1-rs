@@ -27,17 +27,27 @@ macro_rules! test_string_invalid_charset {
 
 #[test]
 fn to_der_length() {
+    let mut encoder = <Primitive<0>>::new();
     // indefinite length
     let length = Length::Indefinite;
-    let v = length.to_der_vec().expect("serialization failed");
+    let mut v = Vec::new();
+    encoder
+        .write_length(length, &mut v)
+        .expect("serialization failed");
     assert_eq!(&v, &[0x80]);
     // definite, short form
     let length = Length::Definite(3);
-    let v = length.to_der_vec().expect("serialization failed");
+    let mut v = Vec::new();
+    encoder
+        .write_length(length, &mut v)
+        .expect("serialization failed");
     assert_eq!(&v, &[0x03]);
     // definite, long form
     let length = Length::Definite(250);
-    let v = length.to_der_vec().expect("serialization failed");
+    let mut v = Vec::new();
+    encoder
+        .write_length(length, &mut v)
+        .expect("serialization failed");
     assert_eq!(&v, &[0x81, 0xfa]);
 }
 
@@ -89,7 +99,7 @@ fn to_der_header() {
 fn to_der_any() {
     let header = Header::new_simple(Tag::Integer);
     let any = Any::from_header_and_data(header, &hex!("02"));
-    assert_eq!(any.to_der_len(), Ok(3));
+    assert_eq!(any.der_content_len(), Length::Definite(1));
     let v = any.to_der_vec().expect("serialization failed");
     assert_eq!(&v, &[0x02, 0x01, 0x02]);
 }
@@ -101,9 +111,6 @@ fn to_der_any_raw() {
     // to_vec should compute the length
     let v = any.to_der_vec().expect("serialization failed");
     assert_eq!(&v, &[0x02, 0x01, 0x02]);
-    // to_vec_raw will use the header as provided
-    let v = any.to_der_vec_raw().expect("serialization failed");
-    assert_eq!(&v, &[0x02, 0x03, 0x02]);
 }
 
 #[test]
@@ -118,7 +125,7 @@ fn to_der_bitstring() {
 #[test]
 fn to_der_bmpstring() {
     let bmpstring = BmpString::new("User");
-    assert_eq!(bmpstring.to_der_len(), Ok(10));
+    assert_eq!(bmpstring.der_content_len(), Length::Definite(8));
     let v = bmpstring.to_der_vec().expect("serialization failed");
     let expected = &hex!("1e 08 00 55 00 73 00 65 00 72");
     assert_eq!(&v, expected);
@@ -134,7 +141,7 @@ fn to_der_bmpstring() {
     let sz = 256;
     let s = str::repeat("a", sz);
     let bmpstring = BmpString::new(&s);
-    assert_eq!(bmpstring.to_der_len(), Ok(4 + 2 * s.len()));
+    assert_eq!(bmpstring.der_content_len(), Length::Definite(2 * s.len()));
     let _v = bmpstring.to_der_vec().expect("serialization failed");
 }
 
@@ -150,17 +157,17 @@ fn to_der_bool() {
     //
     let v = true.to_der_vec().expect("serialization failed");
     assert_eq!(&v, &[0x01, 0x01, 0xff]);
-    // raw value (not 0 of 0xff)
+    // raw value (not 0 of 0xff): ToDer will normalize value
     let v = Boolean::new(0x8a)
-        .to_der_vec_raw()
+        .to_der_vec()
         .expect("serialization failed");
-    assert_eq!(&v, &[0x01, 0x01, 0x8a]);
+    assert_eq!(&v, &[0x01, 0x01, 0xff]);
 }
 
 #[test]
 fn to_der_enumerated() {
     let v = Enumerated(2).to_der_vec().expect("serialization failed");
-    assert_eq!(Enumerated(2).to_der_len(), Ok(3));
+    assert_eq!(Enumerated(2).der_content_len(), Length::Definite(1));
     assert_eq!(&v, &[0x0a, 0x01, 0x02]);
     //
     let (_, result) = Enumerated::from_der(&v).expect("parsing failed");
@@ -177,7 +184,7 @@ fn to_der_generalizedtime() {
     assert_eq!(&v[2..], b"19991231235959Z");
     let (_, time2) = GeneralizedTime::from_der(&v).expect("decoding serialized object failed");
     assert!(time.eq(&time2));
-    assert_eq!(time.to_der_len(), Ok(0x11));
+    assert_eq!(time.der_content_len(), Length::Definite(0xf));
     //
     // date with millisecond
     let dt = ASN1DateTime::new(1999, 12, 31, 23, 59, 59, Some(123), ASN1TimeZone::Z);
@@ -230,11 +237,11 @@ fn to_der_integer() {
 fn to_der_null() {
     let bytes: &[u8] = &hex!("05 00");
     let s = Null::new();
-    assert_eq!(s.to_der_len(), Ok(2));
+    assert_eq!(s.der_content_len(), Length::Definite(0));
     let v = s.to_der_vec().expect("serialization failed");
     assert_eq!(&v, bytes);
     // unit
-    assert_eq!(().to_der_len(), Ok(2));
+    assert_eq!(().der_content_len(), Length::Definite(0));
     let (_, s2) = <()>::from_der(&v).expect("decoding serialized object failed");
     assert!(().eq(&s2));
     let v2 = ().to_der_vec().expect("serialization failed");
@@ -263,14 +270,14 @@ fn to_der_octetstring() {
     let bytes: &[u8] = &hex!("01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f");
     let s = OctetString::from(bytes);
     let v = s.to_der_vec().expect("serialization failed");
-    assert_eq!(s.to_der_len(), Ok(bytes.len() + 2));
+    assert_eq!(s.der_content_len(), Length::Definite(bytes.len()));
     assert_eq!(&v[..2], &hex!("04 0f"));
     assert_eq!(&v[2..], bytes);
     let (_, s2) = OctetString::from_der(&v).expect("decoding serialized object failed");
     assert!(s.eq(&s2));
     //
     let v = bytes.to_der_vec().expect("serialization failed");
-    assert_eq!(bytes.to_der_len(), Ok(bytes.len() + 2));
+    assert_eq!(bytes.der_content_len(), Length::Definite(bytes.len()));
     assert_eq!(&v[..2], &hex!("04 0f"));
     assert_eq!(&v[2..], bytes);
     let (_, s2) = OctetString::from_der(&v).expect("decoding serialized object failed");
@@ -369,7 +376,7 @@ fn to_der_real_string() {
 
 #[test]
 fn to_der_sequence() {
-    let it = [2, 3, 4].iter();
+    let it = [2, 3, 4].iter().cloned();
     let seq = Sequence::from_iter_to_der(it).unwrap();
     let v = seq.to_der_vec().expect("serialization failed");
     assert_eq!(&v, &hex!("30 09 02 01 02 02 01 03 02 01 04"));
@@ -394,7 +401,7 @@ fn to_der_sequenceof() {
 
 #[test]
 fn to_der_set() {
-    let it = [2u8, 3, 4].iter();
+    let it = [2u8, 3, 4].iter().cloned();
     let set = Set::from_iter_to_der(it).unwrap();
     let v = set.to_der_vec().expect("serialization failed");
     assert_eq!(&v, &hex!("31 09 02 01 02 02 01 03 02 01 04"));
@@ -418,7 +425,7 @@ fn to_der_set_of() {
 #[test]
 fn to_der_str() {
     let s = "abcdef";
-    assert_eq!(s.to_der_len(), Ok(2 + s.len()));
+    assert_eq!(s.der_content_len(), Length::Definite(s.len()));
     let v = s.to_der_vec().expect("serialization failed");
     assert_eq!(&v[..2], &hex!("0c 06"));
     assert_eq!(&v[2..], b"abcdef");
@@ -428,7 +435,7 @@ fn to_der_str() {
     let sz = 256;
     let s = str::repeat("a", sz);
     let s = s.as_str();
-    assert_eq!(s.to_der_len(), Ok(4 + sz));
+    assert_eq!(s.der_content_len(), Length::Definite(sz));
     let v = s.to_der_vec().expect("serialization failed");
     assert_eq!(v.len(), 4 + sz);
 }
@@ -436,7 +443,7 @@ fn to_der_str() {
 #[test]
 fn to_der_string() {
     let s = "abcdef".to_string();
-    assert_eq!(s.to_der_len(), Ok(2 + s.len()));
+    assert_eq!(s.der_content_len(), Length::Definite(s.len()));
     let v = s.to_der_vec().expect("serialization failed");
     assert_eq!(&v[..2], &hex!("0c 06"));
     assert_eq!(&v[2..], b"abcdef");
@@ -445,7 +452,7 @@ fn to_der_string() {
     // long string
     let sz = 256;
     let s = str::repeat("a", sz);
-    assert_eq!(s.to_der_len(), Ok(4 + sz));
+    assert_eq!(s.der_content_len(), Length::Definite(sz));
     let v = s.to_der_vec().expect("serialization failed");
     assert_eq!(v.len(), 4 + sz);
 }
@@ -515,7 +522,7 @@ fn to_der_utctime() {
 fn to_der_universalstring() {
     const S: &str = "abcdef";
     let s = UniversalString::from(S);
-    assert_eq!(s.to_der_len(), Ok(2 + 4 * S.len()));
+    assert_eq!(s.der_content_len(), Length::Definite(4 * S.len()));
     let v = s.to_der_vec().expect("serialization failed");
     assert_eq!(
         &v,
@@ -527,7 +534,7 @@ fn to_der_universalstring() {
     let sz = 256;
     let s = str::repeat("a", sz);
     let s = UniversalString::from(s);
-    assert_eq!(s.to_der_len(), Ok(4 + 4 * sz));
+    assert_eq!(s.der_content_len(), Length::Definite(4 * sz));
     let v = s.to_der_vec().expect("serialization failed");
     assert_eq!(v.len(), 4 + 4 * sz);
 }
