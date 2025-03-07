@@ -83,7 +83,7 @@ const _: () = {
     use std::io::Write;
 
     impl ToBer for Enumerated {
-        type Encoder = Primitive<Self, { Tag::Enumerated.0 }>;
+        type Encoder = Primitive<{ Tag::Enumerated.0 }>;
 
         fn content_len(&self) -> Length {
             let i = Integer::from(self.0);
@@ -93,6 +93,10 @@ const _: () = {
         fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             let i = Integer::from(self.0);
             target.write(&i.data).map_err(Into::into)
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, false, Self::TAG)
         }
     }
 };

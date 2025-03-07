@@ -2,7 +2,7 @@
 
 use std::io::Write;
 
-use crate::{InnerError, Length, SerializeResult, Tag};
+use crate::{Class, InnerError, Length, SerializeResult, Tag};
 
 mod constructed;
 mod constructed_indefinite;
@@ -21,12 +21,15 @@ pub use primitive::*;
 /// The `Encoder` type allows specifying common encoders for objects with similar headers
 /// (for ex. primitive objects) easily.
 pub trait ToBer {
-    type Encoder: BerEncoder<Self>;
+    type Encoder: BerEncoder;
 
     /// Returns the length of the encoded content of the object
     ///
     /// The length describes the _content_ only, not the header.
     fn content_len(&self) -> Length;
+
+    /// Return the tag information to be encoded in header
+    fn tag_info(&self) -> (Class, bool, Tag);
 
     /// Encode and write the content of the object to the writer `target`
     ///
@@ -40,11 +43,12 @@ pub trait ToBer {
         let mut encoder = Self::Encoder::new();
 
         let mut sz = 0;
-        sz += encoder.write_tag_info(self, target)?;
+        let (class, constructed, tag) = self.tag_info();
+        sz += encoder.write_tag_info(class, constructed, tag, target)?;
 
         // write length
         let length = self.content_len();
-        sz += encoder.write_length(self, length, target)?;
+        sz += encoder.write_length(length, target)?;
 
         Ok(sz)
     }
@@ -71,12 +75,16 @@ pub trait ToBer {
 impl<E, T: ToBer> ToBer for &'_ T
 where
     T: ToBer<Encoder = E>,
-    E: BerEncoder<Self>,
+    E: BerEncoder,
 {
     type Encoder = <T as ToBer>::Encoder;
 
     fn content_len(&self) -> Length {
         (*self).content_len()
+    }
+
+    fn tag_info(&self) -> (Class, bool, Tag) {
+        (*self).tag_info()
     }
 
     fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {

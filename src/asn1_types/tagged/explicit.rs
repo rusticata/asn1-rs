@@ -206,7 +206,7 @@ const _: () = {
         T: ToBer,
         T: DynTagged,
     {
-        type Encoder = BerGenericEncoder<TaggedValue<T, E, Explicit, CLASS, TAG>>;
+        type Encoder = BerGenericEncoder;
 
         fn content_len(&self) -> Length {
             let content_len = self.inner.content_len();
@@ -216,6 +216,10 @@ const _: () = {
 
         fn write_content<W: std::io::Write>(&self, target: &mut W) -> SerializeResult<usize> {
             self.inner.encode(target)
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, true, Self::TAG)
         }
     }
 };

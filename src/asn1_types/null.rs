@@ -81,7 +81,7 @@ const _: () = {
     use std::io::Write;
 
     impl ToBer for Null {
-        type Encoder = Primitive<Self, { Tag::Null.0 }>;
+        type Encoder = Primitive<{ Tag::Null.0 }>;
 
         fn content_len(&self) -> Length {
             Length::Definite(0)
@@ -89,6 +89,10 @@ const _: () = {
 
         fn write_content<W: Write>(&self, _: &mut W) -> SerializeResult<usize> {
             Ok(0)
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, false, Self::TAG)
         }
     }
 };
@@ -151,7 +155,7 @@ const _: () = {
     use std::io::Write;
 
     impl ToBer for () {
-        type Encoder = Primitive<Self, { Tag::Null.0 }>;
+        type Encoder = Primitive<{ Tag::Null.0 }>;
 
         fn content_len(&self) -> Length {
             Length::Definite(0)
@@ -159,6 +163,10 @@ const _: () = {
 
         fn write_content<W: Write>(&self, _: &mut W) -> SerializeResult<usize> {
             Ok(0)
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, false, Self::TAG)
         }
     }
 };

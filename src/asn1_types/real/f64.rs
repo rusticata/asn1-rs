@@ -51,10 +51,10 @@ impl Tagged for f64 {
 const _: () = {
     use std::io::Write;
 
-    use crate::{Length, Primitive, SerializeResult, ToBer};
+    use crate::{Class, Length, Primitive, SerializeResult, ToBer};
 
     impl ToBer for f64 {
-        type Encoder = Primitive<Self, { Tag::RealType.0 }>;
+        type Encoder = Primitive<{ Tag::RealType.0 }>;
 
         fn content_len(&self) -> Length {
             let r = Real::from(*self);
@@ -64,6 +64,10 @@ const _: () = {
         fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             let r = Real::from(*self);
             r.write_content(target)
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, false, Self::TAG)
         }
     }
 };

@@ -425,7 +425,7 @@ const _: () = {
     use std::io::Write;
 
     impl ToBer for Sequence<'_> {
-        type Encoder = Constructed<Self>;
+        type Encoder = Constructed;
 
         fn content_len(&self) -> Length {
             Length::Definite(self.content.len())
@@ -433,6 +433,10 @@ const _: () = {
 
         fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             target.write(&self.content).map_err(Into::into)
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, true, Self::TAG)
         }
     }
 };

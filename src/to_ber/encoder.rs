@@ -6,13 +6,21 @@ use crate::{Class, Length, Tag};
 ///
 /// A BER encoder is an object used to encode the header (full tag including
 /// constructed and class) and length
-pub trait BerEncoder<T: ?Sized> {
+pub trait BerEncoder {
     /// Build a new encoder
     fn new() -> Self;
 
     /// Write tag, constructed bit, and class to `target`
     // NOTE: mut is here to allow keeping state
-    fn write_tag_info<W: Write>(&mut self, t: &T, target: &mut W) -> Result<usize, io::Error>;
+    fn write_tag_info<W: Write>(
+        &mut self,
+        class: Class,
+        constructed: bool,
+        tag: Tag,
+        target: &mut W,
+    ) -> Result<usize, io::Error> {
+        self.write_tag_generic(class, constructed, tag, target)
+    }
 
     /// This functions writes a full tag (Class, Constructed and Number) to `target`
     ///
@@ -70,7 +78,6 @@ pub trait BerEncoder<T: ?Sized> {
     /// Write the length of the encoded object content (without header) to `target`
     fn write_length<W: Write>(
         &mut self,
-        _t: &T,
         length: Length,
         target: &mut W,
     ) -> Result<usize, io::Error> {
@@ -110,27 +117,27 @@ mod tests {
 
     #[test]
     fn tober_write_length() {
-        let mut encoder = Primitive::<(), 0>::new();
+        let mut encoder = Primitive::<0>::new();
         let mut v: Vec<u8> = Vec::new();
 
         // test: Indefinite length
         v.clear();
         encoder
-            .write_length(&(), Length::Indefinite, &mut v)
+            .write_length(Length::Indefinite, &mut v)
             .expect("serialization failed");
         assert_eq!(&v, &hex!("80"));
 
         // test: definite length, short-form
         v.clear();
         encoder
-            .write_length(&(), Length::Definite(2), &mut v)
+            .write_length(Length::Definite(2), &mut v)
             .expect("serialization failed");
         assert_eq!(&v, &hex!("02"));
 
         // test: definite length, long-form
         v.clear();
         encoder
-            .write_length(&(), Length::Definite(300), &mut v)
+            .write_length(Length::Definite(300), &mut v)
             .expect("serialization failed");
         assert_eq!(&v, &hex!("82 01 2c"));
     }

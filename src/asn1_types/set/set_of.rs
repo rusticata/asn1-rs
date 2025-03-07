@@ -233,7 +233,7 @@ const _: () = {
     where
         T: ToBer + DynTagged,
     {
-        type Encoder = Constructed<Self>;
+        type Encoder = Constructed;
 
         fn content_len(&self) -> Length {
             self.items.content_len()
@@ -241,6 +241,10 @@ const _: () = {
 
         fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             self.items.write_content(target)
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, true, Self::TAG)
         }
     }
 };

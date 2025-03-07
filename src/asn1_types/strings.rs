@@ -201,7 +201,7 @@ macro_rules! asn1_string {
             use std::io::Write;
 
             impl $crate::ToBer for $name<'_> {
-                type Encoder = $crate::Primitive<Self, { $crate::Tag::$name.0 }>;
+                type Encoder = $crate::Primitive< { $crate::Tag::$name.0 }>;
 
                 fn content_len(&self) -> $crate::Length {
                     $crate::Length::Definite(self.data.len())
@@ -209,6 +209,11 @@ macro_rules! asn1_string {
 
                 fn write_content<W: Write>(&self, target: &mut W) -> $crate::SerializeResult<usize> {
                     target.write(self.data.as_bytes()).map_err(Into::into)
+                }
+
+                fn tag_info(&self) -> ($crate::Class, bool, $crate::Tag) {
+                    use $crate::Tagged;
+                    (Self::CLASS, false, Self::TAG)
                 }
             }
         };

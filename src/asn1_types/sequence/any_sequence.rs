@@ -95,10 +95,10 @@ impl<'a> DerParser<'a> for AnySequence<'a> {
 const _: () = {
     use std::io::Write;
 
-    use crate::{ber_header_length, Constructed, Length, SerializeResult, ToBer};
+    use crate::{ber_header_length, Class, Constructed, Length, SerializeResult, ToBer};
 
     impl ToBer for AnySequence<'_> {
-        type Encoder = Constructed<Self>;
+        type Encoder = Constructed;
 
         fn content_len(&self) -> Length {
             // content_len returns only the length of *content*, so we need header length for
@@ -121,6 +121,10 @@ const _: () = {
                 let sz = t.encode(target)?;
                 Ok(acc + sz)
             })
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, true, Self::TAG)
         }
     }
 };

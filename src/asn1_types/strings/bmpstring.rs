@@ -168,7 +168,7 @@ const _: () = {
     use std::io::Write;
 
     impl ToBer for BmpString<'_> {
-        type Encoder = Primitive<Self, { Tag::BmpString.0 }>;
+        type Encoder = Primitive<{ Tag::BmpString.0 }>;
 
         fn content_len(&self) -> Length {
             // compute the UTF-16 length
@@ -183,6 +183,10 @@ const _: () = {
                 v.push((u & 0xff) as u8);
             }
             target.write(&v).map_err(Into::into)
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, false, Self::TAG)
         }
     }
 };

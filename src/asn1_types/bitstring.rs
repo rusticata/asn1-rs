@@ -220,7 +220,7 @@ const _: () = {
     use std::io::Write;
 
     impl ToBer for BitString {
-        type Encoder = Primitive<BitString, { Tag::BitString.0 }>;
+        type Encoder = Primitive<{ Tag::BitString.0 }>;
 
         fn content_len(&self) -> Length {
             let len = 1 + (self.len() / 8);
@@ -236,6 +236,10 @@ const _: () = {
             target.write_all(data)?;
 
             Ok(1 + data.len())
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, false, Self::TAG)
         }
     }
 };

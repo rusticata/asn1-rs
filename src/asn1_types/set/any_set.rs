@@ -100,10 +100,10 @@ impl<'a, S: BuildHasher + Default> DerParser<'a> for AnySet<'a, S> {
 const _: () = {
     use std::io::Write;
 
-    use crate::{Constructed, Length, SerializeResult, ToBer};
+    use crate::{Class, Constructed, Length, SerializeResult, ToBer};
 
     impl<S: BuildHasher> ToBer for AnySet<'_, S> {
-        type Encoder = Constructed<Self>;
+        type Encoder = Constructed;
 
         fn content_len(&self) -> Length {
             self.items.content_len()
@@ -114,6 +114,10 @@ const _: () = {
                 let sz = t.encode(target)?;
                 Ok(acc + sz)
             })
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, true, Self::TAG)
         }
     }
 };

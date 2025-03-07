@@ -260,7 +260,7 @@ const _: () = {
     use std::io::Write;
 
     impl ToBer for UtcTime {
-        type Encoder = Primitive<Self, { Tag::UtcTime.0 }>;
+        type Encoder = Primitive<{ Tag::UtcTime.0 }>;
 
         fn content_len(&self) -> Length {
             // data:
@@ -279,6 +279,10 @@ const _: () = {
             )?;
             // write_fmt returns (), see above for length value
             Ok(13)
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, false, Self::TAG)
         }
     }
 };

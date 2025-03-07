@@ -1,37 +1,37 @@
 use std::io;
 use std::io::Write;
-use std::marker::PhantomData;
 
-use crate::{BerEncoder, DynTagged};
+use crate::{BerEncoder, Class, Tag};
 
 /// Encoder for constructed objects, with *Definite* length
 #[allow(missing_debug_implementations)]
-pub struct Constructed<T> {
-    _t: PhantomData<*const T>,
-}
+pub struct Constructed {}
 
-impl<T> Constructed<T> {
+impl Constructed {
     pub const fn new() -> Self {
-        Self { _t: PhantomData }
+        Self {}
     }
 }
 
-impl<T> Default for Constructed<T> {
+impl Default for Constructed {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<T> BerEncoder<T> for Constructed<T>
-where
-    T: DynTagged,
-{
+impl BerEncoder for Constructed {
     fn new() -> Self {
         Constructed::new()
     }
 
-    fn write_tag_info<W: Write>(&mut self, t: &T, target: &mut W) -> Result<usize, io::Error> {
-        self.write_tag_generic(t.class(), true, t.tag(), target)
+    fn write_tag_info<W: Write>(
+        &mut self,
+        class: Class,
+        _constructed: bool,
+        tag: Tag,
+        target: &mut W,
+    ) -> Result<usize, io::Error> {
+        self.write_tag_generic(class, true, tag, target)
     }
 }
 

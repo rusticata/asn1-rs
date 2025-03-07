@@ -1,39 +1,39 @@
 use std::io;
 use std::io::Write;
-use std::marker::PhantomData;
 
-use crate::{DynTagged, Length, SerializeError, SerializeResult, Tag};
+use crate::{Class, DynTagged, Length, SerializeError, SerializeResult, Tag};
 
 use super::{BerEncoder, ToBer};
 
-/// Encoder for constructed objects, with *Definite* length
+/// Encoder for constructed objects, with *Indefinite* length
 #[allow(missing_debug_implementations)]
-pub struct ConstructedIndefinite<T> {
-    _t: PhantomData<*const T>,
-}
+pub struct ConstructedIndefinite {}
 
-impl<T> ConstructedIndefinite<T> {
+impl ConstructedIndefinite {
     pub const fn new() -> Self {
-        Self { _t: PhantomData }
+        Self {}
     }
 }
 
-impl<T> Default for ConstructedIndefinite<T> {
+impl Default for ConstructedIndefinite {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<T> BerEncoder<T> for ConstructedIndefinite<T>
-where
-    T: DynTagged,
-{
+impl BerEncoder for ConstructedIndefinite {
     fn new() -> Self {
         ConstructedIndefinite::new()
     }
 
-    fn write_tag_info<W: Write>(&mut self, t: &T, target: &mut W) -> Result<usize, io::Error> {
-        self.write_tag_generic(t.class(), true, t.tag(), target)
+    fn write_tag_info<W: Write>(
+        &mut self,
+        class: Class,
+        _constructed: bool,
+        tag: Tag,
+        target: &mut W,
+    ) -> Result<usize, io::Error> {
+        self.write_tag_generic(class, true, tag, target)
     }
 }
 
@@ -59,7 +59,7 @@ impl<T> ToBer for IndefiniteVec<T>
 where
     T: ToBer,
 {
-    type Encoder = ConstructedIndefinite<IndefiniteVec<T>>;
+    type Encoder = ConstructedIndefinite;
 
     fn content_len(&self) -> Length {
         Length::Indefinite
@@ -73,6 +73,10 @@ where
         // write EndOfContent
         target.write_all(&[0, 0])?;
         Ok(sz + 2)
+    }
+
+    fn tag_info(&self) -> (Class, bool, Tag) {
+        (self.class(), true, self.tag())
     }
 }
 

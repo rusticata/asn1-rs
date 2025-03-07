@@ -99,7 +99,7 @@ const _: () = {
     use std::io::Write;
 
     impl ToBer for &'_ str {
-        type Encoder = Primitive<Self, { Tag::Utf8String.0 }>;
+        type Encoder = Primitive<{ Tag::Utf8String.0 }>;
 
         fn content_len(&self) -> Length {
             Length::Definite(self.len())
@@ -107,6 +107,10 @@ const _: () = {
 
         fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             target.write(self.as_bytes()).map_err(Into::into)
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, false, Self::TAG)
         }
     }
 };

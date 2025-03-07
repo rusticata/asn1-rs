@@ -151,7 +151,7 @@ const _: () = {
     use std::io::Write;
 
     impl ToBer for OctetString<'_> {
-        type Encoder = Primitive<Self, { Tag::OctetString.0 }>;
+        type Encoder = Primitive<{ Tag::OctetString.0 }>;
 
         fn content_len(&self) -> Length {
             Length::Definite(self.data.len())
@@ -159,6 +159,10 @@ const _: () = {
 
         fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             target.write(&self.data).map_err(Into::into)
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, false, Self::TAG)
         }
     }
 };
@@ -245,7 +249,7 @@ const _: () = {
     use std::io::Write;
 
     impl ToBer for &'_ [u8] {
-        type Encoder = Primitive<Self, { Tag::OctetString.0 }>;
+        type Encoder = Primitive<{ Tag::OctetString.0 }>;
 
         fn content_len(&self) -> Length {
             Length::Definite(self.len())
@@ -253,6 +257,10 @@ const _: () = {
 
         fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             target.write(self).map_err(Into::into)
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, false, Self::TAG)
         }
     }
 };

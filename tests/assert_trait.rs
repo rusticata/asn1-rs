@@ -362,6 +362,8 @@ fn assert_traits_tober() {
         where
             T: ToBer + DynTagged,
         {
+            test_assert!(&T);
+
             test_assert!(HashSet<T>);
             test_assert!(BTreeSet<T>);
 

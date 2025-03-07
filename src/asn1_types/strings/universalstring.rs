@@ -166,7 +166,7 @@ const _: () = {
     use std::io::Write;
 
     impl ToBer for UniversalString<'_> {
-        type Encoder = Primitive<Self, { Tag::UniversalString.0 }>;
+        type Encoder = Primitive<{ Tag::UniversalString.0 }>;
 
         fn content_len(&self) -> Length {
             // UCS-4: 4 bytes per character
@@ -179,6 +179,10 @@ const _: () = {
                 .chars()
                 .try_for_each(|c| target.write(&(c as u32).to_be_bytes()[..]).map(|_| ()))?;
             Ok(self.data.len() * 4)
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, false, Self::TAG)
         }
     }
 };

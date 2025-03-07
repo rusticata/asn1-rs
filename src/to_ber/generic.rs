@@ -1,37 +1,23 @@
-use core::marker::PhantomData;
-
-use crate::DynTagged;
-
 use super::BerEncoder;
 
 /// Encoder for generic objects
 #[allow(missing_debug_implementations)]
-pub struct BerGenericEncoder<T: DynTagged> {
-    _t: PhantomData<*const T>,
-}
+pub struct BerGenericEncoder {}
 
-impl<T: DynTagged> BerGenericEncoder<T> {
+impl BerGenericEncoder {
     pub const fn new() -> Self {
-        Self { _t: PhantomData }
+        Self {}
     }
 }
 
-impl<T: DynTagged> Default for BerGenericEncoder<T> {
+impl Default for BerGenericEncoder {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<T: DynTagged> BerEncoder<T> for BerGenericEncoder<T> {
+impl BerEncoder for BerGenericEncoder {
     fn new() -> Self {
         Self::new()
-    }
-
-    fn write_tag_info<W: std::io::Write>(
-        &mut self,
-        t: &T,
-        target: &mut W,
-    ) -> Result<usize, std::io::Error> {
-        self.write_tag_generic(t.class(), t.constructed(), t.tag(), target)
     }
 }

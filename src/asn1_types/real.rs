@@ -455,7 +455,7 @@ const _: () = {
     use std::io::Write;
 
     impl ToBer for Real {
-        type Encoder = Primitive<Self, { Tag::RealType.0 }>;
+        type Encoder = Primitive<{ Tag::RealType.0 }>;
 
         fn content_len(&self) -> Length {
             match self {
@@ -564,6 +564,10 @@ const _: () = {
                     Ok(n)
                 }
             }
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, false, Self::TAG)
         }
     }
 };

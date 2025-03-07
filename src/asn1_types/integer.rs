@@ -169,7 +169,7 @@ macro_rules! impl_int {
             use std::io::Write;
 
             impl ToBer for $int {
-                type Encoder = Primitive<Self, { Tag::Integer.0 }>;
+                type Encoder = Primitive<{ Tag::Integer.0 }>;
 
                 fn content_len(&self) -> Length {
                     let int = Integer::from(*self);
@@ -179,6 +179,11 @@ macro_rules! impl_int {
                 fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
                     let int = Integer::from(*self);
                     target.write(&int.data).map_err(Into::into)
+                }
+
+                fn tag_info(&self) -> (Class, bool, Tag) {
+                    use $crate::Tagged;
+                    (Self::CLASS, false, Self::TAG)
                 }
             }
         };
@@ -264,7 +269,7 @@ macro_rules! impl_uint {
             use std::io::Write;
 
             impl ToBer for $ty {
-                type Encoder = Primitive<Self, { Tag::Integer.0 }>;
+                type Encoder = Primitive<{ Tag::Integer.0 }>;
 
                 fn content_len(&self) -> Length {
                     let int = Integer::from(*self);
@@ -274,6 +279,11 @@ macro_rules! impl_uint {
                 fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
                     let int = Integer::from(*self);
                     target.write(&int.data).map_err(Into::into)
+                }
+
+                fn tag_info(&self) -> (Class, bool, Tag) {
+                    use $crate::Tagged;
+                    (Self::CLASS, false, Self::TAG)
                 }
             }
         };
@@ -653,7 +663,7 @@ const _: () = {
     use std::io::Write;
 
     impl ToBer for Integer<'_> {
-        type Encoder = Primitive<Self, { Tag::Integer.0 }>;
+        type Encoder = Primitive<{ Tag::Integer.0 }>;
 
         fn content_len(&self) -> Length {
             Length::Definite(self.data.len())
@@ -661,6 +671,10 @@ const _: () = {
 
         fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             target.write(&self.data).map_err(Into::into)
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, false, Self::TAG)
         }
     }
 };

@@ -611,7 +611,7 @@ const _: () = {
     use std::io::Write;
 
     impl ToBer for Any<'_> {
-        type Encoder = BerGenericEncoder<Self>;
+        type Encoder = BerGenericEncoder;
 
         fn content_len(&self) -> Length {
             Length::Definite(self.data.len())
@@ -619,6 +619,10 @@ const _: () = {
 
         fn write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             target.write(self.data.as_bytes2()).map_err(Into::into)
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (self.class(), self.constructed(), self.tag())
         }
     }
 };

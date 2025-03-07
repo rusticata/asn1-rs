@@ -156,7 +156,7 @@ const _: () = {
     where
         T: ToBer + DynTagged,
     {
-        type Encoder = Constructed<Self>;
+        type Encoder = Constructed;
 
         fn content_len(&self) -> Length {
             // content_len returns only the length of *content*, so we need header length for
@@ -179,6 +179,10 @@ const _: () = {
                 let sz = t.encode(target)?;
                 Ok(acc + sz)
             })
+        }
+
+        fn tag_info(&self) -> (Class, bool, Tag) {
+            (Self::CLASS, true, Self::TAG)
         }
     }
 };
