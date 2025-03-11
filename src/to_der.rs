@@ -3,11 +3,7 @@
 use std::io::Write;
 
 use crate::to_ber::*;
-use crate::Class;
-use crate::DynTagged;
-use crate::Length;
-use crate::SerializeResult;
-use crate::Tag;
+use crate::{Class, Length, SerializeResult, Tag};
 
 /// Common trait for DER encoding functions
 ///
@@ -201,7 +197,7 @@ macro_rules! impl_toder_from_tober {
 /// will be indefinite.
 pub fn der_length_constructed_items<'a, T, IT>(iter: IT) -> Length
 where
-    T: ToDer + DynTagged + 'a,
+    T: ToDer + 'a,
     IT: Iterator<Item = &'a T>,
 {
     iter.map(|t| t.der_total_len()).sum()
