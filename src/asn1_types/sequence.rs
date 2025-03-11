@@ -6,6 +6,7 @@ use core::convert::TryFrom;
 use nom::{Input as _, Parser};
 
 mod any_sequence;
+mod array;
 mod iterator;
 mod sequence_of;
 mod vec;
