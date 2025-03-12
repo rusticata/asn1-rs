@@ -61,24 +61,29 @@ fn to_der_length_long() {
 
 #[test]
 fn to_der_tag() {
+    let mut encoder = BerGenericEncoder::new();
     // short tag, UNIVERSAL
-    let v = (Class::Universal, false, Tag(0x1a))
-        .to_der_vec()
+    let mut v = Vec::new();
+    encoder
+        .write_tag_info(Class::Universal, false, Tag(0x1a), &mut v)
         .expect("serialization failed");
     assert_eq!(&v, &[0x1a]);
     // short tag, APPLICATION
-    let v = (Class::Application, false, Tag(0x1a))
-        .to_der_vec()
+    let mut v = Vec::new();
+    encoder
+        .write_tag_info(Class::Application, false, Tag(0x1a), &mut v)
         .expect("serialization failed");
     assert_eq!(&v, &[0x1a | (0b01 << 6)]);
     // short tag, constructed
-    let v = (Class::Universal, true, Tag(0x10))
-        .to_der_vec()
+    let mut v = Vec::new();
+    encoder
+        .write_tag_info(Class::Universal, true, Tag(0x10), &mut v)
         .expect("serialization failed");
     assert_eq!(&v, &[0x30]);
     // long tag, UNIVERSAL
-    let v = (Class::Universal, false, Tag(0x1a1a))
-        .to_der_vec()
+    let mut v = Vec::new();
+    encoder
+        .write_tag_info(Class::Universal, false, Tag(0x1a1a), &mut v)
         .expect("serialization failed");
     assert_eq!(&v, &[0b1_1111, 0xb4, 0x1a]);
 }
