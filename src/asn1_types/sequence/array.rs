@@ -1,3 +1,4 @@
+use alloc::vec::Vec;
 use nom::error::ParseError;
 use nom::Err;
 
