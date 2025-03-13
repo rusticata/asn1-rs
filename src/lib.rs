@@ -44,6 +44,8 @@
 //!
 //! **Minimum Supported Rust Version**: 1.65.0
 //!
+//! **`no_std` support**: `asn1-rs` supports `#[no_std]` (with a requirement on `alloc`).
+//!
 //! # Recipes
 //!
 //! See [doc::recipes] and [doc::derive] for more examples and recipes.
@@ -138,6 +140,8 @@
 //!
 //! If the parsing succeeds, but the integer cannot fit into the expected type, the method will return
 //! an `IntegerTooLarge` error.
+//!
+#![doc = include_str!("../doc/ASN1.md")]
 //!
 //! ## Changes
 //!
