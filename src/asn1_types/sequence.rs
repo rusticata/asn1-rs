@@ -9,6 +9,7 @@ mod any_sequence;
 mod array;
 mod iterator;
 mod sequence_of;
+mod tuple;
 mod vec;
 
 pub use any_sequence::*;
