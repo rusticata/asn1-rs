@@ -13,6 +13,10 @@ use crate::{
 
 /// Base trait for DER object parsers
 ///
+/// # Notes
+///
+/// *This trait might become deprecated soon! Instead of this one, implement trait [`DerParser`].*
+///
 /// Library authors should usually not directly implement this trait, but should prefer implementing the
 /// [`TryFrom<Any>`] + [`CheckDerConstraints`] traits,
 /// which offers greater flexibility and provides an equivalent `FromDer` implementation for free
@@ -121,9 +125,12 @@ pub trait CheckDerConstraints {
 
 /// Base trait for DER object parsers
 ///
-/// Implementers should provide a definition (or validate the default one) for the following:
+/// Implementers should provide a definition for the following:
 /// - method [`from_der_content`](DerParser::from_der_content): Parse DER content, given a header and data
 /// - trait [`DynTagged`]
+///
+/// This trait can be automatically derived from a `struct` using the [`DerParserSequence`](crate::DerParserSequence)
+/// or [`DerParserSet`](crate::DerParserSet) custom derive attributes.
 pub trait DerParser<'i>
 where
     Self: Sized,

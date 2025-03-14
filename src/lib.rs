@@ -33,9 +33,13 @@
 //! The choice of which one to use is usually guided by the speficication of the data format based
 //! on BER or DER: for example, X.509 uses DER as encoding representation.
 //!
-//! The main traits for parsing are the [`FromBer`] and [`FromDer`] traits.
-//! These traits provide methods to parse binary input, and return either the remaining (unparsed) bytes
-//! and the parsed object, or an error.
+//! The main traits for parsing are the [`BerParser`] and [`DerParser`] traits.
+//! These traits provide methods to parse binary input wrapped in [`Input`],
+//! and return either the remaining (unparsed) bytes and the parsed object, or an error.
+//! The [`Input`] types is a simple wrapper around `&[u8]` to keep information on data span. This is
+//! especially useful to print information or to debug parsing errors.
+//!
+//! This crates also provides the [`FromBer`] and [`FromDer`] traits for parsing (working on slices).
 //!
 //! The parsers follow the interface from [nom], and the [`ParseResult`] object is a specialized version
 //! of `nom::IResult`. This means that most `nom` combinators (`map`, `many0`, etc.) can be used in
@@ -94,7 +98,7 @@
 //!
 //! # BER/DER encoders
 //!
-//! BER/DER encoding is symmetrical to decoding, using the traits `ToBer` and [`ToDer`] traits.
+//! BER/DER encoding is symmetrical to decoding, using the traits [`ToBer`] and [`ToDer`] traits.
 //! These traits provide methods to write encoded content to objects with the `io::Write` trait,
 //! or return an allocated `Vec<u8>` with the encoded data.
 //! If the serialization fails, an error is returned.
@@ -121,7 +125,7 @@
 //! assert_eq!(&writer, bytes);
 //! ```
 //!
-//! Similarly to `FromBer`/`FromDer`, serialization methods are also implemented for primitive types:
+//! Similarly to `BerParser`/`DerParser`, serialization methods are also implemented for primitive types:
 //!
 #![cfg_attr(feature = "std", doc = r#"```rust"#)]
 #![cfg_attr(not(feature = "std"), doc = r#"```rust,compile_fail"#)]

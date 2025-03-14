@@ -9,6 +9,10 @@ use crate::{Any, BerError, BerMode, DynTagged, Error, Header, Input, ParseResult
 
 /// Base trait for BER object parsers
 ///
+/// # Notes
+///
+/// *This trait might become deprecated soon! Instead of this one, implement trait [`BerParser`].*
+///
 /// Library authors should usually not directly implement this trait, but should prefer implementing the
 /// [`TryFrom<Any>`] trait,
 /// which offers greater flexibility and provides an equivalent `FromBer` implementation for free.
@@ -63,9 +67,12 @@ where
 
 /// Base trait for BER object parsers
 ///
-/// Implementers should provide a definition (or validate the default one) for the following:
+/// Implementers should provide a definition for the following:
 /// - method [`from_ber_content`](BerParser::from_ber_content): Parse BER content, given a header and data
 /// - trait [`DynTagged`]
+///
+/// This trait can be automatically derived from a `struct` using the [`BerParserSequence`](crate::BerParserSequence)
+/// or [`BerParserSet`](crate::BerParserSet) custom derive attributes.
 pub trait BerParser<'i>
 where
     Self: Sized,
