@@ -172,6 +172,7 @@ pub(crate) fn derive_tober_container(
     let impl_tober_content_len = container.gen_tober_content_len(asn1_type);
     let impl_tober_tag_info = container.gen_tober_tag_info(asn1_type);
     let impl_tober_write_content = container.gen_tober_write_content(asn1_type);
+    let tober = asn1_type.tober();
 
     // note: `gen impl` in synstructure takes care of appending extra where clauses if any, and removing
     // the `where` statement if there are none.
@@ -179,7 +180,7 @@ pub(crate) fn derive_tober_container(
         extern crate asn1_rs;
 
         #[cfg(feature = "std")]
-        gen impl asn1_rs::ToDer for @Self where #(#wh)+* {
+        gen impl asn1_rs::#tober for @Self where #(#wh)+* {
             type Encoder = asn1_rs::BerGenericEncoder;
 
             #impl_tober_content_len

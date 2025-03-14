@@ -30,6 +30,13 @@ pub enum Asn1Type {
 }
 
 impl Asn1Type {
+    pub(crate) fn tober(&self) -> TokenStream {
+        match *self {
+            Asn1Type::Ber => quote!(ToBer),
+            Asn1Type::Der => quote!(ToDer),
+        }
+    }
+
     pub(crate) fn total_len_tokens(&self) -> TokenStream {
         match *self {
             Asn1Type::Ber => quote!(ber_total_len),
@@ -487,9 +494,14 @@ impl Container {
 
     pub fn gen_tober_tag_info(&self, asn1_type: Asn1Type) -> TokenStream {
         let tag_info = asn1_type.tag_info_tokens();
+        let container_type = match self.container_type {
+            ContainerType::Alias => panic!("Invalid container type for tag info?!"),
+            ContainerType::Sequence => quote!(Sequence),
+            ContainerType::Set => quote!(Set),
+        };
         quote!(
             fn #tag_info(&self) -> (asn1_rs::Class, bool, asn1_rs::Tag) {
-                (asn1_rs::Class::Universal, true, asn1_rs::Sequence::TAG)
+                (asn1_rs::Class::Universal, true, asn1_rs::#container_type::TAG)
             }
         )
     }
