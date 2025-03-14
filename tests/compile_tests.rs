@@ -10,12 +10,14 @@ fn compile_pass_derparser() {
     t.pass("tests/run-pass/derparser*.rs");
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn compile_pass_tober() {
     let t = trybuild::TestCases::new();
     t.pass("tests/run-pass/tober*.rs");
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn compile_pass_toder() {
     let t = trybuild::TestCases::new();
