@@ -24,9 +24,46 @@ impl ToTokens for ContainerType {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-enum Asn1Type {
+pub enum Asn1Type {
     Ber,
     Der,
+}
+
+impl Asn1Type {
+    pub(crate) fn total_len_tokens(&self) -> TokenStream {
+        match *self {
+            Asn1Type::Ber => quote!(ber_total_len),
+            Asn1Type::Der => quote!(der_total_len),
+        }
+    }
+
+    pub(crate) fn content_len_tokens(&self) -> TokenStream {
+        match *self {
+            Asn1Type::Ber => quote!(ber_content_len),
+            Asn1Type::Der => quote!(der_content_len),
+        }
+    }
+
+    pub(crate) fn tag_info_tokens(&self) -> TokenStream {
+        match *self {
+            Asn1Type::Ber => quote!(ber_tag_info),
+            Asn1Type::Der => quote!(der_tag_info),
+        }
+    }
+
+    pub(crate) fn encode_tokens(&self) -> TokenStream {
+        match *self {
+            Asn1Type::Ber => quote!(ber_encode),
+            Asn1Type::Der => quote!(der_encode),
+        }
+    }
+
+    pub(crate) fn write_content_tokens(&self) -> TokenStream {
+        match *self {
+            Asn1Type::Ber => quote!(ber_write_content),
+            Asn1Type::Der => quote!(der_write_content),
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -498,14 +535,16 @@ impl Container {
         }
     }
 
-    pub fn gen_der_content_len(&self) -> TokenStream {
+    pub fn gen_tober_content_len(&self, asn1_type: Asn1Type) -> TokenStream {
+        let total_len = asn1_type.total_len_tokens();
+        let content_len = asn1_type.content_len_tokens();
         let field_names = &self.fields.iter().map(|f| &f.name).collect::<Vec<_>>();
         let add_len_instructions = field_names.iter().fold(Vec::new(), |mut instrs, field| {
-            instrs.push(quote! {total_len += self.#field.der_total_len();});
+            instrs.push(quote! {total_len += self.#field.#total_len();});
             instrs
         });
         quote! {
-            fn der_content_len(&self) -> asn1_rs::Length {
+            fn #content_len(&self) -> asn1_rs::Length {
                 let mut total_len = asn1_rs::Length::Definite(0);
                 #(#add_len_instructions)*
                 total_len
@@ -513,22 +552,25 @@ impl Container {
         }
     }
 
-    pub fn gen_der_tag_info(&self) -> TokenStream {
+    pub fn gen_tober_tag_info(&self, asn1_type: Asn1Type) -> TokenStream {
+        let tag_info = asn1_type.tag_info_tokens();
         quote!(
-            fn der_tag_info(&self) -> (asn1_rs::Class, bool, asn1_rs::Tag) {
+            fn #tag_info(&self) -> (asn1_rs::Class, bool, asn1_rs::Tag) {
                 (asn1_rs::Class::Universal, true, asn1_rs::Sequence::TAG)
             }
         )
     }
 
-    pub fn gen_der_write_content(&self) -> TokenStream {
+    pub fn gen_tober_write_content(&self, asn1_type: Asn1Type) -> TokenStream {
+        let encode = asn1_type.encode_tokens();
+        let write_content = asn1_type.write_content_tokens();
         let field_names = &self.fields.iter().map(|f| &f.name).collect::<Vec<_>>();
         let write_instructions = field_names.iter().fold(Vec::new(), |mut instrs, field| {
-            instrs.push(quote! {num_bytes += self.#field.der_encode(writer)?;});
+            instrs.push(quote! {num_bytes += self.#field.#encode(writer)?;});
             instrs
         });
         quote! {
-            fn der_write_content<W: std::io::Write>(&self, writer: &mut W) -> asn1_rs::SerializeResult<usize> {
+            fn #write_content<W: std::io::Write>(&self, writer: &mut W) -> asn1_rs::SerializeResult<usize> {
                 let mut num_bytes = 0;
                 #(#write_instructions)*
                 Ok(num_bytes)

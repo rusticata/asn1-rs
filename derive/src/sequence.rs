@@ -20,8 +20,12 @@ pub fn derive_derparser_sequence(s: synstructure::Structure) -> proc_macro2::Tok
     derive_derparser_container(s, ContainerType::Sequence)
 }
 
+pub fn derive_tober_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
+    derive_tober_container(s, ContainerType::Sequence, Asn1Type::Ber)
+}
+
 pub fn derive_toder_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
-    derive_toder_container(s, ContainerType::Sequence)
+    derive_tober_container(s, ContainerType::Sequence, Asn1Type::Der)
 }
 
 pub(crate) fn derive_ber_container(
@@ -175,9 +179,10 @@ pub(crate) fn derive_derparser_container(
     ts
 }
 
-pub(crate) fn derive_toder_container(
+pub(crate) fn derive_tober_container(
     s: synstructure::Structure,
     container_type: ContainerType,
+    asn1_type: Asn1Type,
 ) -> proc_macro2::TokenStream {
     let ast = s.ast();
 
@@ -200,9 +205,9 @@ pub(crate) fn derive_toder_container(
         _ => true,
     });
 
-    let impl_der_content_len = container.gen_der_content_len();
-    let impl_der_tag_info = container.gen_der_tag_info();
-    let impl_der_write_content = container.gen_der_write_content();
+    let impl_tober_content_len = container.gen_tober_content_len(asn1_type);
+    let impl_tober_tag_info = container.gen_tober_tag_info(asn1_type);
+    let impl_tober_write_content = container.gen_tober_write_content(asn1_type);
 
     // note: `gen impl` in synstructure takes care of appending extra where clauses if any, and removing
     // the `where` statement if there are none.
@@ -213,9 +218,9 @@ pub(crate) fn derive_toder_container(
         gen impl asn1_rs::ToDer for @Self where #(#wh)+* {
             type Encoder = asn1_rs::BerGenericEncoder;
 
-            #impl_der_content_len
-            #impl_der_tag_info
-            #impl_der_write_content
+            #impl_tober_content_len
+            #impl_tober_tag_info
+            #impl_tober_write_content
         }
     });
     if debug_derive {

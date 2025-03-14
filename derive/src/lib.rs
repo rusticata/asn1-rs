@@ -70,6 +70,10 @@ synstructure::decl_derive!([ToStatic, attributes(
     debug_derive
 )] => derive_tostatic);
 
+synstructure::decl_derive!([ToBerSequence, attributes(
+    debug_derive,
+)] => derive_tober_sequence);
+
 synstructure::decl_derive!([ToDerSequence, attributes(
     debug_derive,
 )] => derive_toder_sequence);
@@ -77,6 +81,10 @@ synstructure::decl_derive!([ToDerSequence, attributes(
 synstructure::decl_derive!([ToDerSet, attributes(
     debug_derive,
 )] => derive_toder_set);
+
+synstructure::decl_derive!([ToBerSet, attributes(
+    debug_derive,
+)] => derive_tober_set);
 
 //----------- new BerParser
 

@@ -370,6 +370,9 @@ pub use asn1_rs_derive::DerParserAlias;
 /// ```
 pub use asn1_rs_derive::ToStatic;
 
+// FIXME: add doc!
+pub use asn1_rs_derive::ToBerSequence;
+
 /// # ToDerSequence custom derive
 ///
 /// `ToDerSequence` is a custom derive attribute, to derive both DER [`Sequence`](super::Sequence) serialization automatically from the structure definition.
@@ -425,6 +428,9 @@ pub use asn1_rs_derive::ToStatic;
 /// }
 /// ```
 pub use asn1_rs_derive::ToDerSequence;
+
+// FIXME: add doc!
+pub use asn1_rs_derive::ToBerSet;
 
 // FIXME: add doc!
 pub use asn1_rs_derive::ToDerSet;
