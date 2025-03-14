@@ -64,6 +64,20 @@ impl Asn1Type {
             Asn1Type::Der => quote!(der_write_content),
         }
     }
+
+    pub(crate) fn parser(&self) -> TokenStream {
+        match *self {
+            Asn1Type::Ber => quote!(BerParser),
+            Asn1Type::Der => quote!(DerParser),
+        }
+    }
+
+    pub(crate) fn from_ber_content(&self) -> TokenStream {
+        match *self {
+            Asn1Type::Ber => quote!(from_ber_content),
+            Asn1Type::Der => quote!(from_der_content),
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -256,10 +270,12 @@ impl Container {
         }
     }
 
-    /// Generate blanked implementation of BerParser
+    /// Generate blanked implementation of Ber/DerParser
     ///
     /// `Self` must be `Tagged`
-    pub fn gen_berparser(&self) -> TokenStream {
+    pub fn gen_berparser(&self, asn1_type: Asn1Type) -> TokenStream {
+        let parser = asn1_type.parser();
+        let from_ber_content = asn1_type.from_ber_content();
         let lft = Lifetime::new("'ber", Span::call_site());
 
         // error type
@@ -271,90 +287,7 @@ impl Container {
 
         let field_names = &self.fields.iter().map(|f| &f.name).collect::<Vec<_>>();
 
-        let parse_content = derive_berparser_sequence_content(&self.fields, Asn1Type::Ber);
-
-        // Note: if Self has lifetime bounds, then a new bound must be added to the implementation
-        // For ex: `pub struct AA<'a>` will require a bound `impl[..] BerParser[..] where 'i: 'a`
-        // Container::from_datastruct takes care of this.
-        let wh = &self.where_predicates;
-
-        // TODO: assert constructed (only for Sequence/Set)
-
-        let fn_content = if self.container_type == ContainerType::Alias {
-            // special case: is this an alias for Any
-            if self.is_any {
-                quote! {
-                    use asn1_rs::BerParser;
-                    let (rem, any) = asn1_rs::Any::from_ber_content(header, input)?;
-                    Ok((rem, Self(any)))
-                }
-            } else {
-                // we support only 1 unnamed field
-                assert_eq!(self.fields.len(), 1);
-                let f_ty = &self
-                    .fields
-                    .first()
-                    .expect("Tuple struct without fields")
-                    .type_;
-                error = quote! {
-                    <#f_ty as BerParser<#lft>>::Error
-                };
-                quote! {
-                    use asn1_rs::BerParser;
-                    let (rem, any) = BerParser::from_ber_content(header, input)?;
-                    Ok((rem, Self(any)))
-                }
-            }
-        } else {
-            // assert constructed (only for Sequence/Set)
-            let assert_constructed = self.gen_assert_constructed();
-
-            quote! (
-                let rem = input;
-                //
-                #assert_constructed
-                #parse_content
-                //
-                // XXX check if rem empty?
-                Ok((
-                    rem,
-                    Self{#(#field_names),*}
-                ))
-            )
-        };
-
-        // note: other lifetimes will automatically be added by gen_impl
-        let tokens = quote! {
-            use asn1_rs::BerParser;
-
-            gen impl<#lft> BerParser<#lft> for @Self where #(#wh)+* {
-                type Error = #error;
-
-                fn from_ber_content(header: &'_ Header<#lft>, input: Input<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
-                    #fn_content
-                }
-            }
-        };
-
-        tokens
-    }
-
-    /// Generate blanked implementation of DerParser
-    ///
-    /// `Self` must be `Tagged`
-    pub fn gen_derparser(&self) -> TokenStream {
-        let lft = Lifetime::new("'ber", Span::call_site());
-
-        // error type
-        let mut error = if let Some(attr) = &self.error {
-            get_attribute_meta(attr).expect("Invalid error attribute format")
-        } else {
-            quote! { asn1_rs::BerError<asn1_rs::Input<#lft>> }
-        };
-
-        let field_names = &self.fields.iter().map(|f| &f.name).collect::<Vec<_>>();
-
-        let parse_content = derive_berparser_sequence_content(&self.fields, Asn1Type::Der);
+        let parse_content = derive_berparser_sequence_content(&self.fields, asn1_type);
 
         // Note: if Self has lifetime bounds, then a new bound must be added to the implementation
         // For ex: `pub struct AA<'a>` will require a bound `impl[..] DerParser[..] where 'i: 'a`
@@ -365,8 +298,8 @@ impl Container {
             // special case: is this an alias for Any
             if self.is_any {
                 quote! {
-                    use asn1_rs::DerParser;
-                    let (rem, any) = asn1_rs::Any::from_der_content(header, input)?;
+                    use asn1_rs::#parser;
+                    let (rem, any) = asn1_rs::Any::#from_ber_content(header, input)?;
                     Ok((rem, Self(any)))
                 }
             } else {
@@ -378,11 +311,11 @@ impl Container {
                     .expect("Tuple struct without fields")
                     .type_;
                 error = quote! {
-                    <#f_ty as DerParser<#lft>>::Error
+                    <#f_ty as #parser<#lft>>::Error
                 };
                 quote! {
-                    use asn1_rs::DerParser;
-                    let (rem, any) = DerParser::from_der_content(header, input)?;
+                    use asn1_rs::#parser;
+                    let (rem, any) = #parser::#from_ber_content(header, input)?;
                     Ok((rem, Self(any)))
                 }
             }
@@ -406,12 +339,12 @@ impl Container {
 
         // note: other lifetimes will automatically be added by gen_impl
         let tokens = quote! {
-            use asn1_rs::DerParser;
+            use asn1_rs::#parser;
 
-            gen impl<#lft> DerParser<#lft> for @Self where #(#wh)+* {
+            gen impl<#lft> #parser<#lft> for @Self where #(#wh)+* {
                 type Error = #error;
 
-                fn from_der_content(header: &'_ Header<#lft>, input: Input<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
+                fn #from_ber_content(header: &'_ Header<#lft>, input: Input<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
                     #fn_content
                 }
             }

@@ -8,16 +8,16 @@ pub fn derive_ber_sequence(s: synstructure::Structure) -> proc_macro2::TokenStre
     derive_ber_container(s, ContainerType::Sequence)
 }
 
-pub fn derive_berparser_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
-    derive_berparser_container(s, ContainerType::Sequence)
-}
-
 pub fn derive_der_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
     derive_der_container(s, ContainerType::Sequence)
 }
 
+pub fn derive_berparser_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
+    derive_berparser_container(s, ContainerType::Sequence, Asn1Type::Ber)
+}
+
 pub fn derive_derparser_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
-    derive_derparser_container(s, ContainerType::Sequence)
+    derive_berparser_container(s, ContainerType::Sequence, Asn1Type::Der)
 }
 
 pub fn derive_tober_sequence(s: synstructure::Structure) -> proc_macro2::TokenStream {
@@ -65,43 +65,6 @@ pub(crate) fn derive_ber_container(
     ts
 }
 
-pub(crate) fn derive_berparser_container(
-    s: synstructure::Structure,
-    container_type: ContainerType,
-) -> proc_macro2::TokenStream {
-    let ast = s.ast();
-
-    let container = match &ast.data {
-        Data::Struct(ds) => Container::from_datastruct(ds, ast, container_type),
-        _ => panic!("Unsupported type, cannot derive"),
-    };
-
-    let debug_derive = ast.attrs.iter().any(|attr| {
-        attr.meta
-            .path()
-            .is_ident(&Ident::new("debug_derive", Span::call_site()))
-    });
-
-    let last_berderive = check_lastderive_fromber(ast);
-
-    let impl_tagged = if last_berderive {
-        container.gen_tagged()
-    } else {
-        quote! {}
-    };
-    let impl_berparser = container.gen_berparser();
-    let ts = s.gen_impl(quote! {
-        extern crate asn1_rs;
-
-        #impl_tagged
-        #impl_berparser
-    });
-    if debug_derive {
-        eprintln!("{}", ts);
-    }
-    ts
-}
-
 pub fn derive_der_container(
     s: synstructure::Structure,
     container_type: ContainerType,
@@ -142,9 +105,10 @@ pub fn derive_der_container(
     ts
 }
 
-pub(crate) fn derive_derparser_container(
+pub(crate) fn derive_berparser_container(
     s: synstructure::Structure,
     container_type: ContainerType,
+    asn1_type: Asn1Type,
 ) -> proc_macro2::TokenStream {
     let ast = s.ast();
 
@@ -166,12 +130,12 @@ pub(crate) fn derive_derparser_container(
     } else {
         quote! {}
     };
-    let impl_derparser = container.gen_derparser();
+    let impl_berparser = container.gen_berparser(asn1_type);
     let ts = s.gen_impl(quote! {
         extern crate asn1_rs;
 
         #impl_tagged
-        #impl_derparser
+        #impl_berparser
     });
     if debug_derive {
         eprintln!("{}", ts);

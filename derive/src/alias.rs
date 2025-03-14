@@ -52,7 +52,7 @@ pub fn derive_berparser_alias(s: synstructure::Structure) -> proc_macro2::TokenS
     } else {
         quote! {}
     };
-    let impl_berparser = container.gen_berparser();
+    let impl_berparser = container.gen_berparser(Asn1Type::Ber);
     let ts = s.gen_impl(quote! {
         extern crate asn1_rs;
 
@@ -117,7 +117,7 @@ pub fn derive_derparser_alias(s: synstructure::Structure) -> proc_macro2::TokenS
     } else {
         quote! {}
     };
-    let impl_derparser = container.gen_derparser();
+    let impl_derparser = container.gen_berparser(Asn1Type::Der);
     let ts = s.gen_impl(quote! {
         extern crate asn1_rs;
 
