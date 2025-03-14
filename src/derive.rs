@@ -425,3 +425,6 @@ pub use asn1_rs_derive::ToStatic;
 /// }
 /// ```
 pub use asn1_rs_derive::ToDerSequence;
+
+// FIXME: add doc!
+pub use asn1_rs_derive::ToDerSet;

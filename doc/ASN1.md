@@ -468,7 +468,7 @@ Use custom derive:
 ```rust
 use asn1_rs::*;
 
-#[derive(Debug, PartialEq, DerSet/*, ToDerSet*/)]
+#[derive(Debug, PartialEq, DerSet, ToDerSet)]
 struct MyType {
     a: bool,
     b: u32,
