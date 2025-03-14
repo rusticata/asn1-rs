@@ -54,7 +54,59 @@
 /// ```
 pub use asn1_rs_derive::BerSequence;
 
-// FIXME: add doc!
+/// # BerParserSequence custom derive
+///
+/// `BerParserSequence` is a custom derive attribute, to derive a BER [`Sequence`](super::Sequence) parser automatically from the structure definition.
+/// This attribute will automatically derive implementations for the following traits:
+///   - [`BerParser`](super::BerParser)
+///
+/// `BerParserSequence` generates only the DER parser, and is compatible with `DerParserSequence`. Use both custom derive
+/// attributes if you want both BER and DER parsers.
+///
+/// Parsers will be automatically derived from struct fields. Every field type must implement the [`FromBer`](super::FromBer) trait.
+///
+/// See [`derive`](crate::doc::derive) documentation for more examples and documentation.
+///
+/// ## Examples
+///
+/// To parse the following ASN.1 structure:
+/// <pre>
+/// S ::= SEQUENCE {
+///     a INTEGER(0..2^32),
+///     b INTEGER(0..2^16),
+///     c INTEGER(0..2^16),
+/// }
+/// </pre>
+///
+/// Define a structure and add the `BerParserSequence` derive:
+///
+/// ```rust
+/// use asn1_rs::*;
+///
+/// #[derive(BerParserSequence)]
+/// struct S {
+///   a: u32,
+///   b: u16,
+///   c: u16
+/// }
+/// ```
+///
+/// ## Debugging
+///
+/// To help debugging the generated code, the `#[debug_derive]` attribute has been added.
+///
+/// When this attribute is specified, the generated code will be printed to `stderr` during compilation.
+///
+/// Example:
+/// ```rust
+/// use asn1_rs::*;
+///
+/// #[derive(BerParserSequence)]
+/// #[debug_derive]
+/// struct S {
+///   a: u32,
+/// }
+/// ```
 pub use asn1_rs_derive::BerParserSequence;
 
 /// # DerSequence custom derive
@@ -114,7 +166,59 @@ pub use asn1_rs_derive::BerParserSequence;
 /// ```
 pub use asn1_rs_derive::DerSequence;
 
-// FIXME: add doc!
+/// # DerParserSequence custom derive
+///
+/// `DerParserSequence` is a custom derive attribute, to derive a BER [`Sequence`](super::Sequence) parser automatically from the structure definition.
+/// This attribute will automatically derive implementations for the following traits:
+///   - [`BerParser`](super::BerParser)
+///
+/// `DerParserSequence` generates only the DER parser, and is compatible with `BerParserSequence`. Use both custom derive
+/// attributes if you want both BER and DER parsers.
+///
+/// Parsers will be automatically derived from struct fields. Every field type must implement the [`FromBer`](super::FromBer) trait.
+///
+/// See [`derive`](crate::doc::derive) documentation for more examples and documentation.
+///
+/// ## Examples
+///
+/// To parse the following ASN.1 structure:
+/// <pre>
+/// S ::= SEQUENCE {
+///     a INTEGER(0..2^32),
+///     b INTEGER(0..2^16),
+///     c INTEGER(0..2^16),
+/// }
+/// </pre>
+///
+/// Define a structure and add the `DerParserSequence` derive:
+///
+/// ```rust
+/// use asn1_rs::*;
+///
+/// #[derive(DerParserSequence)]
+/// struct S {
+///   a: u32,
+///   b: u16,
+///   c: u16
+/// }
+/// ```
+///
+/// ## Debugging
+///
+/// To help debugging the generated code, the `#[debug_derive]` attribute has been added.
+///
+/// When this attribute is specified, the generated code will be printed to `stderr` during compilation.
+///
+/// Example:
+/// ```rust
+/// use asn1_rs::*;
+///
+/// #[derive(DerParserSequence)]
+/// #[debug_derive]
+/// struct S {
+///   a: u32,
+/// }
+/// ```
 pub use asn1_rs_derive::DerParserSequence;
 
 /// # BerSet custom derive
@@ -173,7 +277,59 @@ pub use asn1_rs_derive::DerParserSequence;
 /// ```
 pub use asn1_rs_derive::BerSet;
 
-// FIXME: add doc!
+/// # BerParserSet custom derive
+///
+/// `BerParserSet` is a custom derive attribute, to derive a BER [`Set`](super::Set) parser automatically from the structure definition.
+/// This attribute will automatically derive implementations for the following traits:
+///   - [`BerParser`](super::BerParser)
+///
+/// `BerParserSet` generates only the DER parser, and is compatible with `DerParserSet`. Use both custom derive
+/// attributes if you want both BER and DER parsers.
+///
+/// Parsers will be automatically derived from struct fields. Every field type must implement the [`FromBer`](super::FromBer) trait.
+///
+/// See [`derive`](crate::doc::derive) documentation for more examples and documentation.
+///
+/// ## Examples
+///
+/// To parse the following ASN.1 structure:
+/// <pre>
+/// S ::= SEQUENCE {
+///     a INTEGER(0..2^32),
+///     b INTEGER(0..2^16),
+///     c INTEGER(0..2^16),
+/// }
+/// </pre>
+///
+/// Define a structure and add the `BerParserSet` derive:
+///
+/// ```rust
+/// use asn1_rs::*;
+///
+/// #[derive(BerParserSet)]
+/// struct S {
+///   a: u32,
+///   b: u16,
+///   c: u16
+/// }
+/// ```
+///
+/// ## Debugging
+///
+/// To help debugging the generated code, the `#[debug_derive]` attribute has been added.
+///
+/// When this attribute is specified, the generated code will be printed to `stderr` during compilation.
+///
+/// Example:
+/// ```rust
+/// use asn1_rs::*;
+///
+/// #[derive(BerParserSet)]
+/// #[debug_derive]
+/// struct S {
+///   a: u32,
+/// }
+/// ```
 pub use asn1_rs_derive::BerParserSet;
 
 /// # DerSet custom derive
@@ -233,7 +389,59 @@ pub use asn1_rs_derive::BerParserSet;
 /// ```
 pub use asn1_rs_derive::DerSet;
 
-// FIXME: add doc!
+/// # DerParserSet custom derive
+///
+/// `DerParserSet` is a custom derive attribute, to derive a BER [`Set`](super::Set) parser automatically from the structure definition.
+/// This attribute will automatically derive implementations for the following traits:
+///   - [`BerParser`](super::BerParser)
+///
+/// `DerParserSet` generates only the DER parser, and is compatible with `BerParserSet`. Use both custom derive
+/// attributes if you want both BER and DER parsers.
+///
+/// Parsers will be automatically derived from struct fields. Every field type must implement the [`FromBer`](super::FromBer) trait.
+///
+/// See [`derive`](crate::doc::derive) documentation for more examples and documentation.
+///
+/// ## Examples
+///
+/// To parse the following ASN.1 structure:
+/// <pre>
+/// S ::= SEQUENCE {
+///     a INTEGER(0..2^32),
+///     b INTEGER(0..2^16),
+///     c INTEGER(0..2^16),
+/// }
+/// </pre>
+///
+/// Define a structure and add the `DerParserSet` derive:
+///
+/// ```rust
+/// use asn1_rs::*;
+///
+/// #[derive(DerParserSet)]
+/// struct S {
+///   a: u32,
+///   b: u16,
+///   c: u16
+/// }
+/// ```
+///
+/// ## Debugging
+///
+/// To help debugging the generated code, the `#[debug_derive]` attribute has been added.
+///
+/// When this attribute is specified, the generated code will be printed to `stderr` during compilation.
+///
+/// Example:
+/// ```rust
+/// use asn1_rs::*;
+///
+/// #[derive(DerParserSet)]
+/// #[debug_derive]
+/// struct S {
+///   a: u32,
+/// }
+/// ```
 pub use asn1_rs_derive::DerParserSet;
 
 /// # BerAlias custom derive
@@ -286,7 +494,48 @@ pub use asn1_rs_derive::DerParserSet;
 /// ```
 pub use asn1_rs_derive::BerAlias;
 
-// FIXME: add doc!
+/// # BerParserAlias custom derive
+///
+/// `BerParserAlias` is a custom derive attribute, to derive a DER object parser automatically from the structure definition.
+/// This attribute will automatically derive implementations for the following traits:
+///   - [`DerParser`](super::DerParser)
+///
+/// When defining alias, only unnamed (tuple) structs with one field are supported.
+///
+/// Parser will be automatically derived from the struct field. This field type must implement the `BerParser` trait.
+///
+/// See [`derive`](crate::doc::derive) documentation for more examples and documentation.
+///
+/// ## Examples
+///
+/// To parse the following ASN.1 object:
+/// <pre>
+/// MyInt ::= INTEGER(0..2^32)
+/// </pre>
+///
+/// Define a structure and add the `BerParserAlias` derive:
+///
+/// ```rust
+/// use asn1_rs::*;
+///
+/// #[derive(BerParserAlias)]
+/// struct S(pub u32);
+/// ```
+///
+/// ## Debugging
+///
+/// To help debugging the generated code, the `#[debug_derive]` attribute has been added.
+///
+/// When this attribute is specified, the generated code will be printed to `stderr` during compilation.
+///
+/// Example:
+/// ```rust
+/// use asn1_rs::*;
+///
+/// #[derive(BerParserAlias)]
+/// #[debug_derive]
+/// struct S(pub u32);
+/// ```
 pub use asn1_rs_derive::BerParserAlias;
 
 /// # DerAlias custom derive
@@ -336,7 +585,48 @@ pub use asn1_rs_derive::BerParserAlias;
 /// ```
 pub use asn1_rs_derive::DerAlias;
 
-// FIXME: add doc!
+/// # DerParserAlias custom derive
+///
+/// `DerParserAlias` is a custom derive attribute, to derive a DER object parser automatically from the structure definition.
+/// This attribute will automatically derive implementations for the following traits:
+///   - [`DerParser`](super::DerParser)
+///
+/// When defining alias, only unnamed (tuple) structs with one field are supported.
+///
+/// Parser will be automatically derived from the struct field. This field type must implement the `DerParser` trait.
+///
+/// See [`derive`](crate::doc::derive) documentation for more examples and documentation.
+///
+/// ## Examples
+///
+/// To parse the following ASN.1 object:
+/// <pre>
+/// MyInt ::= INTEGER(0..2^32)
+/// </pre>
+///
+/// Define a structure and add the `DerParserAlias` derive:
+///
+/// ```rust
+/// use asn1_rs::*;
+///
+/// #[derive(DerParserAlias)]
+/// struct S(pub u32);
+/// ```
+///
+/// ## Debugging
+///
+/// To help debugging the generated code, the `#[debug_derive]` attribute has been added.
+///
+/// When this attribute is specified, the generated code will be printed to `stderr` during compilation.
+///
+/// Example:
+/// ```rust
+/// use asn1_rs::*;
+///
+/// #[derive(DerParserAlias)]
+/// #[debug_derive]
+/// struct S(pub u32);
+/// ```
 pub use asn1_rs_derive::DerParserAlias;
 
 /// # ToStatic custom derive
@@ -370,12 +660,65 @@ pub use asn1_rs_derive::DerParserAlias;
 /// ```
 pub use asn1_rs_derive::ToStatic;
 
-// FIXME: add doc!
+/// # ToBerSequence custom derive
+///
+/// `ToBerSequence` is a custom derive attribute, to derive BER [`Sequence`](super::Sequence) serialization automatically from the structure definition.
+/// This attribute will automatically derive implementations for the following traits:
+///   - [`ToBer`](super::ToBer)
+///
+/// Serialization will be automatically derived from struct fields. Every field type must implement the [`ToBer`](super::ToBer) trait.
+///
+/// See [`derive`](crate::doc::derive) documentation for more examples and documentation.
+///
+/// ## Examples
+///
+/// To serialize the following ASN.1 structure:
+/// <pre>
+/// S ::= SEQUENCE {
+///     a INTEGER(0..2^32),
+///     b INTEGER(0..2^16),
+///     c INTEGER(0..2^16),
+/// }
+/// </pre>
+///
+/// Define a structure and add the `BerSequence` derive:
+///
+#[cfg_attr(feature = "std", doc = r#"```rust"#)]
+#[cfg_attr(not(feature = "std"), doc = r#"```rust,compile_fail"#)]
+/// use asn1_rs::*;
+///
+/// #[derive(BerSequence, ToBerSequence)]
+/// struct S {
+///   a: u32,
+///   b: u16,
+///   c: u16
+/// }
+///
+/// let s = S { a: 1, b: 2, c: 3 };
+/// let data = s.to_ber_vec().expect("Serialization failed");
+/// ```
+///
+/// ## Debugging
+///
+/// To help debugging the generated code, the `#[debug_derive]` attribute has been added.
+///
+/// When this attribute is specified, the generated code will be printed to `stderr` during compilation.
+///
+/// Example:
+/// ```rust
+/// use asn1_rs::*;
+///
+/// #[derive(BerSequence, ToBerSequence)]
+/// #[debug_derive]
+/// struct S {
+///   a: u32,
+/// }
+/// ```
 pub use asn1_rs_derive::ToBerSequence;
 
 /// # ToDerSequence custom derive
 ///
-/// `ToDerSequence` is a custom derive attribute, to derive both DER [`Sequence`](super::Sequence) serialization automatically from the structure definition.
+/// `ToDerSequence` is a custom derive attribute, to derive DER [`Sequence`](super::Sequence) serialization automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`ToDer`](super::ToDer)
 ///
@@ -429,8 +772,114 @@ pub use asn1_rs_derive::ToBerSequence;
 /// ```
 pub use asn1_rs_derive::ToDerSequence;
 
-// FIXME: add doc!
+/// # ToBerSet custom derive
+///
+/// `ToBerSet` is a custom derive attribute, to derive BER [`Set`](super::Set) serialization automatically from the structure definition.
+/// This attribute will automatically derive implementations for the following traits:
+///   - [`ToBer`](super::ToBer)
+///
+/// Serialization will be automatically derived from struct fields. Every field type must implement the [`ToBer`](super::ToBer) trait.
+///
+/// See [`derive`](crate::doc::derive) documentation for more examples and documentation.
+///
+/// ## Examples
+///
+/// To serialize the following ASN.1 structure:
+/// <pre>
+/// S ::= SEQUENCE {
+///     a INTEGER(0..2^32),
+///     b INTEGER(0..2^16),
+///     c INTEGER(0..2^16),
+/// }
+/// </pre>
+///
+/// Define a structure and add the `ToBerSet` derive:
+///
+#[cfg_attr(feature = "std", doc = r#"```rust"#)]
+#[cfg_attr(not(feature = "std"), doc = r#"```rust,compile_fail"#)]
+/// use asn1_rs::*;
+///
+/// #[derive(BerSet, ToBerSet)]
+/// struct S {
+///   a: u32,
+///   b: u16,
+///   c: u16
+/// }
+///
+/// let s = S { a: 1, b: 2, c: 3 };
+/// let data = s.to_ber_vec().expect("Serialization failed");
+/// ```
+///
+/// ## Debugging
+///
+/// To help debugging the generated code, the `#[debug_derive]` attribute has been added.
+///
+/// When this attribute is specified, the generated code will be printed to `stderr` during compilation.
+///
+/// Example:
+/// ```rust
+/// use asn1_rs::*;
+///
+/// #[derive(BerSet, ToBerSet)]
+/// #[debug_derive]
+/// struct S {
+///   a: u32,
+/// }
+/// ```
 pub use asn1_rs_derive::ToBerSet;
 
-// FIXME: add doc!
+/// # ToDerSet custom derive
+///
+/// `ToDerSet` is a custom derive attribute, to derive DER [`Set`](super::Set) serialization automatically from the structure definition.
+/// This attribute will automatically derive implementations for the following traits:
+///   - [`ToBer`](super::ToBer)
+///
+/// Serialization will be automatically derived from struct fields. Every field type must implement the [`ToDer`](super::ToDer) trait.
+///
+/// See [`derive`](crate::doc::derive) documentation for more examples and documentation.
+///
+/// ## Examples
+///
+/// To serialize the following ASN.1 structure:
+/// <pre>
+/// S ::= SEQUENCE {
+///     a INTEGER(0..2^32),
+///     b INTEGER(0..2^16),
+///     c INTEGER(0..2^16),
+/// }
+/// </pre>
+///
+/// Define a structure and add the `ToDerSet` derive:
+///
+#[cfg_attr(feature = "std", doc = r#"```rust"#)]
+#[cfg_attr(not(feature = "std"), doc = r#"```rust,compile_fail"#)]
+/// use asn1_rs::*;
+///
+/// #[derive(DerSet, ToDerSet)]
+/// struct S {
+///   a: u32,
+///   b: u16,
+///   c: u16
+/// }
+///
+/// let s = S { a: 1, b: 2, c: 3 };
+/// let data = s.to_der_vec().expect("Serialization failed");
+/// ```
+///
+/// ## Debugging
+///
+/// To help debugging the generated code, the `#[debug_derive]` attribute has been added.
+///
+/// When this attribute is specified, the generated code will be printed to `stderr` during compilation.
+///
+/// Example:
+/// ```rust
+/// use asn1_rs::*;
+///
+/// #[derive(DerSet, ToDerSet)]
+/// #[debug_derive]
+/// struct S {
+///   a: u32,
+/// }
+/// ```
 pub use asn1_rs_derive::ToDerSet;
