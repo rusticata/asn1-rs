@@ -107,8 +107,9 @@
 //!
 //! Writing 2 BER integers:
 //!
-#![cfg_attr(feature = "std", doc = r#"```rust"#)]
-#![cfg_attr(not(feature = "std"), doc = r#"```rust,compile_fail"#)]
+//! ```rust
+//! # #[cfg(feature = "std")]
+//! # fn test_content() {
 //! use asn1_rs::{Integer, ToDer};
 //!
 //! let mut writer = Vec::new();
@@ -123,12 +124,14 @@
 //!                0x02, 0x03, 0x01, 0x00, 0x00,
 //! ];
 //! assert_eq!(&writer, bytes);
+//! # }
 //! ```
 //!
 //! Similarly to `BerParser`/`DerParser`, serialization methods are also implemented for primitive types:
 //!
-#![cfg_attr(feature = "std", doc = r#"```rust"#)]
-#![cfg_attr(not(feature = "std"), doc = r#"```rust,compile_fail"#)]
+//! ```rust
+//! # #[cfg(feature = "std")]
+//! # fn test_content() {
 //! use asn1_rs::ToDer;
 //!
 //! let mut writer = Vec::new();
@@ -140,6 +143,7 @@
 //!                0x02, 0x03, 0x01, 0x00, 0x00,
 //! ];
 //! assert_eq!(&writer, bytes);
+//! # }
 //! ```
 //!
 //! If the parsing succeeds, but the integer cannot fit into the expected type, the method will return
