@@ -170,6 +170,7 @@
     // unreachable_pub
 )]
 #![forbid(unsafe_code)]
+#![warn(clippy::unwrap_used, clippy::expect_used, clippy::panic)]
 #![warn(
 /* missing_docs,
 rust_2018_idioms,*/
