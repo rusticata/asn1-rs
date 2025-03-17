@@ -14,6 +14,7 @@ rust-version = "1.65"
 
 include = [
   "CHANGELOG.md",
+  "CONTRIBUTING.md",
   "LICENSE-*",
   "README.md",
   ".gitignore",
@@ -29,6 +30,7 @@ include = [
   "src/asn1_types/tagged/*.rs",
   "src/ber/*.rs",
   "src/doc/*.rs",
+  "src/to_ber/*.rs",
   "tests/*.rs",
 ]
 
