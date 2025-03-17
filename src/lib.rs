@@ -1,11 +1,3 @@
-//! [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE-MIT)
-//! [![Apache License 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](./LICENSE-APACHE)
-//! [![docs.rs](https://docs.rs/asn1-rs/badge.svg)](https://docs.rs/asn1-rs)
-//! [![crates.io](https://img.shields.io/crates/v/asn1-rs.svg)](https://crates.io/crates/asn1-rs)
-//! [![Download numbers](https://img.shields.io/crates/d/asn1-rs.svg)](https://crates.io/crates/asn1-rs)
-//! [![Github CI](https://github.com/rusticata/asn1-rs/workflows/Continuous%20integration/badge.svg)](https://github.com/rusticata/asn1-rs/actions)
-//! [![Minimum rustc version](https://img.shields.io/badge/rustc-1.65.0+-lightgray.svg)](#rust-version-requirements)
-//!
 //! # BER/DER Parsers/Encoders
 //!
 //! A set of parsers/encoders for Basic Encoding Rules (BER [[X.690]]) and Distinguished Encoding Rules(DER
@@ -33,13 +25,16 @@
 //! The choice of which one to use is usually guided by the speficication of the data format based
 //! on BER or DER: for example, X.509 uses DER as encoding representation.
 //!
-//! The main traits for parsing are the [`BerParser`] and [`DerParser`] traits.
-//! These traits provide methods to parse binary input wrapped in [`Input`],
-//! and return either the remaining (unparsed) bytes and the parsed object, or an error.
+//! The main traits for parsing are the [`BerParser`](crate::from_ber::BerParser) and
+//! [`DerParser`](crate::from_der::DerParser) traits.
+//! These traits provide methods to parse binary input wrapped in
+//! [`Input`](crate::input::Input), and return either the remaining (unparsed) bytes and the
+//! parsed object, or an error.
 //! The [`Input`] types is a simple wrapper around `&[u8]` to keep information on data span. This is
 //! especially useful to print information or to debug parsing errors.
 //!
-//! This crates also provides the [`FromBer`] and [`FromDer`] traits for parsing (working on slices).
+//! This crates also provides the [`FromBer`](crate::from_ber::FromBer) and
+//! [`FromDer`](crate::from_der::FromDer) traits for parsing (working on slices).
 //!
 //! The parsers follow the interface from [nom], and the [`ParseResult`] object is a specialized version
 //! of `nom::IResult`. This means that most `nom` combinators (`map`, `many0`, etc.) can be used in
@@ -98,7 +93,8 @@
 //!
 //! # BER/DER encoders
 //!
-//! BER/DER encoding is symmetrical to decoding, using the traits [`ToBer`] and [`ToDer`] traits.
+//! BER/DER encoding is symmetrical to decoding, using the traits
+//! [`ToBer`](crate::to_ber::ToBer) and [`ToDer`](crate::to_der::ToDer) traits.
 //! These traits provide methods to write encoded content to objects with the `io::Write` trait,
 //! or return an allocated `Vec<u8>` with the encoded data.
 //! If the serialization fails, an error is returned.
@@ -153,7 +149,7 @@
 //!
 //! ## Changes
 //!
-//! See `CHANGELOG.md`.
+//! See `CHANGELOG.md`, and `UPGRADING.md` for instructions for upgrading major versions.
 //!
 //! # References
 //!
