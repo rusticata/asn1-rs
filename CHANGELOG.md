@@ -8,6 +8,16 @@
 
 ### Thanks
 
+## 0.7.1
+
+### Changed/Fixed
+
+- Update lock file
+- Update features trace and debug to depend on std (#70)
+- Fix doctests with `--no-default-features`
+- Make some tests conditional if `std` is not enabled
+- Fix misc clippy (nightly) warnings
+
 ## 0.7.0
 
 ### Changed/Fixed
