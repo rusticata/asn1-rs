@@ -343,7 +343,8 @@ checksum = "dc33ff2d4973d518d823d61aa239014831e521c75da58e3df4840d3f47749d09"
 [[package]]
 name = "rusticata-macros"
 version = "5.0.0"
-source = "git+https://github.com/rusticata/rusticata-macros#6de4df5363bf4d3bf80d54c231cbe3783ad0b0ce"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f40620447734539bcc6c64e9c66fed2410e17b46986733f1090c922d85f7105b"
 dependencies = [
  "nom",
 ]

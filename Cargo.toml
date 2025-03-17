@@ -77,6 +77,3 @@ allowed_external_types = [
     "bitvec::slice::BitSlice"
 ]
 
-# TODO: remove this before release
-[patch.crates-io]
-rusticata-macros = { git="https://github.com/rusticata/rusticata-macros" }
