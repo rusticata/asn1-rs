@@ -70,7 +70,31 @@ fn derive_derparser_choice_implicit() {
     let _ = MyEnum::parse_der(Input::from(hex_v0c)).expect_err("CHOICE IMPLICIT bas constructed");
 }
 
+fn derive_derparser_choice_and_berparser() {
+    #[derive(Debug)]
+    //
+    // This works, but only with one derive per line!
+    #[derive(BerParserChoice)]
+    //
+    #[derive(DerParserChoice)]
+    #[tagged_implicit]
+    #[debug_derive]
+    pub enum MyEnum {
+        Val0(u8),
+        Val1(String),
+        Val2(u32),
+    }
+
+    // Ok: variant with tag 0
+    let hex_v0a = &hex!("80 0108");
+    let (rem, res) = MyEnum::parse_der(Input::from(hex_v0a)).expect("parsing failed");
+    assert!(rem.is_empty());
+    assert!(matches!(res, MyEnum::Val0(8)));
+}
+
 fn main() {
     derive_derparser_choice_explicit();
     derive_derparser_choice_implicit();
+    derive_derparser_choice_and_berparser();
+    derive_derparser_choice_and_berparser();
 }
