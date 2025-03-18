@@ -149,3 +149,12 @@ synstructure::decl_derive!([BerParserAlias, attributes(
 synstructure::decl_derive!([DerParserAlias, attributes(
     debug_derive
 )] => derive_derparser_alias);
+
+//--- new derive
+
+synstructure::decl_derive!([Choice, attributes(
+    debug_derive,
+    tagged_explicit,
+    tagged_implicit,
+    asn1,
+)] => derive_choice);

@@ -78,7 +78,7 @@ fn derive_derparser_choice_and_berparser() {
     //
     #[derive(DerParserChoice)]
     #[tagged_implicit]
-    #[debug_derive]
+    // #[debug_derive]
     pub enum MyEnum {
         Val0(u8),
         Val1(String),

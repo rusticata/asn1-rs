@@ -889,3 +889,6 @@ pub use asn1_rs_derive::BerParserChoice;
 
 // FIXME: add documentation
 pub use asn1_rs_derive::DerParserChoice;
+
+// FIXME: add documentation
+pub use asn1_rs_derive::Choice;
