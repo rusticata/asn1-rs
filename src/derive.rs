@@ -883,3 +883,9 @@ pub use asn1_rs_derive::ToBerSet;
 /// }
 /// ```
 pub use asn1_rs_derive::ToDerSet;
+
+// FIXME: add documentation
+pub use asn1_rs_derive::BerParserChoice;
+
+// FIXME: add documentation
+pub use asn1_rs_derive::DerParserChoice;

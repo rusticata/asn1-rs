@@ -79,6 +79,13 @@ impl Asn1Type {
         }
     }
 
+    pub(crate) fn parse_ber(&self) -> TokenStream {
+        match *self {
+            Asn1Type::Ber => quote!(parse_ber),
+            Asn1Type::Der => quote!(parse_der),
+        }
+    }
+
     pub(crate) fn from_ber_content(&self) -> TokenStream {
         match *self {
             Asn1Type::Ber => quote!(from_ber_content),
@@ -789,7 +796,7 @@ fn get_field_berparser(f: &FieldInfo, asn1_type: Asn1Type) -> TokenStream {
     }
 }
 
-fn get_attribute_meta(attr: &Attribute) -> Result<TokenStream, syn::Error> {
+pub(crate) fn get_attribute_meta(attr: &Attribute) -> Result<TokenStream, syn::Error> {
     if let Meta::List(meta) = &attr.meta {
         let content = &meta.tokens;
         Ok(quote! { #content })

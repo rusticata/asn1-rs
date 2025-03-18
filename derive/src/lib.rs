@@ -1,10 +1,12 @@
 mod alias;
 mod check_derive;
+mod choice;
 mod container;
 mod sequence;
 mod set;
 mod tostatic;
 use alias::*;
+use choice::*;
 use sequence::*;
 use set::*;
 use tostatic::derive_tostatic;
@@ -127,6 +129,18 @@ synstructure::decl_derive!([DerParserSet, attributes(
     error,
     map_err
 )] => derive_derparser_set);
+
+synstructure::decl_derive!([BerParserChoice, attributes(
+    debug_derive,
+    tagged_explicit,
+    tagged_implicit,
+)] => derive_berparser_choice);
+
+synstructure::decl_derive!([DerParserChoice, attributes(
+    debug_derive,
+    tagged_explicit,
+    tagged_implicit,
+)] => derive_derparser_choice);
 
 synstructure::decl_derive!([BerParserAlias, attributes(
     debug_derive
