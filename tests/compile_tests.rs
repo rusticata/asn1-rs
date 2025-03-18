@@ -25,6 +25,12 @@ fn compile_pass_toder() {
 }
 
 #[test]
+fn compile_pass_choice() {
+    let t = trybuild::TestCases::new();
+    t.pass("tests/run-pass/choice*.rs");
+}
+
+#[test]
 fn compile_pass_misc() {
     let t = trybuild::TestCases::new();
     t.pass("tests/run-pass/custom*.rs");

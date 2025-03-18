@@ -37,6 +37,16 @@ impl Asn1Type {
         }
     }
 
+    pub(crate) fn compose(&self, suffix: &str) -> TokenStream {
+        let prefix = match *self {
+            Asn1Type::Ber => "ber",
+            Asn1Type::Der => "der",
+        };
+        let s = format!("{prefix}{suffix}");
+        let ident = Ident::new(&s, Span::call_site());
+        quote! { #ident }
+    }
+
     pub(crate) fn total_len_tokens(&self) -> TokenStream {
         match *self {
             Asn1Type::Ber => quote!(ber_total_len),
@@ -98,6 +108,12 @@ impl Asn1Type {
 pub enum Asn1TagKind {
     Explicit,
     Implicit,
+}
+
+impl Default for Asn1TagKind {
+    fn default() -> Self {
+        Asn1TagKind::Explicit
+    }
 }
 
 impl ToTokens for Asn1TagKind {
