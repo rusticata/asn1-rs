@@ -1,0 +1,16 @@
+error[E0599]: no variant or associated item named `parse_der` found for enum `MyEnum` in the current scope
+  --> tests/compile-fail/berparser_attributes_no_der.rs:22:21
+   |
+11 |     pub enum MyEnum {
+   |     --------------- variant or associated item `parse_der` not found for this enum
+...
+22 |     let _ = MyEnum::parse_der(Input::from(Input::from(bytes))).expect("parsing DER failed");
+   |                     ^^^^^^^^^ variant or associated item not found in `MyEnum`
+   |
+   = help: items from traits can only be used if the trait is implemented and in scope
+   = note: the following trait defines an item `parse_der`, perhaps you need to implement it:
+           candidate #1: `derive_choice_explicit_attributes_no_der::_::asn1_rs::DerParser`
+help: there is an associated function `parse_ber` with a similar name
+   |
+22 |     let _ = MyEnum::parse_ber(Input::from(Input::from(bytes))).expect("parsing DER failed");
+   |                     ~~~~~~~~~

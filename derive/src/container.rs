@@ -102,6 +102,19 @@ impl Asn1Type {
             Asn1Type::Der => quote!(from_der_content),
         }
     }
+
+    pub(crate) fn parse_multi(s: &str) -> Result<Vec<Self>, String> {
+        s.split(",").try_fold(Vec::new(), |mut acc, sub| {
+            let sub = sub.trim();
+            let asn1_type = match sub {
+                "BER" => Asn1Type::Ber,
+                "DER" => Asn1Type::Der,
+                _ => return Err("Invalid ASN.1 type (possible values: BER, DER)".into()),
+            };
+            acc.push(asn1_type);
+            Ok(acc)
+        })
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]

@@ -2,35 +2,73 @@ use crate::check_derive::check_lastderive_fromber;
 use crate::container::*;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
-use syn::{Attribute, Data, Ident, Lifetime};
+use syn::{Attribute, Data, Lifetime, LitStr};
 use synstructure::VariantInfo;
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 struct ChoiceOptions {
     debug: bool,
     error: Option<Attribute>,
     tag_kind: Asn1TagKind,
+
+    parsers: Vec<Asn1Type>,
+    encoders: Vec<Asn1Type>,
 }
 
 impl ChoiceOptions {
     pub fn from_struct(s: &synstructure::Structure) -> Self {
-        let mut options = Self::default();
+        let mut options = Self {
+            parsers: vec![Asn1Type::Ber, Asn1Type::Der],
+            encoders: vec![Asn1Type::Ber, Asn1Type::Der],
+            ..Self::default()
+        };
         let ast = s.ast();
-        let ident_debug = Ident::new("debug_derive", Span::call_site());
-        let ident_explicit = Ident::new("tagged_explicit", Span::call_site());
-        let ident_implicit = Ident::new("tagged_implicit", Span::call_site());
-        let ident_error = Ident::new("tagged_error", Span::call_site());
 
         for attr in ast.attrs.iter() {
             let path = attr.meta.path();
-            if path.is_ident(&ident_debug) {
+            if path.is_ident("debug_derive") {
                 options.debug = true;
-            } else if path.is_ident(&ident_explicit) {
+            } else if path.is_ident("tagged_explicit") {
                 options.tag_kind = Asn1TagKind::Explicit;
-            } else if path.is_ident(&ident_implicit) {
+            } else if path.is_ident("tagged_implicit") {
                 options.tag_kind = Asn1TagKind::Implicit;
-            } else if path.is_ident(&ident_error) {
+            } else if path.is_ident("error") {
                 options.error = Some(attr.clone());
+            } else if path.is_ident("asn1") {
+                // see example at <https://docs.rs/syn/latest/syn/meta/struct.ParseNestedMeta.html>
+                attr.parse_nested_meta(|meta| {
+                    if meta.path.is_ident("parse") {
+                        let value = meta.value()?;
+                        let lit_s: LitStr = value.parse()?;
+                        let s = lit_s.value();
+                        let asn1_types = if s.is_empty() {
+                            vec![Asn1Type::Ber, Asn1Type::Der]
+                        } else {
+                            Asn1Type::parse_multi(&s)
+                                .expect("Invalid values for asn1(parse) attribute")
+                        };
+                        options.parsers = asn1_types;
+                    } else if meta.path.is_ident("encode") {
+                        let value = meta.value()?;
+                        let lit_s: LitStr = value.parse()?;
+                        let s = lit_s.value();
+                        let asn1_types = if s.is_empty() {
+                            vec![]
+                        } else {
+                            Asn1Type::parse_multi(&s)
+                                .expect("Invalid values for asn1(parse) attribute")
+                        };
+                        options.encoders = asn1_types;
+                    } else {
+                        // meta.error("Invalid or unknown attribute")
+                        panic!(
+                            "Invalid/Unknown item {} in 'asn1' attribute",
+                            meta.path.get_ident().unwrap()
+                        );
+                    }
+                    return Ok(());
+                })
+                .expect("could not parse 'asn1' attribute");
             }
         }
 
@@ -147,6 +185,13 @@ fn derive_choice_parser(
     options: &ChoiceOptions,
     s: &synstructure::Structure,
 ) -> TokenStream {
+    if !options.parsers.contains(&asn1_type) {
+        if options.debug {
+            eprintln!("// Parsers: skipping asn1_type {:?}", asn1_type);
+        }
+        return quote! {};
+    }
+
     let parse_ber = asn1_type.parse_ber();
     let from_ber_content = asn1_type.from_ber_content();
     let parser = asn1_type.parser();
@@ -216,6 +261,13 @@ fn derive_choice_encode(
     options: &ChoiceOptions,
     s: &synstructure::Structure,
 ) -> TokenStream {
+    if !options.encoders.contains(&asn1_type) {
+        if options.debug {
+            eprintln!("// Encoders: skipping asn1_type {:?}", asn1_type);
+        }
+        return quote! {};
+    }
+
     let tober = asn1_type.tober();
 
     let impl_tober_content_len = choice_gen_tober_content_len(asn1_type, options, s);
