@@ -181,3 +181,8 @@ synstructure::decl_derive!([Choice, attributes(
     tagged_implicit,
     asn1,
 )] => derive_choice);
+
+synstructure::decl_derive!([Alias, attributes(
+    debug_derive,
+    asn1,
+)] => derive_alias);

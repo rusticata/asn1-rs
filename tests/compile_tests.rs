@@ -37,6 +37,12 @@ fn compile_pass_sequence() {
 }
 
 #[test]
+fn compile_pass_alias() {
+    let t = trybuild::TestCases::new();
+    t.pass("tests/run-pass/alias*.rs");
+}
+
+#[test]
 fn compile_pass_set() {
     let t = trybuild::TestCases::new();
     t.pass("tests/run-pass/set*.rs");

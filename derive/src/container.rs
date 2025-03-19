@@ -194,13 +194,25 @@ impl Container {
     }
 
     pub fn gen_tagged(&self) -> TokenStream {
-        let tag = if self.container_type == ContainerType::Alias {
+        let mut constructed = true;
+        let class;
+        let tag;
+        if self.container_type == ContainerType::Alias {
+            constructed = false;
             // special case: is this an alias for Any
             if self.is_any {
                 return quote! {
                     gen impl<'ber> asn1_rs::DynTagged for @Self {
+                        fn class(&self) -> asn1_rs::Class {
+                            self.0.class()
+                        }
+
+                        fn constructed(&self) -> bool {
+                            self.0.constructed()
+                        }
+
                         fn tag(&self) -> asn1_rs::Tag {
-                            self.tag()
+                            self.0.tag()
                         }
 
                         fn accept_tag(_: asn1_rs::Tag) -> bool {
@@ -212,14 +224,17 @@ impl Container {
             }
             // find type of sub-item
             let ty = &self.fields[0].type_;
-            quote! { <#ty as asn1_rs::Tagged>::TAG }
+            class = quote! { <#ty as asn1_rs::Tagged>::CLASS };
+            tag = quote! { <#ty as asn1_rs::Tagged>::TAG };
         } else {
             let container_type = self.container_type;
-            quote! { #container_type }
-        };
+            class = quote! { asn1_rs::Class::Universal };
+            tag = quote! { #container_type };
+        }
         quote! {
             gen impl<'ber> asn1_rs::Tagged for @Self {
-                const CONSTRUCTED: bool = true;
+                const CLASS: asn1_rs::Class = #class;
+                const CONSTRUCTED: bool = #constructed;
                 const TAG: asn1_rs::Tag = #tag;
             }
         }
@@ -430,50 +445,100 @@ impl Container {
         }
     }
 
-    pub fn gen_tober_content_len(&self, asn1_type: Asn1Type) -> TokenStream {
-        let total_len = asn1_type.total_len_tokens();
+    pub fn gen_tober_content_len(
+        &self,
+        asn1_type: Asn1Type,
+        s: &synstructure::Structure,
+    ) -> TokenStream {
+        let total_len = if self.container_type == ContainerType::Alias {
+            // alias: content length only
+            asn1_type.content_len_tokens()
+        } else {
+            // this is a structured type, full object length
+            asn1_type.total_len_tokens()
+        };
         let content_len = asn1_type.content_len_tokens();
-        let field_names = &self.fields.iter().map(|f| &f.name).collect::<Vec<_>>();
-        let add_len_instructions = field_names.iter().fold(Vec::new(), |mut instrs, field| {
-            instrs.push(quote! {total_len += self.#field.#total_len();});
-            instrs
+
+        let body = s.fold(quote! {asn1_rs::Length::Definite(0)}, |acc, bi| {
+            quote! {
+                #acc + #bi.#total_len()
+            }
         });
+
         quote! {
             fn #content_len(&self) -> asn1_rs::Length {
-                let mut total_len = asn1_rs::Length::Definite(0);
-                #(#add_len_instructions)*
-                total_len
+                match *self {
+                    #body
+                }
             }
         }
     }
 
     pub fn gen_tober_tag_info(&self, asn1_type: Asn1Type) -> TokenStream {
         let tag_info = asn1_type.tag_info_tokens();
-        let container_type = match self.container_type {
-            ContainerType::Alias => panic!("Invalid container type for tag info?!"),
-            ContainerType::Sequence => quote!(Sequence),
-            ContainerType::Set => quote!(Set),
-        };
-        quote!(
-            fn #tag_info(&self) -> (asn1_rs::Class, bool, asn1_rs::Tag) {
-                (asn1_rs::Class::Universal, true, asn1_rs::#container_type::TAG)
+        let body = match self.container_type {
+            ContainerType::Alias => {
+                if self.is_any {
+                    quote! {
+                        use asn1_rs::DynTagged;
+                        (self.0.class(), self.0.constructed(), self.0.tag())
+                    }
+                } else {
+                    // find type of sub-item
+                    let ty = &self.fields[0].type_;
+                    quote! {
+                        (<#ty as asn1_rs::Tagged>::CLASS, <#ty as asn1_rs::Tagged>::CONSTRUCTED, <#ty as asn1_rs::Tagged>::TAG)
+                    }
+                }
             }
-        )
+            ContainerType::Sequence => {
+                quote!((asn1_rs::Class::Universal, true, asn1_rs::Tag::Sequence))
+            }
+            ContainerType::Set => {
+                quote!((asn1_rs::Class::Universal, true, asn1_rs::Tag::Set))
+            }
+        };
+        quote! {
+            fn #tag_info(&self) -> (asn1_rs::Class, bool, asn1_rs::Tag) {
+                #body
+            }
+        }
     }
 
-    pub fn gen_tober_write_content(&self, asn1_type: Asn1Type) -> TokenStream {
-        let encode = asn1_type.encode_tokens();
+    pub fn gen_tober_write_content(
+        &self,
+        asn1_type: Asn1Type,
+        s: &synstructure::Structure,
+    ) -> TokenStream {
+        let encode = if self.container_type == ContainerType::Alias {
+            // alias: only write content
+            asn1_type.write_content_tokens()
+        } else {
+            // this is a structured type, encode full object
+            asn1_type.encode_tokens()
+        };
         let write_content = asn1_type.write_content_tokens();
-        let field_names = &self.fields.iter().map(|f| &f.name).collect::<Vec<_>>();
-        let write_instructions = field_names.iter().fold(Vec::new(), |mut instrs, field| {
-            instrs.push(quote! {num_bytes += self.#field.#encode(writer)?;});
-            instrs
+
+        // we can't just use `s.fold()` because we need to add a footer `Ok(num_bytes)`
+        let body = s.variants().iter().map(|vi| {
+            let encode = vi.bindings().iter().map(|bi| {
+                quote! { num_bytes += #bi.#encode(writer)?; }
+            });
+            let pat = vi.pat();
+            quote! {
+                #pat => {
+                    let mut num_bytes = 0;
+                    #(#encode)*
+                    Ok(num_bytes)
+                }
+            }
         });
+
         quote! {
             fn #write_content<W: std::io::Write>(&self, writer: &mut W) -> asn1_rs::SerializeResult<usize> {
-                let mut num_bytes = 0;
-                #(#write_instructions)*
-                Ok(num_bytes)
+                match *self {
+                    #(#body)*
+                }
             }
         }
     }
@@ -498,9 +563,9 @@ impl Container {
             _ => true,
         });
 
-        let impl_tober_content_len = self.gen_tober_content_len(asn1_type);
+        let impl_tober_content_len = self.gen_tober_content_len(asn1_type, &s);
         let impl_tober_tag_info = self.gen_tober_tag_info(asn1_type);
-        let impl_tober_write_content = self.gen_tober_write_content(asn1_type);
+        let impl_tober_write_content = self.gen_tober_write_content(asn1_type, &s);
         let tober = asn1_type.tober();
 
         // note: `gen impl` in synstructure takes care of appending extra where clauses if any, and removing
