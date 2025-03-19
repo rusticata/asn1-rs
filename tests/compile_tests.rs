@@ -31,6 +31,18 @@ fn compile_pass_choice() {
 }
 
 #[test]
+fn compile_pass_sequence() {
+    let t = trybuild::TestCases::new();
+    t.pass("tests/run-pass/sequence*.rs");
+}
+
+#[test]
+fn compile_pass_set() {
+    let t = trybuild::TestCases::new();
+    t.pass("tests/run-pass/set*.rs");
+}
+
+#[test]
 fn compile_pass_misc() {
     let t = trybuild::TestCases::new();
     t.pass("tests/run-pass/custom*.rs");

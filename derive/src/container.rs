@@ -8,6 +8,7 @@ use syn::{
 };
 
 use crate::asn1_type::Asn1Type;
+use crate::options::Options;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ContainerType {
@@ -227,7 +228,14 @@ impl Container {
     /// Generate blanked implementation of Ber/DerParser
     ///
     /// `Self` must be `Tagged`
-    pub fn gen_berparser(&self, asn1_type: Asn1Type) -> TokenStream {
+    pub fn gen_berparser(&self, asn1_type: Asn1Type, options: &Options) -> TokenStream {
+        if !options.parsers.contains(&asn1_type) {
+            if options.debug {
+                eprintln!("// Parsers: skipping asn1_type {:?}", asn1_type);
+            }
+            return quote! {};
+        }
+
         let parser = asn1_type.parser();
         let from_ber_content = asn1_type.from_ber_content();
         let lft = Lifetime::new("'ber", Span::call_site());
@@ -468,6 +476,48 @@ impl Container {
                 Ok(num_bytes)
             }
         }
+    }
+
+    pub fn gen_tober(
+        &self,
+        asn1_type: Asn1Type,
+        options: &Options,
+        s: &synstructure::Structure,
+    ) -> TokenStream {
+        if !options.encoders.contains(&asn1_type) {
+            if options.debug {
+                eprintln!("// Encoders: skipping asn1_type {:?}", asn1_type);
+            }
+            return quote! {};
+        }
+
+        let wh = &self.where_predicates;
+        // we must filter out the 'ber lifetime (added for parsers, but not used here)
+        let wh = wh.iter().filter(|predicate| match predicate {
+            WherePredicate::Lifetime(lft) => lft.lifetime.ident != "ber",
+            _ => true,
+        });
+
+        let impl_tober_content_len = self.gen_tober_content_len(asn1_type);
+        let impl_tober_tag_info = self.gen_tober_tag_info(asn1_type);
+        let impl_tober_write_content = self.gen_tober_write_content(asn1_type);
+        let tober = asn1_type.tober();
+
+        // note: `gen impl` in synstructure takes care of appending extra where clauses if any, and removing
+        // the `where` statement if there are none.
+        let ts = s.gen_impl(quote! {
+            extern crate asn1_rs;
+
+            #[cfg(feature = "std")]
+            gen impl asn1_rs::#tober for @Self where #(#wh)+* {
+                type Encoder = asn1_rs::BerGenericEncoder;
+
+                #impl_tober_content_len
+                #impl_tober_tag_info
+                #impl_tober_write_content
+            }
+        });
+        ts
     }
 }
 
