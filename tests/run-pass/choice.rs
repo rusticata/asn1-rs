@@ -27,14 +27,14 @@ fn derive_choice_explicit() {
     // Fail: tag 0, content with incorrect type
     let ber0b = &hex!("a0 03 0101ff");
     let _ =
-        MyEnum::parse_ber(Input::from(Input::from(ber0b))).expect_err("Tag 0 invalid inner type");
+        MyEnum::parse_ber(Input::from(ber0b)).expect_err("Tag 0 invalid inner type");
     let _ =
-        MyEnum::parse_ber(Input::from(Input::from(ber0b))).expect_err("Tag 0 invalid inner type");
+        MyEnum::parse_ber(Input::from(ber0b)).expect_err("Tag 0 invalid inner type");
 
     // Fail: tag 0, valid content but outer tag not constructed
     let ber0c = &hex!("80 03 0101ff");
-    let _ = MyEnum::parse_ber(Input::from(Input::from(ber0c))).expect_err("Tag 0 not constructed");
-    let _ = MyEnum::parse_ber(Input::from(Input::from(ber0c))).expect_err("Tag 0 not constructed");
+    let _ = MyEnum::parse_ber(Input::from(ber0c)).expect_err("Tag 0 not constructed");
+    let _ = MyEnum::parse_ber(Input::from(ber0c)).expect_err("Tag 0 not constructed");
 }
 
 fn derive_choice_implicit() {
@@ -55,24 +55,24 @@ fn derive_choice_implicit() {
     let ber0 = &hex!("80 0108");
     let expected = MyEnum::Val0(8);
     let (_, r0_ber) =
-        MyEnum::parse_ber(Input::from(Input::from(ber0))).expect("parsing BER failed");
+        MyEnum::parse_ber(Input::from(ber0)).expect("parsing BER failed");
     let (_, r0_der) =
-        MyEnum::parse_ber(Input::from(Input::from(ber0))).expect("parsing DER failed");
+        MyEnum::parse_ber(Input::from(ber0)).expect("parsing DER failed");
     assert_eq!(r0_ber, expected);
     assert_eq!(r0_der, expected);
 
     // Fail: tag 0, valid content but outer tag constructed
     let ber0c = &hex!("a0 0108");
-    let _ = MyEnum::parse_ber(Input::from(Input::from(ber0c))).expect_err("Tag 0 constructed");
-    let _ = MyEnum::parse_der(Input::from(Input::from(ber0c))).expect_err("Tag 0 constructed");
+    let _ = MyEnum::parse_ber(Input::from(ber0c)).expect_err("Tag 0 constructed");
+    let _ = MyEnum::parse_der(Input::from(ber0c)).expect_err("Tag 0 constructed");
 
     //--- variant 3: should be constructed (inner type is Vec<u32>)
     let ber3 = &hex!("a3 09 020110 020120 020140");
     let expected = MyEnum::Val3(vec![16, 32, 64]);
     let (_, r3_ber) =
-        MyEnum::parse_ber(Input::from(Input::from(ber3))).expect("parsing BER failed");
+        MyEnum::parse_ber(Input::from(ber3)).expect("parsing BER failed");
     let (_, r3_der) =
-        MyEnum::parse_der(Input::from(Input::from(ber3))).expect("parsing DER failed");
+        MyEnum::parse_der(Input::from(ber3)).expect("parsing DER failed");
     assert_eq!(r3_ber, expected);
     assert_eq!(r3_der, expected);
 }
