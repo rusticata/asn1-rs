@@ -1,13 +1,11 @@
 use crate::asn1_type::Asn1Type;
 use crate::check_derive::check_lastderive_fromber;
 use crate::container::*;
+use crate::options::Options;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{Data, Error, Ident, Lifetime, Result};
 use synstructure::VariantInfo;
-
-mod options;
-use options::ChoiceOptions;
 
 pub fn derive_choice(s: synstructure::Structure) -> TokenStream {
     match DeriveChoice::new(&s) {
@@ -17,7 +15,7 @@ pub fn derive_choice(s: synstructure::Structure) -> TokenStream {
 }
 
 pub struct DeriveChoice<'s> {
-    options: ChoiceOptions,
+    options: Options,
 
     ident: Ident,
     synstruct: &'s synstructure::Structure<'s>,
@@ -25,17 +23,17 @@ pub struct DeriveChoice<'s> {
 }
 
 impl<'s> DeriveChoice<'s> {
-    fn new(s: &'s synstructure::Structure<'s>) -> Result<Self> {
+    fn new(s: &'s synstructure::Structure<'_>) -> Result<Self> {
         let ast = s.ast();
         if !matches!(&ast.data, Data::Enum(_)) {
             return Err(Error::new_spanned(
                 &ast.ident,
-                "'Choice' can only be derive on `enum` type",
+                "'Choice' can only be derived on `enum` type",
             ));
         };
 
         let ident = ast.ident.clone();
-        let options = ChoiceOptions::from_struct(&s)?;
+        let options = Options::from_struct(&s)?;
         let variants = parse_tag_variants(&s)?;
 
         let s = Self {
@@ -117,7 +115,7 @@ fn parse_tag_variants<'a, 'r>(
 
 fn derive_choice_dyntagged(
     variants: &[TagVariant],
-    options: &ChoiceOptions,
+    options: &Options,
     s: &synstructure::Structure,
 ) -> TokenStream {
     let constructed = match options.tag_kind {
@@ -164,7 +162,7 @@ fn derive_choice_dyntagged(
 fn derive_choice_parser(
     asn1_type: Asn1Type,
     variants: &[TagVariant],
-    options: &ChoiceOptions,
+    options: &Options,
     s: &synstructure::Structure,
 ) -> TokenStream {
     if !options.parsers.contains(&asn1_type) {
@@ -240,7 +238,7 @@ fn derive_choice_parser(
 fn derive_choice_encode(
     asn1_type: Asn1Type,
     variants: &[TagVariant],
-    options: &ChoiceOptions,
+    options: &Options,
     s: &synstructure::Structure,
 ) -> TokenStream {
     if !options.encoders.contains(&asn1_type) {
@@ -272,7 +270,7 @@ fn derive_choice_encode(
 
 fn choice_gen_tober_content_len(
     asn1_type: Asn1Type,
-    options: &ChoiceOptions,
+    options: &Options,
     s: &synstructure::Structure<'_>,
 ) -> TokenStream {
     let content_len = asn1_type.content_len_tokens();
@@ -299,7 +297,7 @@ fn choice_gen_tober_content_len(
 fn choice_gen_tober_tag_info(
     asn1_type: Asn1Type,
     _variants: &[TagVariant],
-    _options: &ChoiceOptions,
+    _options: &Options,
     _s: &synstructure::Structure<'_>,
 ) -> TokenStream {
     let tag_info = asn1_type.tag_info_tokens();
@@ -316,7 +314,7 @@ fn choice_gen_tober_tag_info(
 fn choice_gen_tober_write_content(
     asn1_type: Asn1Type,
     variants: &[TagVariant],
-    options: &ChoiceOptions,
+    options: &Options,
     _s: &synstructure::Structure<'_>,
 ) -> TokenStream {
     let encode = asn1_type.compose("_encode");
@@ -374,11 +372,11 @@ pub fn derive_berparser_choice_container(
     if !matches!(&ast.data, Data::Enum(_)) {
         return Err(Error::new_spanned(
             &ast.ident,
-            "'Choice' can only be derive on `enum` type",
+            "'Choice' can only be derived on `enum` type",
         ));
     };
 
-    let options = ChoiceOptions::from_struct(&s)?;
+    let options = Options::from_struct(&s)?;
 
     let variants = parse_tag_variants(&s)?;
 

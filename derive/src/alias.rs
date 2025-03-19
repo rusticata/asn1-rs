@@ -1,11 +1,12 @@
 use crate::asn1_type::Asn1Type;
 use crate::check_derive::check_lastderive_fromber;
 use crate::container::*;
-use proc_macro2::Span;
+use crate::options::Options;
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
-use syn::{Data, Ident};
+use syn::{Data, Ident, Result};
 
-pub fn derive_ber_alias(s: synstructure::Structure) -> proc_macro2::TokenStream {
+pub fn derive_ber_alias(s: synstructure::Structure) -> TokenStream {
     let ast = s.ast();
 
     let container = match &ast.data {
@@ -33,7 +34,7 @@ pub fn derive_ber_alias(s: synstructure::Structure) -> proc_macro2::TokenStream 
     ts
 }
 
-pub fn derive_berparser_alias(s: synstructure::Structure) -> proc_macro2::TokenStream {
+pub fn derive_berparser_alias(s: synstructure::Structure) -> Result<TokenStream> {
     let ast = s.ast();
 
     let container = match &ast.data {
@@ -41,6 +42,7 @@ pub fn derive_berparser_alias(s: synstructure::Structure) -> proc_macro2::TokenS
         _ => panic!("Unsupported type, cannot derive"),
     };
 
+    let options = Options::from_struct(&s)?;
     let debug_derive = ast.attrs.iter().any(|attr| {
         attr.meta
             .path()
@@ -54,7 +56,7 @@ pub fn derive_berparser_alias(s: synstructure::Structure) -> proc_macro2::TokenS
     } else {
         quote! {}
     };
-    let impl_berparser = container.gen_berparser(Asn1Type::Ber);
+    let impl_berparser = container.gen_berparser(Asn1Type::Ber, &options);
     let ts = s.gen_impl(quote! {
         extern crate asn1_rs;
 
@@ -64,10 +66,10 @@ pub fn derive_berparser_alias(s: synstructure::Structure) -> proc_macro2::TokenS
     if debug_derive {
         eprintln!("{}", ts);
     }
-    ts
+    Ok(ts)
 }
 
-pub fn derive_der_alias(s: synstructure::Structure) -> proc_macro2::TokenStream {
+pub fn derive_der_alias(s: synstructure::Structure) -> TokenStream {
     let ast = s.ast();
 
     let container = match &ast.data {
@@ -75,6 +77,7 @@ pub fn derive_der_alias(s: synstructure::Structure) -> proc_macro2::TokenStream 
         _ => panic!("Unsupported type, cannot derive"),
     };
 
+    // let options = Options::from_struct(&s)?;
     let debug_derive = ast.attrs.iter().any(|attr| {
         attr.meta
             .path()
@@ -98,7 +101,7 @@ pub fn derive_der_alias(s: synstructure::Structure) -> proc_macro2::TokenStream 
     ts
 }
 
-pub fn derive_derparser_alias(s: synstructure::Structure) -> proc_macro2::TokenStream {
+pub fn derive_derparser_alias(s: synstructure::Structure) -> Result<TokenStream> {
     let ast = s.ast();
 
     let container = match &ast.data {
@@ -106,6 +109,7 @@ pub fn derive_derparser_alias(s: synstructure::Structure) -> proc_macro2::TokenS
         _ => panic!("Unsupported type, cannot derive"),
     };
 
+    let options = Options::from_struct(&s)?;
     let debug_derive = ast.attrs.iter().any(|attr| {
         attr.meta
             .path()
@@ -119,7 +123,7 @@ pub fn derive_derparser_alias(s: synstructure::Structure) -> proc_macro2::TokenS
     } else {
         quote! {}
     };
-    let impl_derparser = container.gen_berparser(Asn1Type::Der);
+    let impl_derparser = container.gen_berparser(Asn1Type::Der, &options);
     let ts = s.gen_impl(quote! {
         extern crate asn1_rs;
 
@@ -129,5 +133,5 @@ pub fn derive_derparser_alias(s: synstructure::Structure) -> proc_macro2::TokenS
     if debug_derive {
         eprintln!("{}", ts);
     }
-    ts
+    Ok(ts)
 }

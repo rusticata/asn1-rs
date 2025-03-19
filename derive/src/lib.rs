@@ -3,9 +3,11 @@ mod asn1_type;
 mod check_derive;
 mod choice;
 mod container;
+mod options;
 mod sequence;
 mod set;
 mod tostatic;
+
 use alias::*;
 use choice::*;
 use sequence::*;
@@ -152,6 +154,26 @@ synstructure::decl_derive!([DerParserAlias, attributes(
 )] => derive_derparser_alias);
 
 //--- new derive
+
+synstructure::decl_derive!([Sequence, attributes(
+    debug_derive,
+    default,
+    optional,
+    map_err,
+    tagged_explicit,
+    tagged_implicit,
+    asn1,
+)] => derive_sequence);
+
+synstructure::decl_derive!([Set, attributes(
+    debug_derive,
+    default,
+    optional,
+    map_err,
+    tagged_explicit,
+    tagged_implicit,
+    asn1,
+)] => derive_set);
 
 synstructure::decl_derive!([Choice, attributes(
     debug_derive,

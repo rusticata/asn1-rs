@@ -2,7 +2,7 @@ use crate::{asn1_type::Asn1Type, container::*};
 use syn::{Attribute, Result};
 
 #[derive(Debug, Default)]
-pub struct ChoiceOptions {
+pub struct Options {
     pub debug: bool,
     pub error: Option<Attribute>,
     pub tag_kind: Asn1TagKind,
@@ -11,7 +11,7 @@ pub struct ChoiceOptions {
     pub encoders: Vec<Asn1Type>,
 }
 
-impl ChoiceOptions {
+impl Options {
     pub fn from_struct(s: &synstructure::Structure) -> Result<Self> {
         let mut options = Self {
             parsers: vec![Asn1Type::Ber, Asn1Type::Der],
