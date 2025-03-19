@@ -1,4 +1,5 @@
 mod alias;
+mod asn1_type;
 mod check_derive;
 mod choice;
 mod container;

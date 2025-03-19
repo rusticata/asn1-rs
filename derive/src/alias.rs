@@ -1,4 +1,6 @@
-use crate::{check_derive::check_lastderive_fromber, container::*};
+use crate::asn1_type::Asn1Type;
+use crate::check_derive::check_lastderive_fromber;
+use crate::container::*;
 use proc_macro2::Span;
 use quote::quote;
 use syn::{Data, Ident};
