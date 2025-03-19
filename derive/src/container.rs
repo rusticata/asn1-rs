@@ -1,9 +1,13 @@
 use proc_macro2::{Literal, Span, TokenStream};
 use quote::{quote, ToTokens};
+use syn::parse::ParseStream;
+use syn::spanned::Spanned;
 use syn::{
-    parse::ParseStream, parse_quote, spanned::Spanned, Attribute, DataStruct, DeriveInput, Field,
-    Fields, Ident, Lifetime, LitInt, Meta, Type, WherePredicate,
+    parse_quote, Attribute, DataStruct, DeriveInput, Field, Fields, Ident, Lifetime, LitInt, Meta,
+    Type, WherePredicate,
 };
+
+use crate::asn1_type::Asn1Type;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum ContainerType {
@@ -20,100 +24,6 @@ impl ToTokens for ContainerType {
             ContainerType::Set => quote! { asn1_rs::Tag::Set },
         };
         s.to_tokens(tokens)
-    }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum Asn1Type {
-    Ber,
-    Der,
-}
-
-impl Asn1Type {
-    pub(crate) fn tober(&self) -> TokenStream {
-        match *self {
-            Asn1Type::Ber => quote!(ToBer),
-            Asn1Type::Der => quote!(ToDer),
-        }
-    }
-
-    pub(crate) fn compose(&self, suffix: &str) -> TokenStream {
-        let prefix = match *self {
-            Asn1Type::Ber => "ber",
-            Asn1Type::Der => "der",
-        };
-        let s = format!("{prefix}{suffix}");
-        let ident = Ident::new(&s, Span::call_site());
-        quote! { #ident }
-    }
-
-    pub(crate) fn total_len_tokens(&self) -> TokenStream {
-        match *self {
-            Asn1Type::Ber => quote!(ber_total_len),
-            Asn1Type::Der => quote!(der_total_len),
-        }
-    }
-
-    pub(crate) fn content_len_tokens(&self) -> TokenStream {
-        match *self {
-            Asn1Type::Ber => quote!(ber_content_len),
-            Asn1Type::Der => quote!(der_content_len),
-        }
-    }
-
-    pub(crate) fn tag_info_tokens(&self) -> TokenStream {
-        match *self {
-            Asn1Type::Ber => quote!(ber_tag_info),
-            Asn1Type::Der => quote!(der_tag_info),
-        }
-    }
-
-    pub(crate) fn encode_tokens(&self) -> TokenStream {
-        match *self {
-            Asn1Type::Ber => quote!(ber_encode),
-            Asn1Type::Der => quote!(der_encode),
-        }
-    }
-
-    pub(crate) fn write_content_tokens(&self) -> TokenStream {
-        match *self {
-            Asn1Type::Ber => quote!(ber_write_content),
-            Asn1Type::Der => quote!(der_write_content),
-        }
-    }
-
-    pub(crate) fn parser(&self) -> TokenStream {
-        match *self {
-            Asn1Type::Ber => quote!(BerParser),
-            Asn1Type::Der => quote!(DerParser),
-        }
-    }
-
-    pub(crate) fn parse_ber(&self) -> TokenStream {
-        match *self {
-            Asn1Type::Ber => quote!(parse_ber),
-            Asn1Type::Der => quote!(parse_der),
-        }
-    }
-
-    pub(crate) fn from_ber_content(&self) -> TokenStream {
-        match *self {
-            Asn1Type::Ber => quote!(from_ber_content),
-            Asn1Type::Der => quote!(from_der_content),
-        }
-    }
-
-    pub(crate) fn parse_multi(s: &str) -> Result<Vec<Self>, String> {
-        s.split(",").try_fold(Vec::new(), |mut acc, sub| {
-            let sub = sub.trim();
-            let asn1_type = match sub {
-                "BER" => Asn1Type::Ber,
-                "DER" => Asn1Type::Der,
-                _ => return Err("Invalid ASN.1 type (possible values: BER, DER)".into()),
-            };
-            acc.push(asn1_type);
-            Ok(acc)
-        })
     }
 }
 

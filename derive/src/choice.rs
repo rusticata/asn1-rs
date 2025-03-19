@@ -1,78 +1,79 @@
+use crate::asn1_type::Asn1Type;
 use crate::check_derive::check_lastderive_fromber;
 use crate::container::*;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
-use syn::{Attribute, Data, Lifetime, LitStr};
+use syn::{Data, Error, Ident, Lifetime, Result};
 use synstructure::VariantInfo;
 
-#[derive(Debug, Default)]
-struct ChoiceOptions {
-    debug: bool,
-    error: Option<Attribute>,
-    tag_kind: Asn1TagKind,
+mod options;
+use options::ChoiceOptions;
 
-    parsers: Vec<Asn1Type>,
-    encoders: Vec<Asn1Type>,
+pub fn derive_choice(s: synstructure::Structure) -> TokenStream {
+    match DeriveChoice::new(&s) {
+        Ok(s) => s.to_tokens(),
+        Err(e) => e.to_compile_error().into(),
+    }
 }
 
-impl ChoiceOptions {
-    pub fn from_struct(s: &synstructure::Structure) -> Self {
-        let mut options = Self {
-            parsers: vec![Asn1Type::Ber, Asn1Type::Der],
-            encoders: vec![Asn1Type::Ber, Asn1Type::Der],
-            ..Self::default()
-        };
+pub struct DeriveChoice<'s> {
+    options: ChoiceOptions,
+
+    ident: Ident,
+    synstruct: &'s synstructure::Structure<'s>,
+    variants: Vec<TagVariant<'s, 's>>,
+}
+
+impl<'s> DeriveChoice<'s> {
+    fn new(s: &'s synstructure::Structure<'s>) -> Result<Self> {
         let ast = s.ast();
+        if !matches!(&ast.data, Data::Enum(_)) {
+            return Err(Error::new_spanned(
+                &ast.ident,
+                "'Choice' can only be derive on `enum` type",
+            ));
+        };
 
-        for attr in ast.attrs.iter() {
-            let path = attr.meta.path();
-            if path.is_ident("debug_derive") {
-                options.debug = true;
-            } else if path.is_ident("tagged_explicit") {
-                options.tag_kind = Asn1TagKind::Explicit;
-            } else if path.is_ident("tagged_implicit") {
-                options.tag_kind = Asn1TagKind::Implicit;
-            } else if path.is_ident("error") {
-                options.error = Some(attr.clone());
-            } else if path.is_ident("asn1") {
-                // see example at <https://docs.rs/syn/latest/syn/meta/struct.ParseNestedMeta.html>
-                attr.parse_nested_meta(|meta| {
-                    if meta.path.is_ident("parse") {
-                        let value = meta.value()?;
-                        let lit_s: LitStr = value.parse()?;
-                        let s = lit_s.value();
-                        let asn1_types = if s.is_empty() {
-                            vec![Asn1Type::Ber, Asn1Type::Der]
-                        } else {
-                            Asn1Type::parse_multi(&s)
-                                .expect("Invalid values for asn1(parse) attribute")
-                        };
-                        options.parsers = asn1_types;
-                    } else if meta.path.is_ident("encode") {
-                        let value = meta.value()?;
-                        let lit_s: LitStr = value.parse()?;
-                        let s = lit_s.value();
-                        let asn1_types = if s.is_empty() {
-                            vec![]
-                        } else {
-                            Asn1Type::parse_multi(&s)
-                                .expect("Invalid values for asn1(parse) attribute")
-                        };
-                        options.encoders = asn1_types;
-                    } else {
-                        // meta.error("Invalid or unknown attribute")
-                        panic!(
-                            "Invalid/Unknown item {} in 'asn1' attribute",
-                            meta.path.get_ident().unwrap()
-                        );
-                    }
-                    return Ok(());
-                })
-                .expect("could not parse 'asn1' attribute");
-            }
+        let ident = ast.ident.clone();
+        let options = ChoiceOptions::from_struct(&s)?;
+        let variants = parse_tag_variants(&s)?;
+
+        let s = Self {
+            options,
+            ident,
+            synstruct: s,
+            variants,
+        };
+        Ok(s)
+    }
+
+    fn to_tokens(&self) -> TokenStream {
+        let Self {
+            variants,
+            options,
+            synstruct,
+            ..
+        } = self;
+
+        let dyntagged = derive_choice_dyntagged(variants, options, synstruct);
+        let berparser = derive_choice_parser(Asn1Type::Ber, variants, options, synstruct);
+        let derparser = derive_choice_parser(Asn1Type::Der, variants, options, synstruct);
+        let berencode = derive_choice_encode(Asn1Type::Ber, variants, options, synstruct);
+        let derencode = derive_choice_encode(Asn1Type::Der, variants, options, synstruct);
+
+        let ts = quote! {
+            #dyntagged
+            #berparser
+            #derparser
+            #berencode
+            #derencode
+        };
+
+        if self.options.debug {
+            eprintln!("// CHOICE for {}", self.ident);
+            eprintln!("{}", ts);
         }
-
-        options
+        ts
     }
 }
 
@@ -81,16 +82,26 @@ struct TagVariant<'a, 'r> {
     vi: &'r VariantInfo<'a>,
 }
 
-fn parse_tag_variants<'a, 'r>(s: &'r synstructure::Structure<'a>) -> Vec<TagVariant<'a, 'r>> {
+fn parse_tag_variants<'a, 'r>(
+    s: &'r synstructure::Structure<'a>,
+) -> Result<Vec<TagVariant<'a, 'r>>> {
+    // check that all variants has a single type (binding)
+    for v in s.variants() {
+        if v.bindings().len() != 1 {
+            return Err(Error::new_spanned(
+                &v.ast().ident,
+                "'Choice': only variants with one unnamed binding are supported",
+            ));
+        }
+    }
+
     // counter for auto-assignement of tag values (if not specified)
     let mut current_tag: u32 = 0;
-    s.variants()
+    let v = s
+        .variants()
         .iter()
         .map(|vi| {
             // eprintln!("variant {current_tag} info: {vi:?}");
-
-            // check that variant is a single type
-
             let tag_variant = TagVariant {
                 tag: current_tag,
                 vi,
@@ -100,37 +111,8 @@ fn parse_tag_variants<'a, 'r>(s: &'r synstructure::Structure<'a>) -> Vec<TagVari
 
             tag_variant
         })
-        .collect()
-}
-
-pub fn derive_choice(s: synstructure::Structure) -> TokenStream {
-    let ast = s.ast();
-    if !matches!(&ast.data, Data::Enum(_)) {
-        panic!("Unsupported type, cannot derive")
-    };
-
-    let options = ChoiceOptions::from_struct(&s);
-
-    let variants = parse_tag_variants(&s);
-
-    let dyntagged = derive_choice_dyntagged(&variants, &options, &s);
-    let berparser = derive_choice_parser(Asn1Type::Ber, &variants, &options, &s);
-    let derparser = derive_choice_parser(Asn1Type::Der, &variants, &options, &s);
-    let berencode = derive_choice_encode(Asn1Type::Ber, &variants, &options, &s);
-    let derencode = derive_choice_encode(Asn1Type::Der, &variants, &options, &s);
-
-    let ts = quote! {
-        #dyntagged
-        #berparser
-        #derparser
-        #berencode
-        #derencode
-    };
-    if options.debug {
-        eprintln!("// CHOICE for {}", ast.ident);
-        eprintln!("{}", ts);
-    }
-    ts
+        .collect();
+    Ok(v)
 }
 
 fn derive_choice_dyntagged(
@@ -375,27 +357,30 @@ fn choice_gen_tober_write_content(
 
 //--- old-style derive
 
-pub fn derive_berparser_choice(s: synstructure::Structure) -> TokenStream {
+pub fn derive_berparser_choice(s: synstructure::Structure) -> Result<TokenStream> {
     derive_berparser_choice_container(s, Asn1Type::Ber)
 }
 
-pub fn derive_derparser_choice(s: synstructure::Structure) -> TokenStream {
+pub fn derive_derparser_choice(s: synstructure::Structure) -> Result<TokenStream> {
     derive_berparser_choice_container(s, Asn1Type::Der)
 }
 
 pub fn derive_berparser_choice_container(
     s: synstructure::Structure,
     asn1_type: Asn1Type,
-) -> TokenStream {
+) -> Result<TokenStream> {
     let ast = s.ast();
 
     if !matches!(&ast.data, Data::Enum(_)) {
-        panic!("Unsupported type, cannot derive")
+        return Err(Error::new_spanned(
+            &ast.ident,
+            "'Choice' can only be derive on `enum` type",
+        ));
     };
 
-    let options = ChoiceOptions::from_struct(&s);
+    let options = ChoiceOptions::from_struct(&s)?;
 
-    let variants = parse_tag_variants(&s);
+    let variants = parse_tag_variants(&s)?;
 
     let last_berderive = check_lastderive_fromber(ast);
 
@@ -413,5 +398,5 @@ pub fn derive_berparser_choice_container(
     if options.debug {
         eprintln!("{}", ts);
     }
-    ts
+    Ok(ts)
 }
