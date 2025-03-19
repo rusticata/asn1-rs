@@ -2,9 +2,17 @@ use crate::asn1_type::Asn1Type;
 use crate::check_derive::check_lastderive_fromber;
 use crate::container::*;
 use crate::options::Options;
+use crate::sequence::DeriveSequence;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{Data, Ident, Result};
+
+pub fn derive_alias(s: synstructure::Structure) -> TokenStream {
+    match DeriveSequence::new(&s, ContainerType::Alias) {
+        Ok(s) => s.to_tokens(),
+        Err(e) => e.to_compile_error().into(),
+    }
+}
 
 pub fn derive_ber_alias(s: synstructure::Structure) -> TokenStream {
     let ast = s.ast();

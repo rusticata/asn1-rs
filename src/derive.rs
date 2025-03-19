@@ -898,3 +898,6 @@ pub use asn1_rs_derive::Sequence;
 
 // FIXME: add documentation
 pub use asn1_rs_derive::Set;
+
+// FIXME: add documentation
+pub use asn1_rs_derive::Alias;
