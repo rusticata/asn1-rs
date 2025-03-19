@@ -1,6 +1,6 @@
 /// # BerSequence custom derive
 ///
-/// `BerSequence` is a custom derive attribute, to derive a BER [`Sequence`](super::Sequence) parser automatically from the structure definition.
+/// `BerSequence` is a custom derive attribute, to derive a BER `Sequence` parser automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`TryFrom<Any>`](super::Any), also providing [`FromBer`](super::FromBer)
 ///   - [`Tagged`](super::Tagged)
@@ -56,7 +56,7 @@ pub use asn1_rs_derive::BerSequence;
 
 /// # BerParserSequence custom derive
 ///
-/// `BerParserSequence` is a custom derive attribute, to derive a BER [`Sequence`](super::Sequence) parser automatically from the structure definition.
+/// `BerParserSequence` is a custom derive attribute, to derive a BER `Sequence` parser automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`BerParser`](super::BerParser)
 ///
@@ -111,7 +111,7 @@ pub use asn1_rs_derive::BerParserSequence;
 
 /// # DerSequence custom derive
 ///
-/// `DerSequence` is a custom derive attribute, to derive both BER and DER [`Sequence`](super::Sequence) parsers automatically from the structure definition.
+/// `DerSequence` is a custom derive attribute, to derive both BER and DER `Sequence` parsers automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`TryFrom<Any>`](super::Any), also providing [`FromBer`](super::FromBer)
 ///   - [`Tagged`](super::Tagged)
@@ -168,7 +168,7 @@ pub use asn1_rs_derive::DerSequence;
 
 /// # DerParserSequence custom derive
 ///
-/// `DerParserSequence` is a custom derive attribute, to derive a BER [`Sequence`](super::Sequence) parser automatically from the structure definition.
+/// `DerParserSequence` is a custom derive attribute, to derive a BER `Sequence` parser automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`BerParser`](super::BerParser)
 ///
@@ -223,7 +223,7 @@ pub use asn1_rs_derive::DerParserSequence;
 
 /// # BerSet custom derive
 ///
-/// `BerSet` is a custom derive attribute, to derive a BER [`Set`](super::Set) parser automatically from the structure definition.
+/// `BerSet` is a custom derive attribute, to derive a BER `Set` parser automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`TryFrom<Any>`](super::Any), also providing [`FromBer`](super::FromBer)
 ///   - [`Tagged`](super::Tagged)
@@ -279,7 +279,7 @@ pub use asn1_rs_derive::BerSet;
 
 /// # BerParserSet custom derive
 ///
-/// `BerParserSet` is a custom derive attribute, to derive a BER [`Set`](super::Set) parser automatically from the structure definition.
+/// `BerParserSet` is a custom derive attribute, to derive a BER `Set` parser automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`BerParser`](super::BerParser)
 ///
@@ -334,7 +334,7 @@ pub use asn1_rs_derive::BerParserSet;
 
 /// # DerSet custom derive
 ///
-/// `DerSet` is a custom derive attribute, to derive both BER and DER [`Set`](super::Set) parsers automatically from the structure definition.
+/// `DerSet` is a custom derive attribute, to derive both BER and DER `Set` parsers automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`TryFrom<Any>`](super::Any), also providing [`FromBer`](super::FromBer)
 ///   - [`Tagged`](super::Tagged)
@@ -391,7 +391,7 @@ pub use asn1_rs_derive::DerSet;
 
 /// # DerParserSet custom derive
 ///
-/// `DerParserSet` is a custom derive attribute, to derive a BER [`Set`](super::Set) parser automatically from the structure definition.
+/// `DerParserSet` is a custom derive attribute, to derive a BER `Set` parser automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`BerParser`](super::BerParser)
 ///
@@ -662,7 +662,7 @@ pub use asn1_rs_derive::ToStatic;
 
 /// # ToBerSequence custom derive
 ///
-/// `ToBerSequence` is a custom derive attribute, to derive BER [`Sequence`](super::Sequence) serialization automatically from the structure definition.
+/// `ToBerSequence` is a custom derive attribute, to derive BER `Sequence` serialization automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`ToBer`](super::ToBer)
 ///
@@ -718,7 +718,7 @@ pub use asn1_rs_derive::ToBerSequence;
 
 /// # ToDerSequence custom derive
 ///
-/// `ToDerSequence` is a custom derive attribute, to derive DER [`Sequence`](super::Sequence) serialization automatically from the structure definition.
+/// `ToDerSequence` is a custom derive attribute, to derive DER `Sequence` serialization automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`ToDer`](super::ToDer)
 ///
@@ -774,7 +774,7 @@ pub use asn1_rs_derive::ToDerSequence;
 
 /// # ToBerSet custom derive
 ///
-/// `ToBerSet` is a custom derive attribute, to derive BER [`Set`](super::Set) serialization automatically from the structure definition.
+/// `ToBerSet` is a custom derive attribute, to derive BER `Set` serialization automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`ToBer`](super::ToBer)
 ///
@@ -830,7 +830,7 @@ pub use asn1_rs_derive::ToBerSet;
 
 /// # ToDerSet custom derive
 ///
-/// `ToDerSet` is a custom derive attribute, to derive DER [`Set`](super::Set) serialization automatically from the structure definition.
+/// `ToDerSet` is a custom derive attribute, to derive DER `Set` serialization automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`ToBer`](super::ToBer)
 ///
