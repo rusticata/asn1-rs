@@ -218,6 +218,7 @@ impl Container {
         };
         quote! {
             gen impl<'ber> asn1_rs::Tagged for @Self {
+                const CONSTRUCTED: bool = true;
                 const TAG: asn1_rs::Tag = #tag;
             }
         }
