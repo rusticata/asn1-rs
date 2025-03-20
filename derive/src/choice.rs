@@ -118,9 +118,25 @@ fn derive_choice_dyntagged(
     options: &Options,
     s: &synstructure::Structure,
 ) -> TokenStream {
+    let class = match options.tag_kind {
+        Some(_) => quote! { asn1_rs::Class::ContextSpecific },
+        None => {
+            // more complex answer: depends on variant/binding
+            let class_branches = variants.iter().map(|v| {
+                let pat = v.vi.pat();
+                let bi = &v.vi.bindings()[0];
+                quote! { #pat => #bi.class(),  }
+            });
+            quote! {
+                match self {
+                    #(#class_branches)*
+                }
+            }
+        }
+    };
     let constructed = match options.tag_kind {
-        Asn1TagKind::Explicit => quote! { true },
-        Asn1TagKind::Implicit => {
+        Some(Asn1TagKind::Explicit) => quote! { true },
+        Some(Asn1TagKind::Implicit) | None => {
             // more complex answer: depends on variant/binding
             let constructed_branches = variants.iter().map(|v| {
                 let pat = v.vi.pat();
@@ -134,32 +150,55 @@ fn derive_choice_dyntagged(
             }
         }
     };
-    let tag_branches = variants.iter().map(|v| {
-        let pat = v.vi.pat();
-        let tag = v.tag;
-        quote! { #pat => asn1_rs::Tag(#tag),  }
-    });
+    let tag = {
+        let tag_branches = variants.iter().map(|v| {
+            let pat = v.vi.pat();
+            match options.tag_kind {
+                Some(_) => {
+                    let tag = v.tag;
+                    quote! { #pat => asn1_rs::Tag(#tag),  }
+                }
+                None => {
+                    let bi = &v.vi.bindings()[0];
+                    quote! { #pat => #bi.tag(),  }
+                }
+            }
+        });
+        quote! {
+            match self {
+                #(#tag_branches)*
+            }
+        }
+    };
 
     s.gen_impl(quote! {
         gen impl asn1_rs::DynTagged for @Self {
+            // FIXME: this accepts more tags than it should
             fn accept_tag(_: asn1_rs::Tag) -> bool { true }
 
-            fn class(&self) -> asn1_rs::Class { Class::ContextSpecific }
+            fn class(&self) -> asn1_rs::Class { #class }
 
-            fn constructed(&self) -> bool {
-                #constructed
-            }
+            fn constructed(&self) -> bool { #constructed }
 
-            fn tag(&self) -> asn1_rs::Tag {
-                match self {
-                    #(#tag_branches)*
-                }
-            }
+            fn tag(&self) -> asn1_rs::Tag { #tag }
         }
     })
 }
 
 fn derive_choice_parser(
+    asn1_type: Asn1Type,
+    variants: &[TagVariant],
+    options: &Options,
+    s: &synstructure::Structure,
+) -> TokenStream {
+    match options.tag_kind {
+        Some(tag_kind) => derive_choice_parser_tagged(tag_kind, asn1_type, variants, options, s),
+        None => derive_choice_parser_untagged(asn1_type, variants, options, s),
+    }
+}
+
+fn derive_choice_parser_tagged(
+    tag_kind: Asn1TagKind,
     asn1_type: Asn1Type,
     variants: &[TagVariant],
     options: &Options,
@@ -185,7 +224,7 @@ fn derive_choice_parser(
         let tag = v.tag;
         let bi = &bindings[0];
         let construct = v.vi.construct(|_, _i| bi);
-        match options.tag_kind {
+        match tag_kind {
             Asn1TagKind::Explicit => quote! {
                 #tag => {
                     let (rem, #bi) = #parser::#parse_ber(rem)?;
@@ -200,7 +239,7 @@ fn derive_choice_parser(
             },
         }
     });
-    let assert_constructed = match options.tag_kind {
+    let assert_constructed = match tag_kind {
         Asn1TagKind::Explicit => quote! {
             header.assert_constructed_input(&input).map_err(Err::Error)?;
         },
@@ -229,6 +268,65 @@ fn derive_choice_parser(
                             asn1_rs::BerError::unexpected_tag(input, None, header.tag()).into()
                         ));
                     }
+                }
+            }
+        }
+    })
+}
+
+fn derive_choice_parser_untagged(
+    asn1_type: Asn1Type,
+    variants: &[TagVariant],
+    options: &Options,
+    s: &synstructure::Structure,
+) -> TokenStream {
+    if !options.parsers.contains(&asn1_type) {
+        if options.debug {
+            eprintln!("// Parsers: skipping asn1_type {:?}", asn1_type);
+        }
+        return quote! {};
+    }
+
+    let from_ber_content = asn1_type.from_ber_content();
+    let parser = asn1_type.parser();
+    let lft = Lifetime::new("'ber", Span::call_site());
+
+    let parse_branches_if_else = variants.iter().map(|v| {
+        let bindings = v.vi.bindings();
+        if bindings.len() != 1 {
+            panic!("Enum/CHOICE: only variants with one unnamed binding are supported now");
+        }
+        let bi = &bindings[0];
+        let construct = v.vi.construct(|_, _i| bi);
+        let ty = &bi.ast().ty;
+        quote! {
+            if <#ty>::accept_tag(header.tag()) {
+                let (rem, #bi) = <#ty>::#from_ber_content(header, rem)?;
+                Ok((rem, #construct))
+            } else
+        }
+    });
+
+    // error type
+    let error = if let Some(attr) = &options.error {
+        get_attribute_meta(attr).expect("Invalid error attribute format")
+    } else {
+        quote! { asn1_rs::BerError<asn1_rs::Input<#lft>> }
+    };
+
+    s.gen_impl(quote! {
+        extern crate asn1_rs;
+
+        gen impl<#lft> asn1_rs::#parser<#lft> for @Self {
+            type Error = #error;
+            fn #from_ber_content(header: &'_ Header<#lft>, input: Input<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
+                // #assert_constructed
+                let rem = input.clone();
+                #(#parse_branches_if_else)*
+                {
+                    return Err(asn1_rs::nom::Err::Error(
+                        asn1_rs::BerError::unexpected_tag(input, None, header.tag()).into()
+                    ));
                 }
             }
         }
@@ -279,8 +377,8 @@ fn choice_gen_tober_content_len(
     // NOTE: fold() only works on variants with bindings, but we know that it is the case
     let content_len_branches = s.fold(quote! {}, |acc, bi| {
         let instrs = match options.tag_kind {
-            Asn1TagKind::Explicit => quote! { #bi.#total_len() },
-            Asn1TagKind::Implicit => quote! { #bi.#content_len() },
+            Some(Asn1TagKind::Explicit) => quote! { #bi.#total_len() },
+            Some(Asn1TagKind::Implicit) | None => quote! { #bi.#content_len() },
         };
         quote! { #acc #instrs }
     });
@@ -328,13 +426,13 @@ fn choice_gen_tober_write_content(
         let pat = v.vi.pat();
         let bi = &bindings[0];
         match options.tag_kind {
-            Asn1TagKind::Explicit => quote! {
+            Some(Asn1TagKind::Explicit) => quote! {
                 #pat => {
                     // encode as tagged explicit (write full object)
                     #bi.#encode(writer)
                 }
             },
-            Asn1TagKind::Implicit => quote! {
+            Some(Asn1TagKind::Implicit) | None => quote! {
                 #pat => {
                     // encode as tagged implicit (write only content)
                     #bi.#write_content(writer)
