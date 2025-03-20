@@ -5,6 +5,7 @@ fn derive_berparser_choice_explicit() {
     #[derive(Debug)]
     //
     #[derive(BerParserChoice)]
+    #[tagged_explicit]
     // #[debug_derive]
     pub enum MyEnum {
         Val0(u8),
