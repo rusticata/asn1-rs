@@ -118,6 +118,37 @@ fn derive_choice_dyntagged(
     options: &Options,
     s: &synstructure::Structure,
 ) -> TokenStream {
+    let accept_tags = {
+        match options.tag_kind {
+            Some(_) => {
+                let tags = variants.iter().map(|v| v.tag);
+                quote! {
+                    [#(#tags),*].contains(&tag.0)
+                }
+            }
+            None => {
+                let accept_tags_if_else = variants.iter().map(|v| {
+                    let bindings = v.vi.bindings();
+                    if bindings.len() != 1 {
+                        panic!(
+                            "Enum/CHOICE: only variants with one unnamed binding are supported now"
+                        );
+                    }
+                    let bi = &bindings[0];
+                    let ty = &bi.ast().ty;
+                    quote! {
+                        if <#ty>::accept_tag(tag) {
+                            true
+                        } else
+                    }
+                });
+
+                quote! {
+                    #(#accept_tags_if_else)* { false }
+                }
+            }
+        }
+    };
     let class = match options.tag_kind {
         Some(_) => quote! { asn1_rs::Class::ContextSpecific },
         None => {
@@ -173,8 +204,7 @@ fn derive_choice_dyntagged(
 
     s.gen_impl(quote! {
         gen impl asn1_rs::DynTagged for @Self {
-            // FIXME: this accepts more tags than it should
-            fn accept_tag(_: asn1_rs::Tag) -> bool { true }
+            fn accept_tag(tag: asn1_rs::Tag) -> bool { #accept_tags }
 
             fn class(&self) -> asn1_rs::Class { #class }
 
