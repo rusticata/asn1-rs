@@ -96,7 +96,7 @@ impl Parse for Asn1Type {
         if ident == "BER" {
             Ok(Asn1Type::Ber)
         } else if ident == "DER" {
-            Ok(Asn1Type::Ber)
+            Ok(Asn1Type::Der)
         } else {
             Err(Error::new(
                 ident.span(),
