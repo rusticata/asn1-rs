@@ -149,7 +149,18 @@ fn from_ber_length_invalid() {
     let input = &hex!("02 ff 00 01 02 03 04 05 06 07 08 09 0a 0b 0c 0d 0e 0f 10");
     let res = u8::from_ber(input).expect_err("parsing should have failed");
     assert_eq!(res, nom::Err::Error(Error::InvalidLength));
+
     let input = &hex!("02 85 ff ff ff ff ff 00");
+    let res = u8::from_ber(input).expect_err("parsing should have failed");
+    // length is 5 bytes long, so on platforms where usize::BITS < 5*8 the error will not be
+    // Incomplete but InvalidLength
+    // This is not important, what matters is the 'expect_err' (parsing should fail in both cases)
+    if usize::BITS > 40 {
+        assert!(res.is_incomplete());
+    }
+
+    // incomplete
+    let input = &hex!("02 04 00");
     let res = u8::from_ber(input).expect_err("parsing should have failed");
     assert!(res.is_incomplete());
 }
