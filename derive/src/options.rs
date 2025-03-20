@@ -5,7 +5,7 @@ use syn::{Attribute, Result};
 pub struct Options {
     pub debug: bool,
     pub error: Option<Attribute>,
-    pub tag_kind: Asn1TagKind,
+    pub tag_kind: Option<Asn1TagKind>,
 
     pub parsers: Vec<Asn1Type>,
     pub encoders: Vec<Asn1Type>,
@@ -25,9 +25,9 @@ impl Options {
             if path.is_ident("debug_derive") {
                 options.debug = true;
             } else if path.is_ident("tagged_explicit") {
-                options.tag_kind = Asn1TagKind::Explicit;
+                options.tag_kind = Some(Asn1TagKind::Explicit);
             } else if path.is_ident("tagged_implicit") {
-                options.tag_kind = Asn1TagKind::Implicit;
+                options.tag_kind = Some(Asn1TagKind::Implicit);
             } else if path.is_ident("error") {
                 options.error = Some(attr.clone());
             } else if path.is_ident("asn1") {
