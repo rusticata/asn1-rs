@@ -4,7 +4,7 @@ use crate::container::*;
 use crate::options::Options;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
-use syn::{Data, Error, Ident, Lifetime, Result};
+use syn::{parse_quote, Data, Error, Ident, Lifetime, Result, WherePredicate};
 use synstructure::VariantInfo;
 
 pub fn derive_choice(s: synstructure::Structure) -> TokenStream {
@@ -283,10 +283,21 @@ fn derive_choice_parser_tagged(
         quote! { asn1_rs::BerError<asn1_rs::Input<#lft>> }
     };
 
+    // Note: if Self has lifetime bounds, then a new bound must be added to the implementation
+    // For ex: `pub struct AA<'a>` will require a bound `impl[..] DerParser[..] where 'i: 'a`
+    // get lifetimes from generics
+    let lfts: Vec<_> = s.ast().generics.lifetimes().collect();
+    let mut where_predicates = Vec::new();
+    if !lfts.is_empty() {
+        // input slice must outlive all lifetimes from Self
+        let wh: WherePredicate = parse_quote! { #lft: #(#lfts)+* };
+        where_predicates.push(wh);
+    };
+
     s.gen_impl(quote! {
         extern crate asn1_rs;
 
-        gen impl<#lft> asn1_rs::#parser<#lft> for @Self {
+        gen impl<#lft> asn1_rs::#parser<#lft> for @Self where #(#where_predicates)+* {
             type Error = #error;
             fn #from_ber_content(header: &'_ Header<#lft>, input: Input<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
                 #assert_constructed
@@ -331,7 +342,7 @@ fn derive_choice_parser_untagged(
         let ty = &bi.ast().ty;
         quote! {
             if <#ty>::accept_tag(header.tag()) {
-                let (rem, #bi) = <#ty>::#from_ber_content(header, rem)?;
+                let (rem, #bi) = asn1_rs::#parser::#from_ber_content(header, rem)?;
                 Ok((rem, #construct))
             } else
         }
@@ -344,10 +355,21 @@ fn derive_choice_parser_untagged(
         quote! { asn1_rs::BerError<asn1_rs::Input<#lft>> }
     };
 
+    // Note: if Self has lifetime bounds, then a new bound must be added to the implementation
+    // For ex: `pub struct AA<'a>` will require a bound `impl[..] DerParser[..] where 'i: 'a`
+    // get lifetimes from generics
+    let lfts: Vec<_> = s.ast().generics.lifetimes().collect();
+    let mut where_predicates = Vec::new();
+    if !lfts.is_empty() {
+        // input slice must outlive all lifetimes from Self
+        let wh: WherePredicate = parse_quote! { #lft: #(#lfts)+* };
+        where_predicates.push(wh);
+    };
+
     s.gen_impl(quote! {
         extern crate asn1_rs;
 
-        gen impl<#lft> asn1_rs::#parser<#lft> for @Self {
+        gen impl<#lft> asn1_rs::#parser<#lft> for @Self where #(#where_predicates)+* {
             type Error = #error;
             fn #from_ber_content(header: &'_ Header<#lft>, input: Input<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
                 // #assert_constructed
