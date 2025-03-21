@@ -39,6 +39,26 @@ fn derive_choice_untagged() {
     let _ = UntaggedChoice::parse_der(Input::from(ber0b)).expect_err("Tag 0 invalid inner type");
 }
 
+fn derive_choice_untagged_lifetime() {
+    #[derive(Debug, PartialEq)]
+    //
+    #[derive(Choice)]
+    // #[debug_derive]
+    pub enum UntaggedChoice<'a> {
+        Val0(u8),
+        Val1(&'a [u8]),
+    }
+
+    //--- variant 1
+    // Ok: valid content
+    let ber1 = &hex!("04 03 010203");
+    let (_, r1_ber) = UntaggedChoice::parse_ber(Input::from(ber1)).expect("parsing BER failed");
+    let (_, r1_der) = UntaggedChoice::parse_der(Input::from(ber1)).expect("parsing DER failed");
+    let expected = UntaggedChoice::Val1(&[0x01, 0x02, 0x03]);
+    assert_eq!(r1_ber, expected);
+    assert_eq!(r1_der, expected);
+}
+
 fn derive_choice_tagged_explicit() {
     #[derive(Debug, PartialEq)]
     //
@@ -237,6 +257,7 @@ mod with_std {
 
 fn main() {
     derive_choice_untagged();
+    derive_choice_untagged_lifetime();
     derive_choice_tagged_explicit();
     derive_choice_tagged_implicit();
 
