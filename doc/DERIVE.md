@@ -271,94 +271,6 @@ let ref_c = result.c.as_ref();
 
 _Note: The `Sequence` and `Set` attributes cannot be used at the same time on a struct._
 
-## `CHOICE`
-
-The `Choice` derive attribute is used to derive code for an `enum` representing a `CHOICE` object.
-Each field represent a possible value.
-
-For convenience, 3 kinds of derive can be generated:
-- default ("Untagged"): each variant represent an ASN.1 type
-- tagged explicit: each variant represent a type encoded as TAGGED EXPLICIT, with a tag number auto-generated (incremental number of order of appearance of the variant)
-- tagged explicit: similar, but with TAGGED IMPLICIT
-
-The `asn1` attribute can be used to control derived code.
-
-### Examples
-
-Default (untagged) `CHOICE`:
-```rust
-# use asn1_rs::*;
-/// MessageType ::= CHOICE
-#[derive(Debug, PartialEq, Choice)]
-pub enum MessageType<'a> {
-    /// text OCTET STRING
-    Text(&'a [u8]),
-    /// codedNumeric INTEGER
-    CodedNumeric(u32),
-}
-
-# let parser = |input| -> IResult<Input, (), BerError<Input>> {
-let (rem, result) = MessageType::parse_ber(input)?;
-# Ok((rem, ())) };
-```
-
-`CHOICE` with TAGGED EXPLICIT variants only (using `tagged_explicit` attribute):
-```rust
-# use asn1_rs::*;
-/// Test ::= CHOICE
-#[derive(Debug, PartialEq, Choice)]
-#[tagged_explicit]
-pub enum Test {
-    /// age [0] INTEGER
-    Age(u32),
-    /// index [1] INTEGER
-    Index(u32),
-}
-
-# let parser = |input| -> IResult<Input, (), BerError<Input>> {
-let (rem, result) = Test::parse_ber(input)?;
-# Ok((rem, ())) };
-```
-`CHOICE` with TAGGED IMPLICIT variants only (using `tagged_implicit` attribute):
-```rust
-# use asn1_rs::*;
-/// GeneralName ::= CHOICE
-#[derive(Debug, PartialEq, Choice)]
-#[tagged_implicit]
-pub enum GeneralName<'a> {
-    /// otherName [0]  AnotherName
-    OtherName(Any<'a>),
-    /// rfc822Name [1] IA5String
-    Rfc822Name(Ia5String<'a>),
-     /// dNSName [2] IA5String
-    DNSName(Ia5String<'a>),
-    // ...
-}
-
-# let parser = |input| -> IResult<Input, (), BerError<Input>> {
-let (rem, result) = GeneralName::parse_ber(input)?;
-# Ok((rem, ())) };
-```
-
-## Type Alias
-
-The `Alias` derive attribute is used to derive code for an ASN.1 type alias.
-It can only be used on a struct with a single anonymous field.
-
-The `asn1` attribute can be used to control derived code.
-
-### Examples
-
-```rust
-# use asn1_rs::*;
-/// KeyIdentifier ::= OCTET STRING
-#[derive(Debug, PartialEq, Alias)]
-pub struct KeyIdentifier<'a>(&'a [u8]);
-
-# let parser = |input| -> IResult<Input, (), BerError<Input>> {
-let (rem, result) = KeyIdentifier::parse_ber(input)?;
-# Ok((rem, ())) };
-```
 
 # Advanced
 
@@ -427,9 +339,100 @@ pub struct T4 {
 
 *Note*: when deriving BER and DER parsers, errors paths are different (`TryFrom` returns the error type, while [`FromDer`] returns a [`ParseResult`]). Some code will be inserted by the `map_err` attribute to handle this transparently and keep the same function signature.
 
+
+# `CHOICE`
+
+The `Choice` derive attribute is used to derive code for an `enum` representing a `CHOICE` object.
+Each field represent a possible value.
+
+For convenience, 3 kinds of derive can be generated:
+- default ("Untagged"): each variant represent an ASN.1 type
+- tagged explicit: each variant represent a type encoded as TAGGED EXPLICIT, with a tag number auto-generated (incremental number of order of appearance of the variant)
+- tagged explicit: similar, but with TAGGED IMPLICIT
+
+The `asn1` attribute can be used to control derived code.
+
+### Examples
+
+Default (untagged) `CHOICE`:
+```rust
+# use asn1_rs::*;
+/// MessageType ::= CHOICE
+#[derive(Debug, PartialEq, Choice)]
+pub enum MessageType<'a> {
+    /// text OCTET STRING
+    Text(&'a [u8]),
+    /// codedNumeric INTEGER
+    CodedNumeric(u32),
+}
+
+# let parser = |input| -> IResult<Input, (), BerError<Input>> {
+let (rem, result) = MessageType::parse_ber(input)?;
+# Ok((rem, ())) };
+```
+
+`CHOICE` with TAGGED EXPLICIT variants only (using `tagged_explicit` attribute):
+```rust
+# use asn1_rs::*;
+/// Test ::= CHOICE
+#[derive(Debug, PartialEq, Choice)]
+#[tagged_explicit]
+pub enum Test {
+    /// age [0] INTEGER
+    Age(u32),
+    /// index [1] INTEGER
+    Index(u32),
+}
+
+# let parser = |input| -> IResult<Input, (), BerError<Input>> {
+let (rem, result) = Test::parse_ber(input)?;
+# Ok((rem, ())) };
+```
+`CHOICE` with TAGGED IMPLICIT variants only (using `tagged_implicit` attribute):
+```rust
+# use asn1_rs::*;
+/// GeneralName ::= CHOICE
+#[derive(Debug, PartialEq, Choice)]
+#[tagged_implicit]
+pub enum GeneralName<'a> {
+    /// otherName [0]  AnotherName
+    OtherName(Any<'a>),
+    /// rfc822Name [1] IA5String
+    Rfc822Name(Ia5String<'a>),
+     /// dNSName [2] IA5String
+    DNSName(Ia5String<'a>),
+    // ...
+}
+
+# let parser = |input| -> IResult<Input, (), BerError<Input>> {
+let (rem, result) = GeneralName::parse_ber(input)?;
+# Ok((rem, ())) };
+```
+
+
+# Type Alias
+
+The [`Alias`] derive attribute is used to derive code for an ASN.1 type alias.
+It can only be used on a struct with a single anonymous field.
+
+The `asn1` attribute can be used to control derived code.
+
+### Examples
+
+```rust
+# use asn1_rs::*;
+/// KeyIdentifier ::= OCTET STRING
+#[derive(Debug, PartialEq, Alias)]
+pub struct KeyIdentifier<'a>(&'a [u8]);
+
+# let parser = |input| -> IResult<Input, (), BerError<Input>> {
+let (rem, result) = KeyIdentifier::parse_ber(input)?;
+# Ok((rem, ())) };
+```
+
 # Serialization
 
-## BER/DER Sequence serialization
+## BER/DER objects serialization
 
 The [`Sequence`], [`Set`], [`Choice`] and [`Alias`] derive attributes derive parsers and encoders by default, for BER and DER (this can be controlled using the `asn1` attribute).
 
@@ -450,6 +453,15 @@ let output = s.to_der_vec().expect("serialization failed");
 let (_rest, result) = S::parse_ber(Input::from(&output)).expect("parsing failed");
 assert_eq!(s, result);
 ```
+
+# Deprecated attributes
+
+The following attributes are becoming deprecated, and will be marked `deprecated` in the next release.
+
+NOTE: they are not yet marked as such to leave some time for transition, and ensure every feature has been ported to the new attributes.
+
+- [`BerParserSet`](crate::BerParserSet), [`DerParserSet`](crate::DerParserSet), [`ToBerSet`](crate::ToBerSet): replace by `Set`
+- [`BerParserSequence`](crate::BerParserSequence), [`DerParserSequence`](crate::DerParserSequence), [`ToBerSequence`](crate::ToBerSequence): replace by `Sequence`
 
 [`DynTagged`]: crate::DynTagged
 [`Sequence`]: crate::derive::Sequence

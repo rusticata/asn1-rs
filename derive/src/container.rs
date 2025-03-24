@@ -104,7 +104,7 @@ impl Container {
                     _ => (),
                 }
             }
-            (ContainerType::Alias, _) => panic!("BER/DER alias must be used with tuple strucs"),
+            (ContainerType::Alias, _) => panic!("BER/DER alias must be used with tuple structs"),
             (_, Fields::Unnamed(_)) => panic!("BER/DER sequence cannot be used on tuple structs"),
             _ => (),
         }

@@ -243,7 +243,7 @@ My-Type ::= RELATIVE-OID
 </td>	
 <td>
 
-Relative object identifiers are also implemented usind `Oid` (Copy-on-Write):
+Relative object identifiers are also implemented using `Oid` (Copy-on-Write):
 ```rust
 use asn1_rs::*;
 type T1<'a> = Oid<'a>;
@@ -397,7 +397,7 @@ Use custom derive:
 ```rust
 use asn1_rs::*;
 
-#[derive(Debug, PartialEq, DerSequence, ToDerSequence)]
+#[derive(Debug, PartialEq, Sequence)]
 struct MyType {
     a: bool,
     b: u32,
@@ -468,7 +468,7 @@ Use custom derive:
 ```rust
 use asn1_rs::*;
 
-#[derive(Debug, PartialEq, DerSet, ToDerSet)]
+#[derive(Debug, PartialEq, Set)]
 struct MyType {
     a: bool,
     b: u32,
@@ -541,7 +541,7 @@ Using custom derive attribute for a `struct`:
 ```rust
 use asn1_rs::*;
 
-#[derive(Debug, PartialEq, DerSequence, ToDerSequence)]
+#[derive(Debug, PartialEq, Sequence)]
 pub struct MyType {
     #[default(true)]
     a: bool,
