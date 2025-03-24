@@ -4,7 +4,7 @@ use crate::container::*;
 use crate::options::Options;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
-use syn::{parse_quote, Data, Error, Ident, Lifetime, Result, WherePredicate};
+use syn::{parse_quote, Data, Error, Ident, Lifetime, LitInt, Result, WherePredicate};
 use synstructure::VariantInfo;
 
 pub fn derive_choice(s: synstructure::Structure) -> TokenStream {
@@ -98,19 +98,47 @@ fn parse_tag_variants<'a, 'r>(
     let v = s
         .variants()
         .iter()
-        .map(|vi| {
+        .try_fold(Vec::new(), |mut acc, vi| -> Result<Vec<_>> {
             // eprintln!("variant {current_tag} info: {vi:?}");
-            let tag_variant = TagVariant {
-                tag: current_tag,
-                vi,
+
+            let tag = match get_variant_tag(vi)? {
+                Some(tag) => {
+                    // if a tag was provided, update counter to use it from now
+                    current_tag = tag;
+                    tag
+                }
+                None => current_tag,
             };
+            let tag_variant = TagVariant { tag, vi };
+            // before inserting, check for tags unicity
+            if acc.iter().any(|tv: &TagVariant<'_, '_>| tv.tag == tag) {
+                return Err(Error::new_spanned(
+                    &vi.ast().ident,
+                    "'Choice': duplicate tag found",
+                ));
+            }
+            acc.push(tag_variant);
 
             current_tag += 1;
 
-            tag_variant
-        })
-        .collect();
+            Ok(acc)
+        })?;
+
     Ok(v)
+}
+
+/// Check attributes for 'tag' and use tag if provided
+fn get_variant_tag(vi: &VariantInfo<'_>) -> Result<Option<u32>> {
+    for attr in vi.ast().attrs {
+        let path = attr.meta.path();
+        if path.is_ident("tag") {
+            let lit: LitInt = attr.parse_args()?;
+            let tag_number = lit.base10_parse::<u32>()?;
+            return Ok(Some(tag_number));
+        }
+    }
+
+    Ok(None)
 }
 
 fn derive_choice_dyntagged(

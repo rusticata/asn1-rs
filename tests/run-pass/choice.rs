@@ -91,6 +91,42 @@ fn derive_choice_tagged_explicit() {
     let _ = MyEnum::parse_der(Input::from(ber0c)).expect_err("Tag 0 not constructed");
 }
 
+fn derive_choice_attribute_tag_explicit() {
+    #[derive(Debug, PartialEq)]
+    //
+    #[derive(Choice)]
+    #[tagged_explicit]
+    pub enum MyEnum {
+        Val0(u8),
+        Val1(String),
+        #[tag(4)]
+        Val2(u32),
+        #[tag(0x22)]
+        Val3(Vec<u32>),
+    }
+
+    //--- variant 2
+    // Ok: tag 4, valid content
+    let ber0 = &hex!("a4 03 020108");
+    let (_, r0_ber) = MyEnum::parse_ber(Input::from(ber0)).expect("parsing BER failed");
+    let (_, r0_der) = MyEnum::parse_der(Input::from(ber0)).expect("parsing DER failed");
+    assert_eq!(r0_ber, MyEnum::Val2(8));
+    assert_eq!(r0_der, MyEnum::Val2(8));
+
+    // Ok: tag 0x22, valid content
+    let expected = MyEnum::Val3(vec![0x08]);
+    let ber3 = &hex!("bf 22 05 3003020108");
+    let (_, r3_ber) = MyEnum::parse_ber(Input::from(ber3)).expect("parsing BER failed");
+    let (_, r3_der) = MyEnum::parse_der(Input::from(ber3)).expect("parsing DER failed");
+    assert_eq!(r3_ber, expected);
+    assert_eq!(r3_der, expected);
+
+    // Fail: tag 2
+    let ber0b = &hex!("a2 03 020108");
+    let _ = MyEnum::parse_ber(Input::from(ber0b)).expect_err("Tag 2 is not declared");
+    let _ = MyEnum::parse_der(Input::from(ber0b)).expect_err("Tag 2 is not declared");
+}
+
 fn derive_choice_tagged_implicit() {
     #[derive(Debug, PartialEq)]
     //
@@ -125,6 +161,42 @@ fn derive_choice_tagged_implicit() {
     let (_, r3_der) = MyEnum::parse_der(Input::from(ber3)).expect("parsing DER failed");
     assert_eq!(r3_ber, expected);
     assert_eq!(r3_der, expected);
+}
+
+fn derive_choice_attribute_tag_implicit() {
+    #[derive(Debug, PartialEq)]
+    //
+    #[derive(Choice)]
+    #[tagged_implicit]
+    pub enum MyEnum {
+        Val0(u8),
+        Val1(String),
+        #[tag(4)]
+        Val2(u32),
+        #[tag(0x22)]
+        Val3(Vec<u32>),
+    }
+
+    //--- variant 2
+    // Ok: tag 4, valid content
+    let ber0 = &hex!("840108");
+    let (_, r0_ber) = MyEnum::parse_ber(Input::from(ber0)).expect("parsing BER failed");
+    let (_, r0_der) = MyEnum::parse_der(Input::from(ber0)).expect("parsing DER failed");
+    assert_eq!(r0_ber, MyEnum::Val2(8));
+    assert_eq!(r0_der, MyEnum::Val2(8));
+
+    // Ok: tag 0x22, valid content
+    let expected = MyEnum::Val3(vec![0x08]);
+    let ber3 = &hex!("bf 22 03 020108");
+    let (_, r3_ber) = MyEnum::parse_ber(Input::from(ber3)).expect("parsing BER failed");
+    let (_, r3_der) = MyEnum::parse_der(Input::from(ber3)).expect("parsing DER failed");
+    assert_eq!(r3_ber, expected);
+    assert_eq!(r3_der, expected);
+
+    // Fail: tag 2
+    let ber0b = &hex!("820108");
+    let _ = MyEnum::parse_ber(Input::from(ber0b)).expect_err("Tag 2 is not declared");
+    let _ = MyEnum::parse_der(Input::from(ber0b)).expect_err("Tag 2 is not declared");
 }
 
 #[cfg(feature = "std")]
@@ -213,6 +285,31 @@ mod with_std {
         assert_eq!(v0, r0_der);
     }
 
+    fn derive_choice_attribute_tag_explicit_encode() {
+        #[derive(Debug, PartialEq)]
+        //
+        #[derive(Choice)]
+        #[tagged_explicit]
+        pub enum MyEnum {
+            Val0(u8),
+            Val1(String),
+            #[tag(4)]
+            Val2(u32),
+            #[tag(0x22)]
+            Val3(Vec<u32>),
+        }
+
+        // Ok: variant 2
+        let v2 = MyEnum::Val2(8);
+        let ber = v2.to_ber_vec().expect("BER serialization failed");
+        let der = v2.to_der_vec().expect("DER serialization failed");
+        // check BER encoding
+        let expected = &hex!("a4 03 020108");
+        assert_eq!(&ber, expected);
+        // encoding should be the same
+        assert_eq!(&ber, &der);
+    }
+
     fn derive_choice_tagged_implicit_encode() {
         #[derive(Debug, PartialEq)]
         //
@@ -248,10 +345,37 @@ mod with_std {
         assert_eq!(&ber, expected);
     }
 
+    fn derive_choice_attribute_tag_implicit_encode() {
+        #[derive(Debug, PartialEq)]
+        //
+        #[derive(Choice)]
+        #[tagged_implicit]
+        pub enum MyEnum {
+            Val0(u8),
+            Val1(String),
+            #[tag(4)]
+            Val2(u32),
+            #[tag(0x22)]
+            Val3(Vec<u32>),
+        }
+
+        // Ok: variant 2
+        let v2 = MyEnum::Val2(8);
+        let ber = v2.to_ber_vec().expect("BER serialization failed");
+        let der = v2.to_der_vec().expect("DER serialization failed");
+        // check BER encoding
+        let expected = &hex!("840108");
+        assert_eq!(&ber, expected);
+        // encoding should be the same
+        assert_eq!(&ber, &der);
+    }
+
     pub fn run_tests() {
         derive_choice_untagged_encode();
         derive_choice_tagged_explicit_encode();
+        derive_choice_attribute_tag_explicit_encode();
         derive_choice_tagged_implicit_encode();
+        derive_choice_attribute_tag_implicit_encode();
     }
 }
 
@@ -259,7 +383,9 @@ fn main() {
     derive_choice_untagged();
     derive_choice_untagged_lifetime();
     derive_choice_tagged_explicit();
+    derive_choice_attribute_tag_explicit();
     derive_choice_tagged_implicit();
+    derive_choice_attribute_tag_implicit();
 
     #[cfg(feature = "std")]
     {

@@ -350,6 +350,10 @@ For convenience, 3 kinds of derive can be generated:
 - tagged explicit: each variant represent a type encoded as TAGGED EXPLICIT, with a tag number auto-generated (incremental number of order of appearance of the variant)
 - tagged explicit: similar, but with TAGGED IMPLICIT
 
+For the tagged kinds, the `tag` attribute can be used to specify the tag number of a variant.
+In that case, the automatic counter is updated to continue from that value (see examples below).
+If the same tag number happens multiple times, an error is raised.
+
 The `asn1` attribute can be used to control derived code.
 
 ### Examples
@@ -383,11 +387,35 @@ pub enum Test {
     /// index [1] INTEGER
     Index(u32),
 }
-
+#
 # let parser = |input| -> IResult<Input, (), BerError<Input>> {
-let (rem, result) = Test::parse_ber(input)?;
+# let (rem, result) = Test::parse_ber(input)?;
 # Ok((rem, ())) };
 ```
+
+`CHOICE` with TAGGED EXPLICIT variants only (using `tagged_explicit` attribute) and specific tags:
+```rust
+# use asn1_rs::*;
+/// Test ::= CHOICE
+#[derive(Debug, PartialEq, Choice)]
+#[tagged_explicit]
+pub enum Test {
+    /// name [0] UTF8String
+    Name(String),
+    /// surname [4] UTF8String
+    #[tag(4)]
+    Surname(String),
+    // since above variant used `tag(4)`, current tag will be 5
+    // to override this, use the `tag` attribute again
+    /// lastname [5] UTF8String
+    LastName(String),
+}
+#
+# let parser = |input| -> IResult<Input, (), BerError<Input>> {
+# let (rem, result) = Test::parse_ber(input)?;
+# Ok((rem, ())) };
+```
+
 `CHOICE` with TAGGED IMPLICIT variants only (using `tagged_implicit` attribute):
 ```rust
 # use asn1_rs::*;
@@ -403,9 +431,9 @@ pub enum GeneralName<'a> {
     DNSName(Ia5String<'a>),
     // ...
 }
-
+#
 # let parser = |input| -> IResult<Input, (), BerError<Input>> {
-let (rem, result) = GeneralName::parse_ber(input)?;
+# let (rem, result) = GeneralName::parse_ber(input)?;
 # Ok((rem, ())) };
 ```
 
