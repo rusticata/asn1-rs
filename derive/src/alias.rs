@@ -64,7 +64,7 @@ pub fn derive_berparser_alias(s: synstructure::Structure) -> Result<TokenStream>
     } else {
         quote! {}
     };
-    let impl_berparser = container.gen_berparser(Asn1Type::Ber, &options);
+    let impl_berparser = container.gen_berparser(Asn1Type::Ber, &options, &s);
     let ts = s.gen_impl(quote! {
         extern crate asn1_rs;
 
@@ -131,7 +131,7 @@ pub fn derive_derparser_alias(s: synstructure::Structure) -> Result<TokenStream>
     } else {
         quote! {}
     };
-    let impl_derparser = container.gen_berparser(Asn1Type::Der, &options);
+    let impl_derparser = container.gen_berparser(Asn1Type::Der, &options, &s);
     let ts = s.gen_impl(quote! {
         extern crate asn1_rs;
 
