@@ -398,6 +398,14 @@ impl<'a> FromDer<'a> for Header<'a> {
 }
 
 impl DynTagged for Header<'_> {
+    fn class(&self) -> Class {
+        self.class
+    }
+
+    fn constructed(&self) -> bool {
+        self.constructed
+    }
+
     fn tag(&self) -> Tag {
         self.tag
     }
