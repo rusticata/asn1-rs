@@ -67,7 +67,17 @@ My-Type ::= CHOICE {
 </td>	
 <td>
 
-_Not yet supported_
+```rust
+use asn1_rs::Choice;
+/// MessageType ::= CHOICE
+#[derive(Debug, PartialEq, Choice)]
+pub enum MessageType<'a> {
+    /// text OCTET STRING
+    Text(&'a [u8]),
+    /// codedNumeric INTEGER
+    CodedNumeric(u32),
+}
+```
 
 </td>
 </tr>
