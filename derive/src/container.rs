@@ -58,6 +58,17 @@ pub enum Asn1TagClass {
     Private,
 }
 
+impl Asn1TagClass {
+    pub fn class_tokens(&self) -> TokenStream {
+        match *self {
+            Asn1TagClass::Universal => quote! { asn1_rs::Class::Universal },
+            Asn1TagClass::Application => quote! { asn1_rs::Class::Application },
+            Asn1TagClass::ContextSpecific => quote! { asn1_rs::Class::ContextSpecific },
+            Asn1TagClass::Private => quote! { asn1_rs::Class::Private },
+        }
+    }
+}
+
 impl ToTokens for Asn1TagClass {
     fn to_tokens(&self, tokens: &mut TokenStream) {
         let s = match self {
@@ -492,8 +503,35 @@ impl Container {
         let content_len = asn1_type.content_len_tokens();
 
         let body = s.fold(quote! {asn1_rs::Length::Definite(0)}, |acc, bi| {
-            quote! {
-                #acc + #bi.#total_len()
+            // check if binding has a 'tag_explicit' or 'tag_implicit' attribute
+            let tag_kind = get_field(&self.fields, bi.ast().ident.as_ref())
+                .map(|f| f.tag)
+                .flatten();
+
+            match tag_kind {
+                Some((Asn1TagKind::Explicit, _class, tag)) => {
+                    // TAGGED EXPLICIT: add length required to encode tag header
+                    let tag = u32::from(tag);
+                    quote! {
+                        #acc
+                            + asn1_rs::ber_header_length(asn1_rs::Tag(#tag), #bi.#total_len()).unwrap_or_default()
+                            + #bi.#total_len()
+                    }
+                }
+                Some((Asn1TagKind::Implicit, _class, tag)) => {
+                    // TAGGED IMPLICIT: add length required to encode tag header
+                    // This could be different from `#bi.#total_len()` in the specific case one of
+                    // (implicit tag, object tag) is long and the other is not
+                    let tag = u32::from(tag);
+                    quote! {
+                        #acc
+                            + asn1_rs::ber_header_length(asn1_rs::Tag(#tag), #bi.#total_len()).unwrap_or_default()
+                            + #bi.#content_len()
+                    }
+                }
+                None => quote! {
+                    #acc + #bi.#total_len()
+                },
             }
         });
 
@@ -550,11 +588,34 @@ impl Container {
             asn1_type.encode_tokens()
         };
         let write_content = asn1_type.write_content_tokens();
+        let encode_explicit = asn1_type.compose("_encode_tagged_explicit");
+        let encode_implicit = asn1_type.compose("_encode_tagged_implicit");
 
         // we can't just use `s.fold()` because we need to add a footer `Ok(num_bytes)`
         let body = s.variants().iter().map(|vi| {
             let encode = vi.bindings().iter().map(|bi| {
-                quote! { num_bytes += #bi.#encode(writer)?; }
+                // check if binding has a 'tag_explicit' or 'tag_implicit' attribute
+                let tag_kind = get_field(&self.fields, bi.ast().ident.as_ref())
+                    .map(|f| f.tag)
+                    .flatten();
+
+                match tag_kind {
+                    Some((Asn1TagKind::Explicit, class, tag)) => {
+                        let tk_class = class.class_tokens();
+                        let tag = u32::from(tag);
+                        quote! {
+                            num_bytes += #bi.#encode_explicit(#tk_class, #tag, writer)?;
+                        }
+                    }
+                    Some((Asn1TagKind::Implicit, class, tag)) => {
+                        let tk_class = class.class_tokens();
+                        let tag = u32::from(tag);
+                        quote! {
+                            num_bytes += #bi.#encode_implicit(#tk_class, #tag, writer)?;
+                        }
+                    }
+                    None => quote! { num_bytes += #bi.#encode(writer)?; },
+                }
             });
             let pat = vi.pat();
             quote! {
@@ -801,6 +862,16 @@ fn derive_berparser_sequence_content(fields: &[FieldInfo], asn1_type: Asn1Type) 
     quote! {
         #(#field_parsers)*
     }
+}
+
+fn get_field<'a>(fields: &'a [FieldInfo], ident: Option<&Ident>) -> Option<&'a FieldInfo> {
+    let ident = if let Some(ident) = ident {
+        ident
+    } else {
+        return None;
+    };
+    // eprintln!("Looking for field '{ident}");
+    fields.iter().find(|&f| f.name == *ident)
 }
 
 // This is an adapted version of `get_field_parser` to use types related to `BerParser`

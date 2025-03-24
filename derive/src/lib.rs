@@ -161,8 +161,8 @@ synstructure::decl_derive!([Sequence, attributes(
     optional,
     error,
     map_err,
-    tagged_explicit,
-    tagged_implicit,
+    tag_explicit,
+    tag_implicit,
     asn1,
 )] => derive_sequence);
 
@@ -172,8 +172,8 @@ synstructure::decl_derive!([Set, attributes(
     optional,
     error,
     map_err,
-    tagged_explicit,
-    tagged_implicit,
+    tag_explicit,
+    tag_implicit,
     asn1,
 )] => derive_set);
 
