@@ -822,7 +822,7 @@ fn get_field_berparser(f: &FieldInfo, asn1_type: Asn1Type) -> TokenStream {
     let map_err = if let Some(tt) = f.map_err.as_ref() {
         quote! { .map_err(|err| err.map(#tt)) }
     } else {
-        quote! { .map_err(|e| e.map(|e| (rem, e).into())) }
+        quote! { .map_err(nom::Err::convert) }
     };
 
     if let Some((tag_kind, class, n)) = f.tag {

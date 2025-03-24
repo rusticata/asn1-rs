@@ -559,3 +559,43 @@ fn to_der_visiblestring() {
 fn to_der_videotexstring() {
     test_simple_string!(VideotexString, "abcdef");
 }
+
+#[test]
+fn derive_sequence_map_err() {
+    #[derive(Debug, PartialEq)]
+    pub enum MyError {
+        NotYetImplemented,
+    }
+
+    impl From<BerError<Input<'_>>> for MyError {
+        fn from(_: BerError<Input>) -> Self {
+            MyError::NotYetImplemented
+        }
+    }
+
+    impl nom::error::ParseError<Input<'_>> for MyError {
+        fn from_error_kind(_: Input, _: nom::error::ErrorKind) -> Self {
+            MyError::NotYetImplemented
+        }
+
+        fn append(_: Input, _: nom::error::ErrorKind, _: Self) -> Self {
+            MyError::NotYetImplemented
+        }
+    }
+
+    #[derive(Sequence)]
+    // #[debug_derive]
+    // #[asn1(parse = "BER", encode = "BER")]
+    #[error(MyError)]
+    pub struct T2 {
+        pub a: u32,
+    }
+
+    // subparser returns an error of type MyError,
+    // in this example we map this to a `BerError`
+    #[derive(Sequence)]
+    pub struct T4 {
+        #[map_err(|_| BerError::new(Input::from(&[]), InnerError::Unsupported))]
+        pub a: T2,
+    }
+}

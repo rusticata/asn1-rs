@@ -362,11 +362,14 @@ let (rem, result) = KeyIdentifier::parse_ber(input)?;
 
 # Advanced
 
-## Custom errors
+## Custom errors (parsers)
 
 Derived parsers can use the `error` attribute to specify the error type of the parser.
 
-The custom error type must implement `From<Error>`, so the derived parsers will transparently convert errors using the [`Into`] trait.
+The custom error type must implement the following traits, so the derived parsers will transparently convert errors using the [`Into`] trait:
+- `From<BerError<Input>>`: convert from errors for primitive/default `asn1_rs` types
+- [`nom::error::ParseError`]: common trait for `nom` errors
+
 
 
 Example:
@@ -378,52 +381,47 @@ pub enum MyError {
     NotYetImplemented,
 }
 
-impl From<asn1_rs::Error> for MyError {
-    fn from(_: asn1_rs::Error) -> Self {
+impl From<BerError<Input<'_>>> for MyError {
+    fn from(_: BerError<Input>) -> Self {
         MyError::NotYetImplemented
     }
 }
 
-#[derive(DerSequence)]
+impl nom::error::ParseError<Input<'_>> for MyError {
+    fn from_error_kind(_: Input, _: nom::error::ErrorKind) -> Self {
+        MyError::NotYetImplemented
+    }
+    fn append(_: Input, _: nom::error::ErrorKind, _: Self) -> Self {
+        MyError::NotYetImplemented
+    }
+}
+
+#[derive(Sequence)]
 #[error(MyError)]
 pub struct T2 {
     pub a: u32,
 }
 ```
 
-## Mapping errors
+## Mapping errors (parsers)
 
 Sometimes, it is necessary to map the returned error to another type, for example when a subparser returns a different error type than the parser's, and the [`Into`] trait cannot be implemented. This is often used in combination with the `error` attribute, but can also be used alone.
 
-The `map_err` attribute can be used to specify a function or closure to map errors. The function signature is `fn (e1: E1) -> E2`.
+The `map_err` attribute can be used to specify a function or closure to map errors. The function signature is `fn (e1: E1) -> E2` with `E1` the parser error type, `E2` the struct parser error type.
 
 Example:
 ```rust
 # use asn1_rs::*;
 #
-#[derive(Debug, PartialEq)]
-pub enum MyError {
-    NotYetImplemented,
+// Here we simply map the error to 'Unsupported'
+fn map_to_unsupported(e: BerError<Input>) -> BerError<Input> {
+    BerError::new(e.input().clone(), InnerError::Unsupported)
 }
 
-impl From<asn1_rs::Error> for MyError {
-    fn from(_: asn1_rs::Error) -> Self {
-        MyError::NotYetImplemented
-    }
-}
-
-#[derive(DerSequence)]
-#[error(MyError)]
-pub struct T2 {
-    pub a: u32,
-}
-
-// subparser returns an error of type MyError,
-// which is mapped to `Error`
-#[derive(DerSequence)]
+#[derive(Sequence)]
 pub struct T4 {
-    #[map_err(|_| Error::BerTypeError)]
-    pub a: T2,
+    #[map_err(map_to_unsupported)]
+    pub a: u32,
 }
 ```
 
@@ -433,19 +431,14 @@ pub struct T4 {
 
 ## BER/DER Sequence serialization
 
-To serialize a struct to a DER `SEQUENCE`, add the [`ToDerSequence`] derive attribute to an existing struct.
-Serialization will be derived automatically for all fields, which must implement the [`ToDer`] trait.
+The [`Sequence`], [`Set`], [`Choice`] and [`Alias`] derive attributes derive parsers and encoders by default, for BER and DER (this can be controlled using the `asn1` attribute).
 
-Some parser traits may be required, so also deriving parsers using [`DerSequence`] may be required.
+All struct fields must implement the related traits.
 
-*Note*: serialization to BER is currently not available. In most cases, DER serialization should be enough.
-
-
-For ex:
-
+DER serialization example:
 ```rust
 # use asn1_rs::*;
-#[derive(Debug, PartialEq, DerSequence, ToDerSequence)]
+#[derive(Debug, PartialEq, Sequence)]
 pub struct S {
     a: u32,
     b: u16,
@@ -454,7 +447,7 @@ pub struct S {
 
 let s = S { a: 1, b: 2, c: 3 };
 let output = s.to_der_vec().expect("serialization failed");
-let (_rest, result) = S::from_ber(&output).expect("parsing failed");
+let (_rest, result) = S::parse_ber(Input::from(&output)).expect("parsing failed");
 assert_eq!(s, result);
 ```
 
