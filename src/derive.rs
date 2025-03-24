@@ -655,7 +655,7 @@ pub use asn1_rs_derive::DerParserAlias;
 
 /// # ToStatic custom derive
 ///
-/// `ToStatic` is a custom derive attribute, to derive the [`ToStatic`](ToStatic) trait automatically from the structure definition.
+/// `ToStatic` is a custom derive attribute, to derive the [`ToStatic`] trait automatically from the structure definition.
 ///
 /// ## Example
 ///

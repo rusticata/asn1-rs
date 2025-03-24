@@ -35,7 +35,7 @@ encode and decode ASN.1 [[X.680]] objects in binary.
 [[X.690]] also defines Distinguished Encoding Rules (DER), which is BER with added rules to
 ensure canonical and unequivocal binary representation of objects.
 
-The choice of which one to use is usually guided by the speficication of the data format based
+The choice of which one to use is usually guided by the specification of the data format based
 on BER or DER: for example, X.509 uses DER as encoding representation.
 
 The main traits for parsing are the [`BerParser`](https://docs.rs/asn1-rs/latest/asn1_rs/from_ber/trait.BerParser.html) and
@@ -156,7 +156,7 @@ an `IntegerTooLarge` error.
 
 To simplify the code needed to declare common/usual ASN.1 objects, custom derive attributes are provided.
 
-For example, to derive a `MyType SEQUENCE { a INTEGER }`, declare a `struct` and add the [`Sequence`](derive::Sequence) attribute:
+For example, to derive a `MyType SEQUENCE { a INTEGER }`, declare a `struct` and add the [`Sequence`](derive@derive::Sequence) attribute:
 ```rust
 #[derive(Sequence)]
 pub struct MyType {
