@@ -477,6 +477,13 @@ fn to_der_tagged_explicit() {
     let (_, t2) =
         TaggedExplicit::<u32, Error, 1>::from_der(&v).expect("decoding serialized object failed");
     assert!(tagged.eq(&t2));
+    // ToDer trait function
+    let value = 2u32;
+    let mut v = Vec::new();
+    value
+        .der_encode_tagged_explicit(Class::ContextSpecific, 1, &mut v)
+        .expect("serialization failed");
+    assert_eq!(&v, &hex!("a1 03 02 01 02"));
 }
 
 #[test]
@@ -494,6 +501,13 @@ fn to_der_tagged_implicit() {
     let (_, t2) =
         TaggedImplicit::<u32, Error, 1>::from_der(&v).expect("decoding serialized object failed");
     assert!(tagged.eq(&t2));
+    // ToDer trait function
+    let value = 2u32;
+    let mut v = Vec::new();
+    value
+        .der_encode_tagged_implicit(Class::ContextSpecific, 1, &mut v)
+        .expect("serialization failed");
+    assert_eq!(&v, &hex!("81 01 02"));
 }
 
 #[test]

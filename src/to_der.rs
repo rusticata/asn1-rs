@@ -3,7 +3,7 @@
 use std::io::Write;
 
 use crate::to_ber::*;
-use crate::{Class, Length, SerializeResult, Tag};
+use crate::{Class, Header, Length, SerializeResult, Tag};
 
 /// Common trait for DER encoding functions
 ///
@@ -81,6 +81,45 @@ pub trait ToDer {
     /// Returns the number of bytes written
     fn der_encode<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
         let sz = self.der_write_header(target)? + self.der_write_content(target)?;
+
+        Ok(sz)
+    }
+
+    /// Encode and write the object (header + content) as TAGGED EXPLICIT and write it to the writer `target`
+    ///
+    /// Usually, `class` is `Class::ContextSpecific`.
+    ///
+    /// Returns the number of bytes written
+    fn der_encode_tagged_explicit<W: Write>(
+        &self,
+        class: Class,
+        tag_number: u32,
+        target: &mut W,
+    ) -> SerializeResult<usize> {
+        let length = self.der_total_len();
+        let tagged_header = Header::new(class, true, Tag(tag_number), length);
+        let sz = tagged_header.der_write_header(target)?
+            + self.der_write_header(target)?
+            + self.der_write_content(target)?;
+
+        Ok(sz)
+    }
+
+    /// Encode and write the object (header + content) as TAGGED IMPLICIT and write it to the writer `target`
+    ///
+    /// Usually, `class` is `Class::ContextSpecific`.
+    ///
+    /// Returns the number of bytes written
+    fn der_encode_tagged_implicit<W: Write>(
+        &self,
+        class: Class,
+        tag_number: u32,
+        target: &mut W,
+    ) -> SerializeResult<usize> {
+        let length = self.der_content_len();
+        let (_, constructed, _) = self.der_tag_info();
+        let tagged_header = Header::new(class, constructed, Tag(tag_number), length);
+        let sz = tagged_header.der_write_header(target)? + self.der_write_content(target)?;
 
         Ok(sz)
     }

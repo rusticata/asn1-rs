@@ -2,7 +2,7 @@
 
 use std::io::Write;
 
-use crate::{Class, InnerError, Length, SerializeResult, Tag};
+use crate::{Class, Header, InnerError, Length, SerializeResult, Tag};
 
 mod constructed;
 mod constructed_indefinite;
@@ -65,6 +65,45 @@ pub trait ToBer {
     /// Returns the number of bytes written
     fn ber_encode<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
         let sz = self.ber_write_header(target)? + self.ber_write_content(target)?;
+
+        Ok(sz)
+    }
+
+    /// Encode and write the object (header + content) as TAGGED EXPLICIT and write it to the writer `target`
+    ///
+    /// Usually, `class` is `Class::ContextSpecific`.
+    ///
+    /// Returns the number of bytes written
+    fn ber_encode_tagged_explicit<W: Write>(
+        &self,
+        class: Class,
+        tag_number: u32,
+        target: &mut W,
+    ) -> SerializeResult<usize> {
+        let length = self.ber_total_len();
+        let tagged_header = Header::new(class, true, Tag(tag_number), length);
+        let sz = tagged_header.ber_write_header(target)?
+            + self.ber_write_header(target)?
+            + self.ber_write_content(target)?;
+
+        Ok(sz)
+    }
+
+    /// Encode and write the object (header + content) as TAGGED IMPLICIT and write it to the writer `target`
+    ///
+    /// Usually, `class` is `Class::ContextSpecific`.
+    ///
+    /// Returns the number of bytes written
+    fn ber_encode_tagged_implicit<W: Write>(
+        &self,
+        class: Class,
+        tag_number: u32,
+        target: &mut W,
+    ) -> SerializeResult<usize> {
+        let length = self.ber_content_len();
+        let (_, constructed, _) = self.ber_tag_info();
+        let tagged_header = Header::new(class, constructed, Tag(tag_number), length);
+        let sz = tagged_header.ber_write_header(target)? + self.ber_write_content(target)?;
 
         Ok(sz)
     }
