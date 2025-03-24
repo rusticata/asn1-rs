@@ -299,7 +299,7 @@ fn derive_choice_parser_tagged(
 
         gen impl<#lft> asn1_rs::#parser<#lft> for @Self where #(#where_predicates)+* {
             type Error = #error;
-            fn #from_ber_content(header: &'_ Header<#lft>, input: Input<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
+            fn #from_ber_content(header: &'_ asn1_rs::Header<#lft>, input: asn1_rs::Input<#lft>) -> asn1_rs::nom::IResult<asn1_rs::Input<#lft>, Self, Self::Error> {
                 #assert_constructed
                 let rem = input.clone();
                 match header.tag().0 {
@@ -371,8 +371,9 @@ fn derive_choice_parser_untagged(
 
         gen impl<#lft> asn1_rs::#parser<#lft> for @Self where #(#where_predicates)+* {
             type Error = #error;
-            fn #from_ber_content(header: &'_ Header<#lft>, input: Input<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
+            fn #from_ber_content(header: &'_ asn1_rs::Header<#lft>, input: asn1_rs::Input<#lft>) -> asn1_rs::nom::IResult<asn1_rs::Input<#lft>, Self, Self::Error> {
                 // #assert_constructed
+                use asn1_rs::DynTagged;
                 let rem = input.clone();
                 #(#parse_branches_if_else)*
                 {
