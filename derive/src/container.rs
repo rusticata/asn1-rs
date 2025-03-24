@@ -243,7 +243,12 @@ impl Container {
     /// Generate blanked implementation of Ber/DerParser
     ///
     /// `Self` must be `Tagged`
-    pub fn gen_berparser(&self, asn1_type: Asn1Type, options: &Options) -> TokenStream {
+    pub fn gen_berparser(
+        &self,
+        asn1_type: Asn1Type,
+        options: &Options,
+        s: &synstructure::Structure,
+    ) -> TokenStream {
         if !options.parsers.contains(&asn1_type) {
             if options.debug {
                 eprintln!("// Parsers: skipping asn1_type {:?}", asn1_type);
@@ -269,7 +274,7 @@ impl Container {
         // Note: if Self has lifetime bounds, then a new bound must be added to the implementation
         // For ex: `pub struct AA<'a>` will require a bound `impl[..] DerParser[..] where 'i: 'a`
         // Container::from_datastruct takes care of this.
-        let wh = &self.where_predicates;
+        let mut wh = self.where_predicates.clone();
 
         let fn_content = if self.container_type == ContainerType::Alias {
             // special case: is this an alias for Any
@@ -287,6 +292,30 @@ impl Container {
                     .first()
                     .expect("Tuple struct without fields")
                     .type_;
+                // NOTE: this can fail it #ty contains lifetimes
+                // for ex: <&'a [u8] as BerParser<'ber>>  <-- would require 'a: 'ber
+
+                // workaround 1:
+                // let f_ty = {
+                //     let mut f_ty = f_ty.clone();
+                //     // replace all lifetimes with #lft
+                //     // this can be complex, there are many possible types
+                //     if let Type::Reference(ref mut r) = f_ty {
+                //         r.lifetime = Some(lft.clone());
+                //     }
+                //     f_ty
+                // };
+
+                // workaround 2:
+                // add all reverse lifetime bounds ('a: 'ber)
+                // this makes 'ber equal to all lifetimes (which seems right here)
+                for l in s.ast().generics.lifetimes() {
+                    if l.lifetime != lft {
+                        let pred: WherePredicate = parse_quote! { #l: #lft };
+                        wh.push(pred);
+                    }
+                }
+
                 error = quote! {
                     <#f_ty as #parser<#lft>>::Error
                 };
@@ -318,7 +347,7 @@ impl Container {
         let tokens = quote! {
             use asn1_rs::#parser;
 
-            gen impl<#lft> #parser<#lft> for @Self where #(#wh)+* {
+            gen impl<#lft> #parser<#lft> for @Self where #(#wh),* {
                 type Error = #error;
 
                 fn #from_ber_content(header: &'_ Header<#lft>, input: Input<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
@@ -326,6 +355,9 @@ impl Container {
                 }
             }
         };
+
+        // let s = tokens.clone();
+        // eprintln!("{}", quote! {#s});
 
         tokens
     }

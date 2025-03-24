@@ -1,38 +1,65 @@
 # BER/DER Custom Derive Attributes
 
-## BER/DER Sequence parsers
+## BER/DER Sequence
 
-### `BER`
+### `Sequence`
 
-To derive a BER `SEQUENCE` parser, add the [`BerSequence`] derive attribute to an existing struct. Parsers will be derived automatically for all fields, which must implement the [`FromBer`] trait.
+To derive parsers and encoders for a BER `SEQUENCE` object, add the [`Sequence`] derive attribute to an existing struct. All fields must implement
+- [`BerParser`] and [`DerParser`] traits for parsing,
+- [`ToBer`] and [`ToDer`] traits for encoding.
+
+By default, all traits are generated (+ [`DynTagged`]).
+
+The `asn1` attribute can be used to control which parsers and encoders are generated (see below).
 
 For ex:
 
 ```rust
 # use asn1_rs::*;
-#[derive(Debug, PartialEq, BerSequence)]
+#[derive(Debug, PartialEq, Sequence)]
 pub struct S {
     a: u32,
     b: u16,
     c: u16,
 }
 
-# let parser = |input| -> Result<(), Error> {
-let (rest, result) = S::from_ber(input)?;
-# Ok(()) };
+# let parser = |input| -> IResult<Input, (), BerError<Input>> {
+let (rem, result) = S::parse_ber(input)?;
+# Ok((rem, ())) };
 ```
 
-After parsing b, any bytes that were leftover and not used to fill val will be returned in `rest`.
+After parsing `input`, any bytes that were leftover and not used to fill val will be returned in `rem`.
 
 When parsing a `SEQUENCE` into a struct, any trailing elements of the `SEQUENCE` that do
-not have matching fields in val will not be included in `rest`, as these are considered
+not have matching fields in val will not be included in `rem`, as these are considered
 valid elements of the `SEQUENCE` and not trailing data.
 
-### `DER`
+### Restricting generated parsers and encoders
 
-To derive a `DER` parser, use the [`DerSequence`] custom attribute.
+To control generated code (for ex generate only a `DER` parser), use the `parse` or `encode` items
+of the `asn1` attribute.
 
-*Note: the `DerSequence` attributes derive both `BER` and `DER` parsers.*
+Each meta item is a string containing a comma-separated list of ASN.1 kinds (`BER` or `DER`)
+- if the meta item is absent, it defaults to `"BER,DER"`
+- if the meta item is present, code is generated only for the given ASN.1 kinds
+- if the meta item is present and empty, no code is generated
+
+| `asn1` meta item | Set of Possible Values | Examples |
+| ----- | ----- | ----- |
+| `parse` | `""`, `"BER"`, `"DER"` | `#asn1(parse="")`<br />`#asn1(parse="BER")`<br />`#asn1(parse="BER,DER")` |
+| `encode` | `""`, `"BER"`, `"DER"` | `#asn1(encode="")`<br />`#asn1(encode="BER")`<br />`#asn1(encode="BER,DER")` |
+
+To generate only the `BER` parser, and no encoder:
+```rust
+# use asn1_rs::*;
+#[derive(Debug, PartialEq, Sequence)]
+#[asn1(parse="BER", encode="")]
+pub struct S {
+    a: u32,
+    b: u16,
+    c: u16,
+}
+```
 
 ## Tagged values
 
@@ -208,9 +235,9 @@ struct S {
 }
 ```
 
-## BER/DER Set parsers
+## BER/DER Set
 
-Parsing BER/DER `SET` objects is very similar to `SEQUENCE`. Use the [`BerSet`] and [`DerSet`] custom derive attributes on the structure, and everything else is exactly the same as for sequences (see above for documentation).
+Deriving code for BER/DER `SET` objects is very similar to `SEQUENCE`. Use the [`Set`] custom derive attribute on the structure, and everything else is exactly the same as for sequences (see above for documentation).
 
 Example:
 ```rust
@@ -218,13 +245,13 @@ Example:
 use std::collections::BTreeSet;
 
 // `Ord` is needed because we will parse as a `BTreeSet` later
-#[derive(Debug, DerSet, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Set, PartialEq, Eq, PartialOrd, Ord)]
 pub struct S2 {
     a: u16,
 }
 
 // test with EXPLICIT Vec
-#[derive(Debug, PartialEq, DerSet)]
+#[derive(Debug, PartialEq, Set)]
 pub struct S {
     // a INTEGER
     a: u32,
@@ -234,12 +261,103 @@ pub struct S {
     c: TaggedExplicit<BTreeSet<S2>, Error, 0>,
 }
 
-# let parser = |input| -> Result<(), Error> {
-let (rem, result) = S::from_ber(input)?;
+# let parser = |input| -> IResult<Input, (), BerError<Input>> {
+let (rem, result) = S::parse_ber(input)?;
 
 // Get a reference on c (type is &BTreeSet<S2>)
 let ref_c = result.c.as_ref();
-# Ok(()) };
+# Ok((rem, ())) };
+```
+
+_Note: The `Sequence` and `Set` attributes cannot be used at the same time on a struct._
+
+## `CHOICE`
+
+The `Choice` derive attribute is used to derive code for an `enum` representing a `CHOICE` object.
+Each field represent a possible value.
+
+For convenience, 3 kinds of derive can be generated:
+- default ("Untagged"): each variant represent an ASN.1 type
+- tagged explicit: each variant represent a type encoded as TAGGED EXPLICIT, with a tag number auto-generated (incremental number of order of appearance of the variant)
+- tagged explicit: similar, but with TAGGED IMPLICIT
+
+The `asn1` attribute can be used to control derived code.
+
+### Examples
+
+Default (untagged) `CHOICE`:
+```rust
+# use asn1_rs::*;
+/// MessageType ::= CHOICE
+#[derive(Debug, PartialEq, Choice)]
+pub enum MessageType<'a> {
+    /// text OCTET STRING
+    Text(&'a [u8]),
+    /// codedNumeric INTEGER
+    CodedNumeric(u32),
+}
+
+# let parser = |input| -> IResult<Input, (), BerError<Input>> {
+let (rem, result) = MessageType::parse_ber(input)?;
+# Ok((rem, ())) };
+```
+
+`CHOICE` with TAGGED EXPLICIT variants only (using `tagged_explicit` attribute):
+```rust
+# use asn1_rs::*;
+/// Test ::= CHOICE
+#[derive(Debug, PartialEq, Choice)]
+#[tagged_explicit]
+pub enum Test {
+    /// age [0] INTEGER
+    Age(u32),
+    /// index [1] INTEGER
+    Index(u32),
+}
+
+# let parser = |input| -> IResult<Input, (), BerError<Input>> {
+let (rem, result) = Test::parse_ber(input)?;
+# Ok((rem, ())) };
+```
+`CHOICE` with TAGGED IMPLICIT variants only (using `tagged_implicit` attribute):
+```rust
+# use asn1_rs::*;
+/// GeneralName ::= CHOICE
+#[derive(Debug, PartialEq, Choice)]
+#[tagged_implicit]
+pub enum GeneralName<'a> {
+    /// otherName [0]  AnotherName
+    OtherName(Any<'a>),
+    /// rfc822Name [1] IA5String
+    Rfc822Name(Ia5String<'a>),
+     /// dNSName [2] IA5String
+    DNSName(Ia5String<'a>),
+    // ...
+}
+
+# let parser = |input| -> IResult<Input, (), BerError<Input>> {
+let (rem, result) = GeneralName::parse_ber(input)?;
+# Ok((rem, ())) };
+```
+
+## Type Alias
+
+The `Alias` derive attribute is used to derive code for an ASN.1 type alias.
+It can only be used on a struct with a single anonymous field.
+
+The `asn1` attribute can be used to control derived code.
+
+### Examples
+
+```rust
+# use asn1_rs::*;
+/// KeyIdentifier ::= OCTET STRING
+#[derive(Debug, PartialEq, Alias)]
+pub struct KeyIdentifier<'a>(&'a [u8]);
+
+# let parser = |input| -> IResult<Input, (), BerError<Input>> {
+let (rem, result) = KeyIdentifier::parse_ber(input)?;
+# Ok((rem, ())) };
 ```
 
 # Advanced
@@ -340,8 +458,16 @@ let (_rest, result) = S::from_ber(&output).expect("parsing failed");
 assert_eq!(s, result);
 ```
 
+[`DynTagged`]: crate::DynTagged
+[`Sequence`]: crate::derive::Sequence
+[`Set`]: crate::derive::Set
+[`Choice`]: crate::derive::Choice
+[`Alias`]: crate::derive::Alias
+[`BerParser`]: crate::BerParser
+[`DerParser`]: crate::DerParser
 [`FromBer`]: crate::FromBer
 [`FromDer`]: crate::FromDer
+[`ToBer`]: crate::ToBer
 [`ToDer`]: crate::ToDer
 [`BerSequence`]: crate::BerSequence
 [`DerSequence`]: crate::DerSequence

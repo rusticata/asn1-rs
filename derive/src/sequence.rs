@@ -54,14 +54,14 @@ impl<'s> DeriveSequence<'s> {
 
         let impl_tagged = self.container.gen_tagged();
 
-        let impl_berparser = self.container.gen_berparser(Asn1Type::Ber, &options);
-        let impl_derparser = self.container.gen_berparser(Asn1Type::Der, &options);
-        let impl_tober = self
+        let impl_berparser = self
             .container
-            .gen_tober(Asn1Type::Ber, &options, &synstruct);
-        let impl_toder = self
+            .gen_berparser(Asn1Type::Ber, options, synstruct);
+        let impl_derparser = self
             .container
-            .gen_tober(Asn1Type::Der, &options, &synstruct);
+            .gen_berparser(Asn1Type::Der, options, synstruct);
+        let impl_tober = self.container.gen_tober(Asn1Type::Ber, options, synstruct);
+        let impl_toder = self.container.gen_tober(Asn1Type::Der, options, synstruct);
         let ts = self.synstruct.gen_impl(quote! {
             extern crate asn1_rs;
 
@@ -213,7 +213,7 @@ pub(crate) fn derive_berparser_container(
     } else {
         quote! {}
     };
-    let impl_berparser = container.gen_berparser(asn1_type, &options);
+    let impl_berparser = container.gen_berparser(asn1_type, &options, &s);
     let ts = s.gen_impl(quote! {
         extern crate asn1_rs;
 
