@@ -1,5 +1,7 @@
 /// # BerSequence custom derive
 ///
+/// _This attribute will become deprecated in some time! See [Deprecated attributes](crate::doc::derive#deprecated-attributes)_
+///
 /// `BerSequence` is a custom derive attribute, to derive a BER `Sequence` parser automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`TryFrom<Any>`](super::Any), also providing [`FromBer`](super::FromBer)
@@ -56,6 +58,8 @@ pub use asn1_rs_derive::BerSequence;
 
 /// # BerParserSequence custom derive
 ///
+/// _This attribute will become deprecated in some time! See [Deprecated attributes](crate::doc::derive#deprecated-attributes)_
+///
 /// `BerParserSequence` is a custom derive attribute, to derive a BER `Sequence` parser automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`BerParser`](super::BerParser)
@@ -110,6 +114,8 @@ pub use asn1_rs_derive::BerSequence;
 pub use asn1_rs_derive::BerParserSequence;
 
 /// # DerSequence custom derive
+///
+/// _This attribute will become deprecated in some time! See [Deprecated attributes](crate::doc::derive#deprecated-attributes)_
 ///
 /// `DerSequence` is a custom derive attribute, to derive both BER and DER `Sequence` parsers automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
@@ -168,6 +174,8 @@ pub use asn1_rs_derive::DerSequence;
 
 /// # DerParserSequence custom derive
 ///
+/// _This attribute will become deprecated in some time! See [Deprecated attributes](crate::doc::derive#deprecated-attributes)_
+///
 /// `DerParserSequence` is a custom derive attribute, to derive a BER `Sequence` parser automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`BerParser`](super::BerParser)
@@ -222,6 +230,8 @@ pub use asn1_rs_derive::DerSequence;
 pub use asn1_rs_derive::DerParserSequence;
 
 /// # BerSet custom derive
+///
+/// _This attribute will become deprecated in some time! See [Deprecated attributes](crate::doc::derive#deprecated-attributes)_
 ///
 /// `BerSet` is a custom derive attribute, to derive a BER `Set` parser automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
@@ -279,6 +289,8 @@ pub use asn1_rs_derive::BerSet;
 
 /// # BerParserSet custom derive
 ///
+/// _This attribute will become deprecated in some time! See [Deprecated attributes](crate::doc::derive#deprecated-attributes)_
+///
 /// `BerParserSet` is a custom derive attribute, to derive a BER `Set` parser automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`BerParser`](super::BerParser)
@@ -333,6 +345,8 @@ pub use asn1_rs_derive::BerSet;
 pub use asn1_rs_derive::BerParserSet;
 
 /// # DerSet custom derive
+///
+/// _This attribute will become deprecated in some time! See [Deprecated attributes](crate::doc::derive#deprecated-attributes)_
 ///
 /// `DerSet` is a custom derive attribute, to derive both BER and DER `Set` parsers automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
@@ -391,6 +405,8 @@ pub use asn1_rs_derive::DerSet;
 
 /// # DerParserSet custom derive
 ///
+/// _This attribute will become deprecated in some time! See [Deprecated attributes](crate::doc::derive#deprecated-attributes)_
+///
 /// `DerParserSet` is a custom derive attribute, to derive a BER `Set` parser automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`BerParser`](super::BerParser)
@@ -446,6 +462,8 @@ pub use asn1_rs_derive::DerParserSet;
 
 /// # BerAlias custom derive
 ///
+/// _This attribute will become deprecated in some time! See [Deprecated attributes](crate::doc::derive#deprecated-attributes)_
+///
 /// `BerAlias` is a custom derive attribute, to derive a BER object parser automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`TryFrom<Any>`](super::Any), also providing [`FromBer`](super::FromBer)
@@ -496,6 +514,8 @@ pub use asn1_rs_derive::BerAlias;
 
 /// # BerParserAlias custom derive
 ///
+/// _This attribute will become deprecated in some time! See [Deprecated attributes](crate::doc::derive#deprecated-attributes)_
+///
 /// `BerParserAlias` is a custom derive attribute, to derive a DER object parser automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`DerParser`](super::DerParser)
@@ -539,6 +559,8 @@ pub use asn1_rs_derive::BerAlias;
 pub use asn1_rs_derive::BerParserAlias;
 
 /// # DerAlias custom derive
+///
+/// _This attribute will become deprecated in some time! See [Deprecated attributes](crate::doc::derive#deprecated-attributes)_
 ///
 /// `DerAlias` is a custom derive attribute, to derive a DER object parser automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
@@ -586,6 +608,8 @@ pub use asn1_rs_derive::BerParserAlias;
 pub use asn1_rs_derive::DerAlias;
 
 /// # DerParserAlias custom derive
+///
+/// _This attribute will become deprecated in some time! See [Deprecated attributes](crate::doc::derive#deprecated-attributes)_
 ///
 /// `DerParserAlias` is a custom derive attribute, to derive a DER object parser automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
@@ -662,6 +686,8 @@ pub use asn1_rs_derive::ToStatic;
 
 /// # ToBerSequence custom derive
 ///
+/// _This attribute will become deprecated in some time! See [Deprecated attributes](crate::doc::derive#deprecated-attributes)_
+///
 /// `ToBerSequence` is a custom derive attribute, to derive BER `Sequence` serialization automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`ToBer`](super::ToBer)
@@ -717,6 +743,8 @@ pub use asn1_rs_derive::ToStatic;
 pub use asn1_rs_derive::ToBerSequence;
 
 /// # ToDerSequence custom derive
+///
+/// _This attribute will become deprecated in some time! See [Deprecated attributes](crate::doc::derive#deprecated-attributes)_
 ///
 /// `ToDerSequence` is a custom derive attribute, to derive DER `Sequence` serialization automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
@@ -774,6 +802,8 @@ pub use asn1_rs_derive::ToDerSequence;
 
 /// # ToBerSet custom derive
 ///
+/// _This attribute will become deprecated in some time! See [Deprecated attributes](crate::doc::derive#deprecated-attributes)_
+///
 /// `ToBerSet` is a custom derive attribute, to derive BER `Set` serialization automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`ToBer`](super::ToBer)
@@ -830,6 +860,8 @@ pub use asn1_rs_derive::ToBerSet;
 
 /// # ToDerSet custom derive
 ///
+/// _This attribute will become deprecated in some time! See [Deprecated attributes](crate::doc::derive#deprecated-attributes)_
+///
 /// `ToDerSet` is a custom derive attribute, to derive DER `Set` serialization automatically from the structure definition.
 /// This attribute will automatically derive implementations for the following traits:
 ///   - [`ToBer`](super::ToBer)
@@ -884,20 +916,28 @@ pub use asn1_rs_derive::ToBerSet;
 /// ```
 pub use asn1_rs_derive::ToDerSet;
 
-// FIXME: add documentation
+#[doc(hidden)]
 pub use asn1_rs_derive::BerParserChoice;
 
-// FIXME: add documentation
+#[doc(hidden)]
 pub use asn1_rs_derive::DerParserChoice;
 
-// FIXME: add documentation
+/// Derive parsers and encoders for an `enum` representing a `CHOICE`
+///
+/// See [Choice](crate::doc::derive#choice) section in 'derive' documentation.
 pub use asn1_rs_derive::Choice;
 
-// FIXME: add documentation
+/// Derive parsers and encoders for a `struct` representing a `SEQUENCE`
+///
+/// See [BER/DER Sequence](crate::doc::derive#berder-sequence) section in 'derive' documentation.
 pub use asn1_rs_derive::Sequence;
 
-// FIXME: add documentation
+/// Derive parsers and encoders for a `struct` representing a `SET`
+///
+/// See [BER/DER Set](crate::doc::derive#berder-set) section in 'derive' documentation.
 pub use asn1_rs_derive::Set;
 
-// FIXME: add documentation
+/// Create an ASN.1 type alias
+///
+/// See [Alias types](crate::doc::derive#type-alias) section in 'derive' documentation.
 pub use asn1_rs_derive::Alias;

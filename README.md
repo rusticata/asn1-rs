@@ -23,7 +23,7 @@ programming), tests, and fuzzing. It also aims to be panic-free.
 This crate is a rewrite of [der-parser](https://crates.io/crates/der-parser) to propose a more data-oriented API,
 and add generalized support for serialization.
 
-Many ideas were borrowed from the [crypto/utils/der](https://github.com/RustCrypto/utils/tree/master/der) crate (like
+Many ideas were initially borrowed from the [crypto/utils/der](https://github.com/RustCrypto/utils/tree/master/der) crate (like
 the `Any`/`TryFrom`/`FromDer` mechanism), adapted and merged into a generalized BER/DER crate.
 Credits (and many thanks) go to Tony Arcieri for writing the original crate.
 
@@ -151,6 +151,20 @@ assert_eq!(&writer, bytes);
 
 If the parsing succeeds, but the integer cannot fit into the expected type, the method will return
 an `IntegerTooLarge` error.
+
+## Custom derive attributes
+
+To simplify the code needed to declare common/usual ASN.1 objects, custom derive attributes are provided.
+
+For example, to derive a `MyType SEQUENCE { a INTEGER }`, declare a `struct` and add the [`Sequence`](derive::Sequence) attribute:
+```rust
+#[derive(Sequence)]
+pub struct MyType {
+  a: u32,
+}
+```
+
+See [doc::derive] for documentation and examples.
 
 
 ### Changes
