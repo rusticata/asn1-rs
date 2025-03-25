@@ -31,6 +31,12 @@ fn compile_pass_choice() {
 }
 
 #[test]
+fn compile_pass_enumerated() {
+    let t = trybuild::TestCases::new();
+    t.pass("tests/run-pass/enumerated*.rs");
+}
+
+#[test]
 fn compile_pass_sequence() {
     let t = trybuild::TestCases::new();
     t.pass("tests/run-pass/sequence*.rs");

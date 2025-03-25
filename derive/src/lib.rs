@@ -3,6 +3,7 @@ mod asn1_type;
 mod check_derive;
 mod choice;
 mod container;
+mod enumerated;
 mod options;
 mod sequence;
 mod set;
@@ -10,6 +11,7 @@ mod tostatic;
 
 use alias::*;
 use choice::*;
+use enumerated::*;
 use sequence::*;
 use set::*;
 use tostatic::derive_tostatic;
@@ -184,6 +186,10 @@ synstructure::decl_derive!([Choice, attributes(
     tag,
     asn1,
 )] => derive_choice);
+
+synstructure::decl_derive!([Enumerated, attributes(
+    debug_derive,
+)] => derive_enumerated);
 
 synstructure::decl_derive!([Alias, attributes(
     debug_derive,
