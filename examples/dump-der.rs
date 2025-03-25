@@ -1,4 +1,4 @@
-use asn1_rs::{Any, Class, FromDer, Length, Result, Tag};
+use asn1_rs::{Any, AnyIterator, Class, DerMode, DerParser, Header, Input, Length, Tag};
 use colored::*;
 use nom::HexDisplay;
 // use oid_registry::{format_oid, Oid as DerOid, OidRegistry};
@@ -10,6 +10,10 @@ use std::{env, fs};
 struct Context<'a> {
     // oid_registry: OidRegistry<'a>,
     hex_max: usize,
+
+    // number of characters required to print an offset in file
+    off_width: usize,
+
     t: PhantomData<&'a ()>,
 }
 
@@ -19,32 +23,81 @@ impl Default for Context<'_> {
         Context {
             // oid_registry,
             hex_max: 64,
+            off_width: 0,
             t: PhantomData,
         }
     }
 }
 
+fn print_offsets(start: usize, len: usize, ctx: &Context) {
+    print!("{start:width$} {len:width$}: ", width = ctx.off_width);
+}
+
+fn print_offsets_none(ctx: &Context) {
+    print!("{:width$} {:width$}: ", "", "", width = ctx.off_width);
+}
+
+fn print_header(header: &Header, depth: usize, _ctx: &Context) {
+    let class = match header.class() {
+        Class::Universal => "UNIVERSAL".to_string().white(),
+        c => c.to_string().cyan(),
+    };
+    let mut detailed_print = false;
+
+    if header.tag().0 >= 31 || header.class() != Class::Universal {
+        detailed_print = true;
+    }
+
+    let hdr = if !detailed_print {
+        // well-known tag
+        header.tag().to_string().to_ascii_uppercase()
+    } else {
+        format!(
+            "[c:{} t:{}({}) l:{}]",
+            class,
+            header.tag().0,
+            header.tag().to_string().white(),
+            str_of_length(header.length())
+        )
+    };
+    indent_print!(depth, "{}", hdr);
+}
+
 #[macro_export]
-macro_rules! indent_println {
+macro_rules! indent_print {
     ( $depth: expr, $fmt:expr ) => {
-        println!(concat!("{:indent$}",$fmt), "", indent = 2*$depth)
+        print!(concat!("{:indent$}",$fmt), "", indent = 2*$depth)
     };
     ( $depth: expr, $fmt:expr, $( $x:expr ),* ) => {
-        println!(concat!("{:indent$}",$fmt), "", $($x),*, indent = 2*$depth)
+        print!(concat!("{:indent$}",$fmt), "", $($x),*, indent = 2*$depth)
     };
 }
 
-#[allow(dead_code)]
-pub fn print_hex_dump(bytes: &[u8], max_len: usize) {
+#[macro_export]
+macro_rules! indent_println {
+    ( $depth: expr, $fmt:expr ) => {
+        indent_print!($depth, $fmt); println!();
+    };
+    ( $depth: expr, $fmt:expr, $( $x:expr ),* ) => {
+        indent_print!($depth, $fmt, $($x),*); println!();
+    };
+}
+
+fn print_hex_dump(bytes: &[u8], ctx: &Context) {
+    let max_len = ctx.hex_max;
     let m = min(bytes.len(), max_len);
-    print!("{}", &bytes[..m].to_hex(16));
+    for line in bytes[..m].to_hex(16).lines() {
+        print_offsets_none(ctx);
+        println!("{line}");
+    }
     if bytes.len() > max_len {
+        print_offsets_none(ctx);
         println!("... <continued>");
     }
 }
 
 fn main() -> std::result::Result<(), Box<dyn Error>> {
-    let ctx = Context::default();
+    let mut ctx = Context::default();
     for filename in env::args().skip(1) {
         eprintln!("File: {}", filename);
         let content = fs::read(&filename)?;
@@ -57,9 +110,11 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
             }
             for (idx, pem) in pems.iter().enumerate() {
                 eprintln!("Pem entry {} [{}]", idx, pem.tag().bright_blue());
+                ctx.off_width = (pem.contents().len() as f32).log10().floor() as usize + 1;
                 print_der(pem.contents(), 1, &ctx);
             }
         } else {
+            ctx.off_width = (content.len() as f32).log10().floor() as usize + 1;
             print_der(&content, 1, &ctx);
         }
     }
@@ -68,13 +123,15 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
 }
 
 fn print_der(i: &[u8], depth: usize, ctx: &Context) {
-    match Any::from_der(i) {
+    let input = Input::from(i);
+    let start = input.start();
+    match Any::parse_der(input) {
         Ok((rem, any)) => {
-            print_der_any(any, depth, ctx);
+            print_der_any(start, any, depth, ctx);
             if !rem.is_empty() {
                 let warning = format!("WARNING: {} extra bytes after object", rem.len());
                 indent_println!(depth, "{}", warning.bright_red());
-                print_hex_dump(rem, ctx.hex_max);
+                print_hex_dump(rem.as_bytes2(), ctx);
             }
         }
         Err(e) => {
@@ -83,42 +140,32 @@ fn print_der(i: &[u8], depth: usize, ctx: &Context) {
     }
 }
 
-fn print_der_result_any(r: Result<Any>, depth: usize, ctx: &Context) {
-    match r {
-        Ok(any) => print_der_any(any, depth, ctx),
-        Err(e) => {
-            eprintln!("Error while parsing at depth {}: {:?}", depth, e);
-        }
-    }
-}
+fn print_der_any(start: usize, any: Any, depth: usize, ctx: &Context) {
+    print_offsets(start, any.data.len(), ctx);
+    print_header(&any.header, depth, ctx);
 
-fn print_der_any(any: Any, depth: usize, ctx: &Context) {
-    let class = match any.header.class() {
-        Class::Universal => "UNIVERSAL".to_string().white(),
-        c => c.to_string().cyan(),
-    };
-    let hdr = format!(
-        "[c:{} t:{}({}) l:{}]",
-        class,
-        any.header.tag().0,
-        any.header.tag().to_string().white(),
-        str_of_length(any.header.length())
-    );
-    indent_println!(depth, "{}", hdr);
+    let inner_start = any.data.start();
     match any.header.class() {
-        Class::Universal => (),
+        Class::Universal => {
+            println!();
+        }
         Class::ContextSpecific | Class::Application => {
-            // attempt to decode inner object (if EXPLICIT)
-            match Any::from_der(any.data.as_bytes2()) {
+            let tag_desc = if any.header.class() == Class::Application {
+                " APPLICATION"
+            } else {
+                ""
+            };
+            // attempt to decode inner object (if EXPLICIT or APPLICATION)
+            match Any::parse_der(any.data.clone()) {
                 Ok((rem2, inner)) => {
                     indent_println!(
                         depth + 1,
                         "{} (rem.len={})",
-                        format!("EXPLICIT [{}]", any.header.tag().0).green(),
+                        format!("EXPLICIT{} [{}]", tag_desc, any.header.tag().0).green(),
                         // any.header.tag.0,
                         rem2.len()
                     );
-                    print_der_any(inner, depth + 2, ctx);
+                    print_der_any(inner_start, inner, depth + 2, ctx);
                 }
                 Err(_) => {
                     // assume tagged IMPLICIT
@@ -131,10 +178,10 @@ fn print_der_any(any: Any, depth: usize, ctx: &Context) {
             }
             return;
         }
-        _ => {
+        Class::Private => {
             indent_println!(
                 depth + 1,
-                "tagged: [{}] {}",
+                "PRIVATE: [{}] {}",
                 any.header.tag().0,
                 "*NOT SUPPORTED*".red()
             );
@@ -144,60 +191,67 @@ fn print_der_any(any: Any, depth: usize, ctx: &Context) {
     match any.header.tag() {
         Tag::BitString => {
             let b = any.bitstring().unwrap();
-            indent_println!(depth + 1, "BITSTRING");
-            print_hex_dump(b.as_ref(), ctx.hex_max);
+            print_hex_dump(b.as_ref(), ctx);
         }
         Tag::Boolean => {
             let b = any.bool().unwrap();
+            print_offsets_none(ctx);
             indent_println!(depth + 1, "BOOLEAN: {}", b.to_string().green());
         }
         Tag::EmbeddedPdv => {
             let e = any.embedded_pdv().unwrap();
+            print_offsets_none(ctx);
             indent_println!(depth + 1, "EMBEDDED PDV: {:?}", e);
-            print_hex_dump(e.data_value, ctx.hex_max);
+            print_hex_dump(e.data_value, ctx);
         }
         Tag::Enumerated => {
             let i = any.enumerated().unwrap();
+            print_offsets_none(ctx);
             indent_println!(depth + 1, "ENUMERATED: {}", i.0);
         }
         Tag::GeneralizedTime => {
             let s = any.generalizedtime().unwrap();
+            print_offsets_none(ctx);
             indent_println!(depth + 1, "GeneralizedTime: {}", s);
         }
         Tag::GeneralString => {
             let s = any.generalstring().unwrap();
+            print_offsets_none(ctx);
             indent_println!(depth + 1, "GeneralString: {}", s.as_ref());
         }
         Tag::Ia5String => {
             let s = any.ia5string().unwrap();
+            print_offsets_none(ctx);
             indent_println!(depth + 1, "IA5String: {}", s.as_ref());
         }
         Tag::Integer => {
             let i = any.integer().unwrap();
             match i.as_i128() {
                 Ok(i) => {
+                    print_offsets_none(ctx);
                     indent_println!(depth + 1, "{}", i);
                 }
                 Err(_) => {
-                    print_hex_dump(i.as_ref(), ctx.hex_max);
+                    print_hex_dump(i.as_ref(), ctx);
                 }
             }
         }
         Tag::Null => (),
         Tag::OctetString => {
             let b = any.octetstring().unwrap();
-            indent_println!(depth + 1, "OCTETSTRING");
-            print_hex_dump(b.as_ref(), ctx.hex_max);
+            print_hex_dump(b.as_ref(), ctx);
         }
         Tag::Oid => {
             let oid = any.oid().unwrap();
             // let der_oid = DerOid::new(oid.as_bytes().into());
             // let s = format_oid(&der_oid, &ctx.oid_registry).cyan();
             let s = oid.to_string().cyan();
+            print_offsets_none(ctx);
             indent_println!(depth + 1, "OID: {}", s);
         }
         Tag::PrintableString => {
             let s = any.printablestring().unwrap();
+            print_offsets_none(ctx);
             indent_println!(depth + 1, "PrintableString: {}", s.as_ref());
         }
         Tag::RelativeOid => {
@@ -205,26 +259,45 @@ fn print_der_any(any: Any, depth: usize, ctx: &Context) {
             // let der_oid = DerOid::new(oid.as_bytes().into());
             // let s = format_oid(&der_oid, &ctx.oid_registry).cyan();
             let s = oid.to_string().cyan();
+            print_offsets_none(ctx);
             indent_println!(depth + 1, "RELATIVE-OID: {}", s);
         }
         Tag::Set => {
-            let seq = any.set().unwrap();
-            for item in seq.der_iter::<Any, asn1_rs::Error>() {
-                print_der_result_any(item, depth + 1, ctx);
+            let item_depth = depth + 1;
+            for r in AnyIterator::<DerMode>::new(any.data.clone()) {
+                //
+                match r {
+                    Ok((item_input, item)) => {
+                        print_der_any(item_input.start(), item, item_depth, ctx);
+                    }
+                    Err(e) => {
+                        eprintln!("Error while parsing at depth {}: {:?}", item_depth, e);
+                    }
+                }
             }
         }
         Tag::Sequence => {
-            let seq = any.sequence().unwrap();
-            for item in seq.der_iter::<Any, asn1_rs::Error>() {
-                print_der_result_any(item, depth + 1, ctx);
+            let item_depth = depth + 1;
+            for r in AnyIterator::<DerMode>::new(any.data.clone()) {
+                //
+                match r {
+                    Ok((item_input, item)) => {
+                        print_der_any(item_input.start(), item, item_depth, ctx);
+                    }
+                    Err(e) => {
+                        eprintln!("Error while parsing at depth {}: {:?}", item_depth, e);
+                    }
+                }
             }
         }
         Tag::UtcTime => {
             let s = any.utctime().unwrap();
+            print_offsets_none(ctx);
             indent_println!(depth + 1, "UtcTime: {}", s);
         }
         Tag::Utf8String => {
             let s = any.utf8string().unwrap();
+            print_offsets_none(ctx);
             indent_println!(depth + 1, "UTF-8: {}", s.as_ref());
         }
         _ => unimplemented!("unsupported tag {}", any.header.tag()),
