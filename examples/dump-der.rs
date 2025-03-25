@@ -187,7 +187,19 @@ fn print_der_any(start: usize, any: Any, depth: usize, ctx: &Context) {
     match any.header.tag() {
         Tag::BitString => {
             let b = any.bitstring().unwrap();
-            print_hex_dump(b.as_ref(), ctx);
+            let bit_slice = b.as_bitslice();
+            if bit_slice.len() < 64 {
+                let s: String = bit_slice
+                    .iter()
+                    .rev()
+                    .map(|bitref| if *bitref { '1' } else { '0' })
+                    .collect();
+                print_offsets_none(ctx);
+                indent_println!(depth + 1, "'{}'B", s);
+            } else {
+                // bitstring too long, print as hex
+                print_hex_dump(b.as_ref(), ctx);
+            }
         }
         Tag::Boolean => {
             let b = any.bool().unwrap();
