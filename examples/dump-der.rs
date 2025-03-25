@@ -157,7 +157,7 @@ fn print_der_any(start: usize, any: Any, depth: usize, ctx: &Context) {
             };
             // attempt to decode inner object (if EXPLICIT or APPLICATION)
             match Any::parse_der(any.data.clone()) {
-                Ok((rem2, inner)) => {
+                Ok((rem2, inner)) if rem2.is_empty() => {
                     indent_println!(
                         depth + 1,
                         "{} (rem.len={})",
@@ -167,13 +167,9 @@ fn print_der_any(start: usize, any: Any, depth: usize, ctx: &Context) {
                     );
                     print_der_any(inner_start, inner, depth + 2, ctx);
                 }
-                Err(_) => {
-                    // assume tagged IMPLICIT
-                    indent_println!(
-                        depth + 1,
-                        "{}",
-                        "could not decode (IMPLICIT tagging?)".bright_red()
-                    );
+                _ => {
+                    println!();
+                    print_hex_dump(any.data.as_bytes2(), ctx);
                 }
             }
             return;
@@ -238,8 +234,19 @@ fn print_der_any(start: usize, any: Any, depth: usize, ctx: &Context) {
         }
         Tag::Null => (),
         Tag::OctetString => {
-            let b = any.octetstring().unwrap();
-            print_hex_dump(b.as_ref(), ctx);
+            // test if OCTET STRING is encapsulating data
+            let data = any.data.clone();
+            match Any::parse_der(data) {
+                Ok((rem, inner)) if rem.is_empty() => {
+                    print_offsets_none(ctx);
+                    indent_println!(depth + 1, "encapsulates:");
+                    print_der_any(inner_start, inner, depth + 1, ctx);
+                }
+                _ => {
+                    let b = any.octetstring().unwrap();
+                    print_hex_dump(b.as_ref(), ctx);
+                }
+            }
         }
         Tag::Oid => {
             let oid = any.oid().unwrap();
