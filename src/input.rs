@@ -45,6 +45,16 @@ impl<'a> Input<'a> {
     }
 
     #[inline]
+    pub const fn start(&self) -> usize {
+        self.span.start
+    }
+
+    #[inline]
+    pub const fn end(&self) -> usize {
+        self.span.end
+    }
+
+    #[inline]
     pub const fn len(&self) -> usize {
         self.data.len()
     }
