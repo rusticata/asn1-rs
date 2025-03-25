@@ -927,6 +927,11 @@ pub use asn1_rs_derive::DerParserChoice;
 /// See [Choice](crate::doc::derive#choice) section in 'derive' documentation.
 pub use asn1_rs_derive::Choice;
 
+/// Derive parsers and encoders for an `enum` representing an `ENUMERATED`
+///
+/// See [Enumerated](crate::doc::derive#enumerated) section in 'derive' documentation.
+pub use asn1_rs_derive::Enumerated;
+
 /// Derive parsers and encoders for a `struct` representing a `SEQUENCE`
 ///
 /// See [BER/DER Sequence](crate::doc::derive#berder-sequence) section in 'derive' documentation.
