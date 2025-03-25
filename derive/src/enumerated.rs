@@ -123,7 +123,7 @@ fn derive_enumerated_parser(
     });
 
     let assert_primitive = quote! {
-        header.assert_primitive_input(&input).map_err(Err::Error)?;
+        header.assert_primitive_input(&input).map_err(asn1_rs::nom::Err::Error)?;
     };
 
     // error type
