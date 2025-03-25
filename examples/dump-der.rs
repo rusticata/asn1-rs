@@ -1,6 +1,5 @@
 use asn1_rs::{Any, AnyIterator, Class, DerMode, DerParser, Header, Input, Length, Tag};
 use colored::*;
-use nom::HexDisplay;
 // use oid_registry::{format_oid, Oid as DerOid, OidRegistry};
 use std::cmp::min;
 use std::error::Error;
@@ -83,16 +82,20 @@ macro_rules! indent_println {
     };
 }
 
-fn print_hex_dump(bytes: &[u8], ctx: &Context) {
+fn print_hex_dump(depth: usize, bytes: &[u8], ctx: &Context) {
     let max_len = ctx.hex_max;
     let m = min(bytes.len(), max_len);
-    for line in bytes[..m].to_hex(16).lines() {
+    for chunk in bytes[..m].chunks(16) {
         print_offsets_none(ctx);
-        println!("{line}");
+        indent_print!(depth, "");
+        for b in chunk.iter() {
+            print!("{b:02X} ");
+        }
+        println!();
     }
     if bytes.len() > max_len {
         print_offsets_none(ctx);
-        println!("... <continued>");
+        indent_println!(depth, "... <continued>");
     }
 }
 
@@ -131,7 +134,7 @@ fn print_der(i: &[u8], depth: usize, ctx: &Context) {
             if !rem.is_empty() {
                 let warning = format!("WARNING: {} extra bytes after object", rem.len());
                 indent_println!(depth, "{}", warning.bright_red());
-                print_hex_dump(rem.as_bytes2(), ctx);
+                print_hex_dump(depth, rem.as_bytes2(), ctx);
             }
         }
         Err(e) => {
@@ -169,7 +172,7 @@ fn print_der_any(start: usize, any: Any, depth: usize, ctx: &Context) {
                 }
                 _ => {
                     println!();
-                    print_hex_dump(any.data.as_bytes2(), ctx);
+                    print_hex_dump(depth + 1, any.data.as_bytes2(), ctx);
                 }
             }
             return;
@@ -215,7 +218,7 @@ fn print_der_any(start: usize, any: Any, depth: usize, ctx: &Context) {
                     indent_println!(depth + 1, "'{}'B", s);
                 } else {
                     // bitstring too long, print as hex
-                    print_hex_dump(b.as_ref(), ctx);
+                    print_hex_dump(depth + 1, b.as_ref(), ctx);
                 }
             }
         }
@@ -228,7 +231,7 @@ fn print_der_any(start: usize, any: Any, depth: usize, ctx: &Context) {
             let e = any.embedded_pdv().unwrap();
             print_offsets_none(ctx);
             indent_println!(depth + 1, "EMBEDDED PDV: {:?}", e);
-            print_hex_dump(e.data_value, ctx);
+            print_hex_dump(depth + 1, e.data_value, ctx);
         }
         Tag::Enumerated => {
             let i = any.enumerated().unwrap();
@@ -258,7 +261,7 @@ fn print_der_any(start: usize, any: Any, depth: usize, ctx: &Context) {
                     indent_println!(depth + 1, "{}", i);
                 }
                 Err(_) => {
-                    print_hex_dump(i.as_ref(), ctx);
+                    print_hex_dump(depth + 1, i.as_ref(), ctx);
                 }
             }
         }
@@ -274,7 +277,7 @@ fn print_der_any(start: usize, any: Any, depth: usize, ctx: &Context) {
                 }
                 _ => {
                     let b = any.octetstring().unwrap();
-                    print_hex_dump(b.as_ref(), ctx);
+                    print_hex_dump(depth + 1, b.as_ref(), ctx);
                 }
             }
         }
