@@ -186,19 +186,37 @@ fn print_der_any(start: usize, any: Any, depth: usize, ctx: &Context) {
     }
     match any.header.tag() {
         Tag::BitString => {
+            let span = any.data.span().clone();
             let b = any.bitstring().unwrap();
-            let bit_slice = b.as_bitslice();
-            if bit_slice.len() < 64 {
-                let s: String = bit_slice
-                    .iter()
-                    .rev()
-                    .map(|bitref| if *bitref { '1' } else { '0' })
-                    .collect();
-                print_offsets_none(ctx);
-                indent_println!(depth + 1, "'{}'B", s);
-            } else {
-                // bitstring too long, print as hex
-                print_hex_dump(b.as_ref(), ctx);
+            // BIT STRING is sometimes used to encapsulate data
+            // Attempt to decode it
+            let input = Input::new(b.as_raw_slice(), span);
+            let mut encapsulates = false;
+            if let Ok((rem, inner)) = Any::parse_der(input) {
+                if rem.is_empty() {
+                    {
+                        encapsulates = true;
+                        print_offsets_none(ctx);
+                        indent_println!(depth + 1, "encapsulates:");
+                        print_der_any(inner_start, inner, depth + 1, ctx);
+                    }
+                }
+            }
+            // else print it
+            if !encapsulates {
+                let bit_slice = b.as_bitslice();
+                if bit_slice.len() < 64 {
+                    let s: String = bit_slice
+                        .iter()
+                        .rev()
+                        .map(|bitref| if *bitref { '1' } else { '0' })
+                        .collect();
+                    print_offsets_none(ctx);
+                    indent_println!(depth + 1, "'{}'B", s);
+                } else {
+                    // bitstring too long, print as hex
+                    print_hex_dump(b.as_ref(), ctx);
+                }
             }
         }
         Tag::Boolean => {
