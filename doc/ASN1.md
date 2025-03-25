@@ -93,12 +93,26 @@ My-Type ::= ENUMERATED { a, b, c }
 </td>	
 <td>
 
+Generic values:
 Value is parsed as `Enumerated`, which contains the index of the value in the type definition.
 ```rust
 use asn1_rs::Enumerated;
 type MyType = Enumerated;
 
 let val = Enumerated::new(2);
+```
+
+Derive attribute:
+```rust
+use asn1_rs::Enumerated;
+ #[derive(Debug, Clone, Copy)]
+// NOTE: enum must have an integer representation + Clone + Copy
+#[derive(Enumerated)]
+pub enum MyEnum {
+    Zero = 0,
+    Four = 4,
+    Five,
+}
 ```
 
 </td>
