@@ -10,8 +10,14 @@ struct Context<'a> {
     // oid_registry: OidRegistry<'a>,
     hex_max: usize,
 
-    // number of characters required to print an offset in file
+    /// number of characters required to print an offset in file
     off_width: usize,
+
+    /// Dump header
+    dump_header: bool,
+
+    /// Dump object hex data
+    dump_hex_data: bool,
 
     t: PhantomData<&'a ()>,
 }
@@ -23,6 +29,8 @@ impl Default for Context<'_> {
             // oid_registry,
             hex_max: 64,
             off_width: 0,
+            dump_header: false,
+            dump_hex_data: false,
             t: PhantomData,
         }
     }
@@ -95,13 +103,30 @@ fn print_hex_dump(depth: usize, bytes: &[u8], ctx: &Context) {
     }
     if bytes.len() > max_len {
         print_offsets_none(ctx);
-        indent_println!(depth, "... <continued>");
+        indent_println!(
+            depth,
+            "... <continued ({} more bytes)>",
+            bytes.len() - max_len
+        );
     }
 }
 
 fn main() -> std::result::Result<(), Box<dyn Error>> {
     let mut ctx = Context::default();
-    for filename in env::args().skip(1) {
+    for arg in env::args().skip(1) {
+        match arg.as_ref() {
+            "-h" => {
+                ctx.dump_header = true;
+                continue;
+            }
+            "-hh" => {
+                ctx.dump_header = true;
+                ctx.dump_hex_data = true;
+                continue;
+            }
+            _ => (),
+        }
+        let filename = arg;
         eprintln!("File: {}", filename);
         let content = fs::read(&filename)?;
         // check for PEM file
@@ -144,6 +169,25 @@ fn print_der(i: &[u8], depth: usize, ctx: &Context) {
 }
 
 fn print_der_any(start: usize, any: Any, depth: usize, ctx: &Context) {
+    if ctx.dump_header {
+        let raw_tag = any.header.raw_header().unwrap();
+        print!("<");
+        for b in raw_tag.as_bytes2() {
+            print!("{b:02X} ");
+        }
+        if ctx.dump_hex_data {
+            let max_bytes = min(any.data.len(), 32);
+            let bytes = &any.data.as_bytes2()[..max_bytes];
+            for b in bytes {
+                print!("{b:02X} ");
+            }
+            if any.data.len() > bytes.len() {
+                print!("...");
+            }
+        }
+        println!(">");
+    }
+
     print_offsets(start, any.data.len(), ctx);
     print_header(&any.header, depth, ctx);
 
