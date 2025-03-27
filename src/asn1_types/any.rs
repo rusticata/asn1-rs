@@ -50,6 +50,7 @@ impl<'a> Any<'a> {
                 class: Class::Universal,
                 length: Length::Definite(data.len()),
                 raw_tag: None,
+                raw_header: None,
             },
             data,
         }
