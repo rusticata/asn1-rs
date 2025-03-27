@@ -2,8 +2,7 @@ use crate::error::*;
 use crate::header::*;
 use crate::{BerMode, BerParser, DerMode, Input, Length, Tag};
 use nom::bytes::streaming::take;
-use nom::{Err, IResult, Input as _, Needed};
-use rusticata_macros::custom_check;
+use nom::{Err, IResult, Input as _};
 
 /// Default maximum recursion limit
 pub const MAX_RECURSION: usize = 50;
@@ -116,66 +115,6 @@ fn ber_skip_object_content<'a>(
                 i = i3;
             }
         }
-    }
-}
-
-/// Try to parse input bytes as u64
-#[inline]
-pub(crate) fn bytes_to_u64(s: &[u8]) -> core::result::Result<u64, Error> {
-    let mut u: u64 = 0;
-    for &c in s {
-        if u & 0xff00_0000_0000_0000 != 0 {
-            return Err(Error::IntegerTooLarge);
-        }
-        u <<= 8;
-        u |= u64::from(c);
-    }
-    Ok(u)
-}
-
-pub(crate) fn parse_identifier(i: &[u8]) -> ParseResult<(u8, u8, u32, &[u8])> {
-    if i.is_empty() {
-        Err(Err::Incomplete(Needed::new(1)))
-    } else {
-        let a = i[0] >> 6;
-        let b = u8::from(i[0] & 0b0010_0000 != 0);
-        let mut c = u32::from(i[0] & 0b0001_1111);
-
-        let mut tag_byte_count = 1;
-
-        if c == 0x1f {
-            c = 0;
-            loop {
-                // Make sure we don't read past the end of our data.
-                custom_check!(i, tag_byte_count >= i.len(), Error::InvalidTag)?;
-
-                // With tag defined as u32 the most we can fit in is four tag bytes.
-                // (X.690 doesn't actually specify maximum tag width.)
-                custom_check!(i, tag_byte_count > 5, Error::InvalidTag)?;
-
-                c = (c << 7) | (u32::from(i[tag_byte_count]) & 0x7f);
-                let done = i[tag_byte_count] & 0x80 == 0;
-                tag_byte_count += 1;
-                if done {
-                    break;
-                }
-            }
-        }
-
-        let (raw_tag, rem) = i.split_at(tag_byte_count);
-
-        Ok((rem, (a, b, c, raw_tag)))
-    }
-}
-
-/// Return the MSB and the rest of the first byte, or an error
-pub(crate) fn parse_ber_length_byte(i: &[u8]) -> ParseResult<(u8, u8)> {
-    if i.is_empty() {
-        Err(Err::Incomplete(Needed::new(1)))
-    } else {
-        let a = i[0] >> 7;
-        let b = i[0] & 0b0111_1111;
-        Ok((&i[1..], (a, b)))
     }
 }
 
