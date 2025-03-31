@@ -1,46 +1,83 @@
 #![allow(unused_imports)]
 
-use crate::ParseResult;
+use nom::{Err, IResult};
+
+use crate::{Input, ParseResult};
 
 pub(crate) mod macros {
-    macro_rules! debug_eprintln {
-    ($msg: expr, $( $args:expr ),* ) => {
-        #[cfg(feature = "debug")]
-        {
-            use colored::Colorize;
-            let s = $msg.to_string().green();
-            eprintln!("{} {}", s, format!($($args),*));
-        }
-    };
-}
-
+    /// Format and log message at TRACE level, but only if feature `trace` is enabled
     #[allow(unused_macros)]
-    macro_rules! trace_eprintln {
-    ($msg: expr, $( $args:expr ),* ) => {
-        #[cfg(feature = "trace")]
-        {
-            use colored::Colorize;
-            let s = $msg.to_string().green();
-            eprintln!("{} {}", s, format!($($args),*));
-        }
-    };
-}
+    macro_rules! log_trace {
+        ($fmt: expr) => {
+            #[cfg(feature = "trace")]
+            {
+                log::trace!($fmt);
+            }
+        };
+        ($fmt: expr, $( $args:expr ),*) => {
+            #[cfg(feature = "trace")]
+            {
+                log::trace!($fmt, $($args),*);
+            }
+        };
+    }
 
-    pub(crate) use debug_eprintln;
-    pub(crate) use trace_eprintln;
+    /// Format and log message at ERROR level, but only if feature `debug` is enabled
+    #[allow(unused_macros)]
+    macro_rules! log_error {
+        ($fmt: expr) => {
+            #[cfg(feature = "debug")]
+            {
+                log::error!($fmt);
+            }
+        };
+        ($fmt: expr, $( $args:expr ),*) => {
+            #[cfg(feature = "debug")]
+            {
+                log::error!($fmt, $($args),*);
+            }
+        };
+    }
+
+    /// Format and log message at the specified level, but only if feature `debug` is enabled
+    #[allow(unused_macros)]
+    macro_rules! debug_log {
+        ($lvl: expr, $fmt: expr) => {
+            #[cfg(feature = "debug")]
+            {
+                log::log!($lvl, $fmt);
+            }
+        };
+        ($lvl: expr, $fmt: expr, $( $args:expr ),*) => {
+            #[cfg(feature = "debug")]
+            {
+                log::log!($lvl, $fmt, $($args),*);
+            }
+        };
+    }
+
+    // re-exports for crate
+    pub(crate) use {debug_log, log_error, log_trace};
 }
 
 use macros::*;
 
 #[cfg(feature = "debug")]
-fn eprintln_hex_dump(bytes: &[u8], max_len: usize) {
+fn log_error_hex_dump(bytes: &[u8], max_len: usize) {
     use core::cmp::min;
-    use nom::HexDisplay;
+    const CHARS: &[u8] = b"0123456789abcdef";
 
     let m = min(bytes.len(), max_len);
-    eprint!("{}", &bytes[..m].to_hex(16));
+    let mut s = String::with_capacity(3 * m + 1);
+    for b in &bytes[..m] {
+        s.push(CHARS[(b >> 4) as usize] as char);
+        s.push(CHARS[(b & 0xf) as usize] as char);
+        s.push(' ');
+    }
+    s.pop();
+    log::error!("{s}");
     if bytes.len() > max_len {
-        eprintln!("... <continued>");
+        log::error!("... <continued>");
     }
 }
 
@@ -59,14 +96,14 @@ where
     F: Fn(I) -> Result<O, E>,
     E: core::fmt::Display,
 {
-    trace_eprintln!(msg, "⤷ {}", fname);
+    log_trace!("{msg} ⤷ {fname}");
     let output = f(input);
     match &output {
         Err(e) => {
-            debug_eprintln!(msg, "↯ {} failed: {}", fname, e.to_string().red());
+            log::error!("{msg} ↯ {fname} failed: {e}");
         }
         _ => {
-            debug_eprintln!(msg, "⤶ {}", fname);
+            log_trace!("{msg} ⤷ {fname}");
         }
     }
     output
@@ -86,29 +123,90 @@ pub fn trace<'a, T, E, F>(msg: &str, mut f: F, input: &'a [u8]) -> ParseResult<'
 where
     F: FnMut(&'a [u8]) -> ParseResult<'a, T, E>,
 {
-    trace_eprintln!(
-        msg,
-        "⤷ input (len={}, type={})",
+    log_trace!(
+        "{msg} ⤷ input (len={}, type={})",
         input.len(),
         core::any::type_name::<T>()
     );
     let res = f(input);
     match &res {
         Ok((_rem, _)) => {
-            trace_eprintln!(
-                msg,
-                "⤶ Parsed {} bytes, {} remaining",
+            log_trace!(
+                "{msg} ⤶ Parsed {} bytes, {} remaining",
                 input.len() - _rem.len(),
                 _rem.len()
             );
         }
         Err(_) => {
             // NOTE: we do not need to print error, caller should print it
-            debug_eprintln!(msg, "↯ Parsing failed at location:");
-            eprintln_hex_dump(input, 16);
+            log::error!("{msg} ↯ Parsing failed at location:");
+            log_error_hex_dump(input, 16);
         }
     }
     res
+}
+
+#[cfg(not(feature = "debug"))]
+#[inline]
+pub fn trace_input<'a, T, E, F>(
+    _msg: &'a str,
+    f: F,
+) -> impl FnMut(Input<'a>) -> IResult<Input<'a>, T, E>
+where
+    F: FnMut(Input<'a>) -> IResult<Input<'a>, T, E>,
+    T: 'a,
+{
+    f
+}
+
+/// Call the wrapped function, logging information about input (before) and result (after)
+#[cfg(feature = "debug")]
+pub fn trace_input<'a, T, E, F>(
+    msg: &'a str,
+    mut f: F,
+) -> impl FnMut(Input<'a>) -> IResult<Input<'a>, T, E>
+where
+    F: FnMut(Input<'a>) -> IResult<Input<'a>, T, E>,
+    T: 'a,
+    E: core::fmt::Display,
+{
+    use nom::Input as _;
+
+    move |input| {
+        let start = input.start();
+        let bytes = input.as_bytes2();
+        log_trace!(
+            "{msg} ⤷ input (start={} len={}, type={})",
+            start,
+            input.len(),
+            core::any::type_name::<T>()
+        );
+        //
+        let res = f(input);
+        match &res {
+            Ok((rem, _)) => {
+                debug_assert!(rem.start() > start);
+                log_trace!(
+                    "{msg} ⤶ (start={}) Parsed {} bytes, {} remaining",
+                    start,
+                    rem.start() - start,
+                    rem.input_len()
+                );
+            }
+            Err(Err::Error(e) | Err::Failure(e)) => {
+                log::error!("{msg} ↯ Parsing failed at location {start} with error '{e}':");
+                log_error_hex_dump(bytes, 16);
+            }
+            Err(Err::Incomplete(needed)) => {
+                log::error!(
+                    "{msg} ↯ Parsing failed at location {start} (missing {:?} bytes):",
+                    needed
+                );
+                log_error_hex_dump(bytes, 16);
+            }
+        }
+        res
+    }
 }
 
 #[cfg(feature = "debug")]
@@ -121,15 +219,98 @@ mod tests {
     use alloc::collections::BTreeSet;
     use hex_literal::hex;
 
+    extern crate env_logger;
+
+    fn init() {
+        let _ = env_logger::builder().is_test(true).try_init();
+    }
+
+    #[test]
+    fn debug_ber_parser_any() {
+        //
+        init();
+
+        //--- parse_ber_any
+
+        log::debug!("Unit test: parse_ber_any (OK)");
+        let input = &hex!("02 01 02 ff ff");
+        let (rem, result) = parse_ber_any(Input::from(input)).expect("parsing failed");
+        assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
+        assert_eq!(result.header.tag(), Tag::Integer);
+
+        log::debug!("Unit test: parse_ber_any (Fail: not enough bytes)");
+        let input = &hex!("02 08 02 ff ff");
+        let _ = parse_ber_any(Input::from(input)).expect_err("not enough bytes");
+
+        //--- Any::parse_ber
+
+        log::debug!("Unit test: Any::parse_ber (OK)");
+        let input = &hex!("02 01 02 ff ff");
+        let (rem, result) = Any::parse_ber(Input::from(input)).expect("parsing failed");
+        assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
+        assert_eq!(result.header.tag(), Tag::Integer);
+    }
+
+    #[test]
+    fn debug_der_parser_any() {
+        //
+        init();
+
+        //--- parse_der_any
+
+        log::debug!("Unit test: parse_der_any (OK)");
+        let input = &hex!("02 01 02 ff ff");
+        // let (rem, result) = Any::parse_ber(Input::from(input)).expect("parsing failed");
+        let (rem, result) = parse_der_any(Input::from(input)).expect("parsing failed");
+        assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
+        assert_eq!(result.header.tag(), Tag::Integer);
+
+        log::debug!("Unit test: parse_ber_any (Fail: not enough bytes)");
+        let input = &hex!("02 08 02 ff ff");
+        let _ = parse_der_any(Input::from(input)).expect_err("not enough bytes");
+
+        log::debug!("Unit test: parse_ber_any (Fail: indefinite length)");
+        let input = &hex!("02 80 00 00 ff");
+        let _ = parse_der_any(Input::from(input)).expect_err("indefinite length");
+
+        //--- Any::parse_der
+
+        log::debug!("Unit test: Any::parse_der (OK)");
+        let input = &hex!("02 01 02 ff ff");
+        let (rem, result) = Any::parse_der(Input::from(input)).expect("parsing failed");
+        assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
+        assert_eq!(result.header.tag(), Tag::Integer);
+
+        //--- Integer::parse_der
+
+        log::debug!("Unit test: Integer::parse_der (OK)");
+        let input = &hex!("02 01 02 ff ff");
+        let (rem, result) = Integer::parse_der(Input::from(input)).expect("parsing failed");
+        assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
+        assert_eq!(result.as_i32(), Ok(2));
+
+        //--- <u32>::parse_der
+
+        log::debug!("Unit test: <u32>::parse_der (OK)");
+        let input = &hex!("02 01 02 ff ff");
+        let (rem, result) = <u32>::parse_der(Input::from(input)).expect("parsing failed");
+        assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
+        assert_eq!(result, 2);
+    }
+
     #[test]
     fn debug_from_ber_any() {
+        init();
+
         assert!(Any::from_ber(&hex!("01 01 ff")).is_ok());
     }
 
     #[test]
     fn debug_from_ber_failures() {
+        init();
+
         // wrong type
-        eprintln!("--");
+        log::debug!("-- wrong type");
         assert!(<Vec<u16>>::from_ber(&hex!("02 01 00")).is_err());
     }
 
