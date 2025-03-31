@@ -198,17 +198,15 @@ macro_rules! impl_uint {
                 header: &'_ Header<'i>,
                 input: Input<'i>,
             ) -> IResult<Input<'i>, Self, Self::Error> {
-                trace_input(concat!(stringify!($ty), "::from_ber_content"), |input| {
-                    // Encoding shall be primitive (X.690: 8.3.1)
-                    header.assert_primitive_input(&input).map_err(Err::Error)?;
+                // Encoding shall be primitive (X.690: 8.3.1)
+                header.assert_primitive_input(&input).map_err(Err::Error)?;
 
-                    let ar = decode_array_uint(input.as_bytes2())
-                        .map_err(|e| BerError::nom_err_input(&input, e.into()))?;
-                    let uint = Self::from_be_bytes(ar);
+                let ar = decode_array_uint(input.as_bytes2())
+                    .map_err(|e| BerError::nom_err_input(&input, e.into()))?;
+                let uint = Self::from_be_bytes(ar);
 
-                    // decode_array_* consume all bytes, so return empty input with result
-                    Ok((input.take_from(input.len()), uint))
-                })(input)
+                // decode_array_* consume all bytes, so return empty input with result
+                Ok((input.take_from(input.len()), uint))
             }
         }
 

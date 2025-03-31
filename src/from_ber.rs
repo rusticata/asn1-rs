@@ -6,6 +6,8 @@ use nom::Input as _;
 use nom::{Err, IResult};
 
 use crate::ber::{GetObjectContent, MAX_RECURSION};
+use crate::debug::macros::log_error;
+use crate::debug::trace_input;
 use crate::{Any, BerError, BerMode, DynTagged, Error, Header, Input, ParseResult};
 
 /// Base trait for BER object parsers
@@ -61,8 +63,16 @@ where
 {
     fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, T, E> {
         let (i, any) = Any::from_ber(bytes).map_err(Err::convert)?;
-        let result = any.try_into().map_err(Err::Error)?;
-        Ok((i, result))
+        match any.try_into().map_err(Err::Error) {
+            Ok(result) => Ok((i, result)),
+            Err(err) => {
+                log_error!(
+                    "≠ Conversion from Any to {} failed",
+                    core::any::type_name::<T>()
+                );
+                Err(err)
+            }
+        }
     }
 }
 
@@ -86,17 +96,23 @@ where
     ///
     /// Header tag must match expected tag
     fn parse_ber(input: Input<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        let (rem, header) = Header::parse_ber(input.clone()).map_err(Err::convert)?;
-        if !Self::accept_tag(header.tag) {
-            return Err(Err::Error(
-                // FIXME: expected Tag is `None`, so the error will not be helpful
-                BerError::unexpected_tag(input, None, header.tag).into(),
-            ));
-        }
-        let (rem, data) =
-            BerMode::get_object_content(&header, rem, MAX_RECURSION).map_err(Err::convert)?;
-        let (_, obj) = Self::from_ber_content(&header, data).map_err(Err::convert)?;
-        Ok((rem, obj))
+        trace_input("DerParser::parse_ber", |input| {
+            let (rem, header) = Header::parse_ber(input.clone()).map_err(Err::convert)?;
+            if !Self::accept_tag(header.tag) {
+                return Err(Err::Error(
+                    // FIXME: expected Tag is `None`, so the error will not be helpful
+                    BerError::unexpected_tag(input, None, header.tag).into(),
+                ));
+            }
+            let (rem, data) =
+                BerMode::get_object_content(&header, rem, MAX_RECURSION).map_err(Err::convert)?;
+            let (_, obj) = trace_input("BerParser::from_ber_content", |i| {
+                // wrap from_ber_content function to display better errors, if any
+                Self::from_ber_content(&header, i)
+            })(data)
+            .map_err(Err::convert)?;
+            Ok((rem, obj))
+        })(input)
     }
 
     /// Parse a new BER object from header and data.

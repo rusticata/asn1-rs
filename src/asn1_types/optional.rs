@@ -3,6 +3,7 @@ use core::fmt::Display;
 use nom::error::ParseError;
 
 use crate::ber::{GetObjectContent, MAX_RECURSION};
+use crate::debug::trace_input;
 use crate::*;
 
 // note: we cannot implement `TryFrom<Any<'a>> with generic errors for Option<T>`,
@@ -40,23 +41,25 @@ where
     type Error = E;
 
     fn parse_ber(input: Input<'a>) -> IResult<Input<'a>, Self, Self::Error> {
-        if input.is_empty() {
-            return Ok((input, None));
-        }
-        // FIXME: call default trait impl?
-        // FIXME: default trait impl does not work: bytes are consumed even
-        // if tag does not match
+        trace_input("Option<T>::parse_ber", |input| {
+            if input.is_empty() {
+                return Ok((input, None));
+            }
+            // FIXME: call default trait impl?
+            // FIXME: default trait impl does not work: bytes are consumed even
+            // if tag does not match
 
-        let (rem, header) = Header::parse_ber(input.clone()).map_err(Err::convert)?;
-        // NOTE: we add this to default trait impl
-        if !T::accept_tag(header.tag) {
-            return Ok((input, None));
-        }
-        // NOTE: end
-        let (rem, data) =
-            BerMode::get_object_content(&header, rem, MAX_RECURSION).map_err(Err::convert)?;
-        let (_, obj) = Self::from_ber_content(&header, data).map_err(Err::convert)?;
-        Ok((rem, obj))
+            let (rem, header) = Header::parse_ber(input.clone()).map_err(Err::convert)?;
+            // NOTE: we add this to default trait impl
+            if !T::accept_tag(header.tag) {
+                return Ok((input, None));
+            }
+            // NOTE: end
+            let (rem, data) =
+                BerMode::get_object_content(&header, rem, MAX_RECURSION).map_err(Err::convert)?;
+            let (_, obj) = Self::from_ber_content(&header, data).map_err(Err::convert)?;
+            Ok((rem, obj))
+        })(input)
     }
 
     fn from_ber_content(
@@ -84,23 +87,25 @@ where
     type Error = E;
 
     fn parse_der(input: Input<'a>) -> IResult<Input<'a>, Self, Self::Error> {
-        if input.is_empty() {
-            return Ok((input, None));
-        }
-        // FIXME: call default trait impl?
-        // FIXME: default trait impl does not work: bytes are consumed even
-        // if tag does not match
+        trace_input("Option<T>::parse_der", |input| {
+            if input.is_empty() {
+                return Ok((input, None));
+            }
+            // FIXME: call default trait impl?
+            // FIXME: default trait impl does not work: bytes are consumed even
+            // if tag does not match
 
-        let (rem, header) = Header::parse_der(input.clone()).map_err(Err::convert)?;
-        // NOTE: we add this to default trait impl
-        if !T::accept_tag(header.tag) {
-            return Ok((input, None));
-        }
-        // NOTE: end
-        let (rem, data) =
-            BerMode::get_object_content(&header, rem, MAX_RECURSION).map_err(Err::convert)?;
-        let (_, obj) = Self::from_der_content(&header, data).map_err(Err::convert)?;
-        Ok((rem, obj))
+            let (rem, header) = Header::parse_der(input.clone()).map_err(Err::convert)?;
+            // NOTE: we add this to default trait impl
+            if !T::accept_tag(header.tag) {
+                return Ok((input, None));
+            }
+            // NOTE: end
+            let (rem, data) =
+                BerMode::get_object_content(&header, rem, MAX_RECURSION).map_err(Err::convert)?;
+            let (_, obj) = Self::from_der_content(&header, data).map_err(Err::convert)?;
+            Ok((rem, obj))
+        })(input)
     }
 
     fn from_der_content(

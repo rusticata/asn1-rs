@@ -5,7 +5,7 @@ use nom::bytes::streaming::take;
 use nom::error::ParseError;
 use nom::{Err, IResult, Input as _};
 
-use crate::debug::{trace, trace_generic};
+use crate::debug::{trace_generic, trace_input};
 use crate::{
     parse_der_any, wrap_ber_parser, Any, BerError, DynTagged, Error, Header, Input, ParseResult,
     Result,
@@ -102,12 +102,7 @@ where
             core::any::type_name::<T>(),
             "T::from_der",
             |bytes| {
-                let (i, any) = trace(
-                    core::any::type_name::<T>(),
-                    wrap_ber_parser(parse_der_any),
-                    bytes,
-                )
-                .map_err(Err::convert)?;
+                let (i, any) = wrap_ber_parser(parse_der_any)(bytes).map_err(Err::convert)?;
                 <T as CheckDerConstraints>::check_constraints(&any)
                     .map_err(|e| Err::Error(e.into()))?;
                 let result = any.try_into().map_err(Err::Error)?;
@@ -143,21 +138,27 @@ where
     ///
     /// Header tag must match expected tag, and length must be definite.
     fn parse_der(input: Input<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        let (rem, header) = Header::parse_der(input.clone()).map_err(Err::convert)?;
-        // get length, rejecting indefinite (invalid for DER)
-        let length = header
-            .length
-            .definite_inner()
-            .map_err(BerError::convert_into(input.clone()))?;
-        if !Self::accept_tag(header.tag) {
-            return Err(Err::Error(
-                // TODO: expected Tag is `None`, so the error will not be helpful
-                BerError::unexpected_tag(input, None, header.tag).into(),
-            ));
-        }
-        let (rem, data) = take(length)(rem)?;
-        let (_, obj) = Self::from_der_content(&header, data).map_err(Err::convert)?;
-        Ok((rem, obj))
+        trace_input("DerParser::parse_der", |input| {
+            let (rem, header) = Header::parse_der(input.clone()).map_err(Err::convert)?;
+            // get length, rejecting indefinite (invalid for DER)
+            let length = header
+                .length
+                .definite_inner()
+                .map_err(BerError::convert_into(input.clone()))?;
+            if !Self::accept_tag(header.tag) {
+                return Err(Err::Error(
+                    // TODO: expected Tag is `None`, so the error will not be helpful
+                    BerError::unexpected_tag(input, None, header.tag).into(),
+                ));
+            }
+            let (rem, data) = take(length)(rem)?;
+            let (_, obj) = trace_input("DerParser::from_der_content", |i| {
+                // wrap from_der_content function to display better errors, if any
+                Self::from_der_content(&header, i)
+            })(data)
+            .map_err(Err::convert)?;
+            Ok((rem, obj))
+        })(input)
     }
 
     /// Parse a new DER object from header and data.
