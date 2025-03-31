@@ -431,7 +431,7 @@ impl<'a> Any<'a> {
                 let res = core::str::from_utf8(self.data.as_bytes2())?;
                 Ok(res)
             }
-            _ => todo!(),
+            _ => Err(Error::BerTypeError),
         }
     }
 
@@ -460,7 +460,7 @@ impl<'a> Any<'a> {
                 let us = UniversalString::try_from(self)?;
                 Ok(us.string())
             }
-            _ => todo!(),
+            _ => Err(Error::BerTypeError),
         }
     }
 }
