@@ -194,12 +194,16 @@ where
                 );
             }
             Err(Err::Error(e) | Err::Failure(e)) => {
-                log::error!("{msg} ↯ Parsing failed at location {start} with error '{e}':");
+                log::error!(
+                    "{msg} ↯ Parsing for type '{}' failed at location {start} with error '{e}':",
+                    core::any::type_name::<T>()
+                );
                 log_error_hex_dump(bytes, 16);
             }
             Err(Err::Incomplete(needed)) => {
                 log::error!(
-                    "{msg} ↯ Parsing failed at location {start} (missing {:?} bytes):",
+                    "{msg} ↯ Parsing for type '{}' failed at location {start} (missing {:?} bytes):",
+                    core::any::type_name::<T>(),
                     needed
                 );
                 log_error_hex_dump(bytes, 16);
