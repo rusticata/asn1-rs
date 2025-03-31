@@ -221,13 +221,13 @@ mod tests {
 
     fn init() {
         use simplelog::{ColorChoice, Config, LevelFilter, TermLogger, TerminalMode};
-        TermLogger::init(
+        // ignore error, this is for unit tests only
+        let _ = TermLogger::init(
             LevelFilter::Trace,
             Config::default(),
             TerminalMode::Stdout,
             ColorChoice::Auto,
-        )
-        .unwrap();
+        );
     }
 
     #[test]
