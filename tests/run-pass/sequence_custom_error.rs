@@ -1,8 +1,11 @@
 use asn1_rs::*;
+use displaydoc::Display;
 use hex_literal::hex;
+use thiserror::Error;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Display, PartialEq, Error)]
 pub enum MyError {
+    /// Not Yet Implemented
     NotYetImplemented,
 }
 

@@ -4,6 +4,8 @@ use nom::{Err, IResult};
 
 use crate::{Input, ParseResult};
 
+use core::fmt::Display;
+
 pub(crate) mod macros {
     /// Format and log message at TRACE level, but only if feature `trace` is enabled
     #[allow(unused_macros)]
@@ -94,7 +96,7 @@ where
 pub fn trace_generic<F, I, O, E>(msg: &str, fname: &str, f: F, input: I) -> Result<O, E>
 where
     F: Fn(I) -> Result<O, E>,
-    E: core::fmt::Display,
+    E: Display,
 {
     log_trace!("{msg} ⤷ {fname}");
     let output = f(input);
@@ -168,7 +170,7 @@ pub fn trace_input<'a, T, E, F>(
 where
     F: FnMut(Input<'a>) -> IResult<Input<'a>, T, E>,
     T: 'a,
-    E: core::fmt::Display,
+    E: Display,
 {
     use nom::Input as _;
 

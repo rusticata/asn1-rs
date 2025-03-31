@@ -1,4 +1,5 @@
 use core::convert::{TryFrom, TryInto};
+use core::fmt::Display;
 
 use nom::error::ParseError;
 use nom::Input as _;
@@ -79,7 +80,7 @@ where
     Self: DynTagged,
 {
     /// The Error type for parsing errors.
-    type Error: ParseError<Input<'i>> + From<BerError<Input<'i>>>;
+    type Error: Display + ParseError<Input<'i>> + From<BerError<Input<'i>>>;
 
     /// Attempt to parse a new BER object from data.
     ///
