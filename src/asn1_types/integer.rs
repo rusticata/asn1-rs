@@ -1,3 +1,4 @@
+use crate::debug::trace_input;
 use crate::*;
 use alloc::borrow::Cow;
 use alloc::vec;
@@ -197,15 +198,17 @@ macro_rules! impl_uint {
                 header: &'_ Header<'i>,
                 input: Input<'i>,
             ) -> IResult<Input<'i>, Self, Self::Error> {
-                // Encoding shall be primitive (X.690: 8.3.1)
-                header.assert_primitive_input(&input).map_err(Err::Error)?;
+                trace_input(concat!(stringify!($ty), "::from_ber_content"), |input| {
+                    // Encoding shall be primitive (X.690: 8.3.1)
+                    header.assert_primitive_input(&input).map_err(Err::Error)?;
 
-                let ar = decode_array_uint(input.as_bytes2())
-                    .map_err(|e| BerError::nom_err_input(&input, e.into()))?;
-                let uint = Self::from_be_bytes(ar);
+                    let ar = decode_array_uint(input.as_bytes2())
+                        .map_err(|e| BerError::nom_err_input(&input, e.into()))?;
+                    let uint = Self::from_be_bytes(ar);
 
-                // decode_array_* consume all bytes, so return empty input with result
-                Ok((input.take_from(input.len()), uint))
+                    // decode_array_* consume all bytes, so return empty input with result
+                    Ok((input.take_from(input.len()), uint))
+                })(input)
             }
         }
 
@@ -542,24 +545,26 @@ impl<'i> BerParser<'i> for Integer<'i> {
         header: &'_ Header<'i>,
         input: Input<'i>,
     ) -> IResult<Input<'i>, Self, Self::Error> {
-        // Encoding shall be primitive (X.690: 8.3.1)
-        header.assert_primitive_input(&input).map_err(Err::Error)?;
+        trace_input("Integer::from_ber_content", |input| {
+            // Encoding shall be primitive (X.690: 8.3.1)
+            header.assert_primitive_input(&input).map_err(Err::Error)?;
 
-        // since encoding must be primitive, indefinite length is not allowed
-        // so we use `der_get_content`
-        let (rem, content) = der_get_content(header, input)?;
+            // since encoding must be primitive, indefinite length is not allowed
+            // so we use `der_get_content`
+            let (rem, content) = der_get_content(header, input)?;
 
-        // The contents octets shall consist of one or more octets (X.690: 8.3.2)
-        if content.is_empty() {
-            return Err(BerError::nom_err(content, InnerError::InvalidLength));
-        }
+            // The contents octets shall consist of one or more octets (X.690: 8.3.2)
+            if content.is_empty() {
+                return Err(BerError::nom_err(content, InnerError::InvalidLength));
+            }
 
-        Ok((
-            rem,
-            Integer {
-                data: Cow::Borrowed(content.as_bytes2()),
-            },
-        ))
+            Ok((
+                rem,
+                Integer {
+                    data: Cow::Borrowed(content.as_bytes2()),
+                },
+            ))
+        })(input)
     }
 }
 

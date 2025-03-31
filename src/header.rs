@@ -1,4 +1,5 @@
 use crate::ber::*;
+use crate::debug::trace_input;
 use crate::error::*;
 use crate::wrap_ber_parser;
 use crate::DerParser;
@@ -328,7 +329,7 @@ impl<'i> BerParser<'i> for Header<'i> {
     type Error = BerError<Input<'i>>;
 
     fn parse_ber(input: Input<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        parse_header(input)
+        trace_input("Header::parse_ber", |i| parse_header(i))(input)
     }
 
     /// <div class="warning">This method is usually not called (and will create a useless clone)</div>
@@ -336,6 +337,10 @@ impl<'i> BerParser<'i> for Header<'i> {
         header: &'_ Header<'i>,
         input: Input<'i>,
     ) -> IResult<Input<'i>, Self, Self::Error> {
+        #[cfg(feature = "debug")]
+        {
+            log::trace!("Header::from_ber_content creates a useless clone and should be avoided");
+        }
         Ok((input, header.clone()))
     }
 }
@@ -344,15 +349,17 @@ impl<'i> DerParser<'i> for Header<'i> {
     type Error = BerError<Input<'i>>;
 
     fn parse_der(input: Input<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        let (rem, header) = parse_header(input.clone())?;
-        // DER parser: we reject Indefinite length
-        if !header.length.is_definite() {
-            return Err(Err::Error(BerError::new(
-                input,
-                InnerError::DerConstraintFailed(DerConstraint::IndefiniteLength),
-            )));
-        }
-        Ok((rem, header))
+        trace_input("Header::parse_ber", |input| {
+            let (rem, header) = parse_header(input.clone())?;
+            // DER parser: we reject Indefinite length
+            if !header.length.is_definite() {
+                return Err(Err::Error(BerError::new(
+                    input,
+                    InnerError::DerConstraintFailed(DerConstraint::IndefiniteLength),
+                )));
+            }
+            Ok((rem, header))
+        })(input)
     }
 
     /// <div class="warning">This method is usually not called (and will create a useless clone)</div>
@@ -360,6 +367,10 @@ impl<'i> DerParser<'i> for Header<'i> {
         header: &'_ Header<'i>,
         input: Input<'i>,
     ) -> IResult<Input<'i>, Self, Self::Error> {
+        #[cfg(feature = "debug")]
+        {
+            log::trace!("Header::from_der_content creates a useless clone and should be avoided");
+        }
         Ok((input, header.clone()))
     }
 }

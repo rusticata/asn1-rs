@@ -1,4 +1,5 @@
 use crate::ber::*;
+use crate::debug::trace_input;
 use crate::Input;
 use crate::*;
 use alloc::borrow::Cow;
@@ -466,20 +467,25 @@ impl<'a> Any<'a> {
 }
 
 pub(crate) fn parse_ber_any(input: Input) -> IResult<Input, Any, BerError<Input>> {
-    let (i, header) = Header::parse_ber(input)?;
-    let (i, data) = BerMode::get_object_content(&header, i, MAX_RECURSION)?;
-    Ok((i, Any { header, data }))
+    trace_input("Any", |input| {
+        //
+        let (i, header) = Header::parse_ber(input)?;
+        let (i, data) = BerMode::get_object_content(&header, i, MAX_RECURSION)?;
+        Ok((i, Any { header, data }))
+    })(input)
 }
 
 pub(crate) fn parse_der_any(input: Input) -> IResult<Input, Any, BerError<Input>> {
-    let (i, header) = Header::parse_der(input.clone())?;
-    // X.690 section 10.1: The definite form of length encoding shall be used
-    header
-        .length
-        .assert_definite_inner()
-        .map_err(BerError::convert(input))?;
-    let (i, data) = DerMode::get_object_content(&header, i, MAX_RECURSION)?;
-    Ok((i, Any { header, data }))
+    trace_input("Any", |input| {
+        let (i, header) = Header::parse_der(input.clone())?;
+        // X.690 section 10.1: The definite form of length encoding shall be used
+        header
+            .length
+            .assert_definite_inner()
+            .map_err(BerError::convert(input))?;
+        let (i, data) = DerMode::get_object_content(&header, i, MAX_RECURSION)?;
+        Ok((i, Any { header, data }))
+    })(input)
 }
 
 impl<'a> FromBer<'a> for Any<'a> {
@@ -636,6 +642,14 @@ mod tests {
         assert_eq!(<Any as DynTagged>::tag(&any), any.tag());
         let int = any.integer().unwrap();
         assert_eq!(int.as_u16(), Ok(1));
+    }
+
+    #[test]
+    fn ber_parser_any() {
+        let input = &hex!("02 01 02 ff ff");
+        let (rem, result) = Any::parse_ber(Input::from(input)).expect("parsing failed");
+        assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
+        assert_eq!(result.header.tag(), Tag::Integer);
     }
 
     #[test]

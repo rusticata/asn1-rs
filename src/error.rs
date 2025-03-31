@@ -6,6 +6,7 @@ use alloc::str;
 use alloc::string;
 #[cfg(not(feature = "std"))]
 use alloc::string::{String, ToString};
+use core::fmt;
 use displaydoc::Display;
 use nom::error::{ErrorKind, FromExternalError, ParseError};
 use nom::{IResult, Input};
@@ -197,6 +198,12 @@ impl<'i> BerError<crate::Input<'i>> {
         inner: InnerError,
     ) -> nom::Err<Self> {
         nom::Err::Error(BerError::new(input.const_clone(), inner))
+    }
+}
+
+impl<I: Input + fmt::Display> fmt::Display for BerError<I> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "BerError: input={} error={}", self.input(), self.inner())
     }
 }
 

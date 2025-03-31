@@ -1,4 +1,5 @@
 use alloc::vec::Vec;
+use core::fmt;
 use core::iter::{Cloned, Enumerate};
 use core::ops::Range;
 use core::slice::Iter;
@@ -116,6 +117,12 @@ impl<'a> From<&'a Vec<u8>> for Input<'a> {
                 end: data.len(),
             },
         }
+    }
+}
+
+impl fmt::Display for Input<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Input(start={} end={}", self.start(), self.end())
     }
 }
 
