@@ -219,10 +219,15 @@ mod tests {
     use alloc::collections::BTreeSet;
     use hex_literal::hex;
 
-    extern crate env_logger;
-
     fn init() {
-        let _ = env_logger::builder().is_test(true).try_init();
+        use simplelog::{ColorChoice, Config, LevelFilter, TermLogger, TerminalMode};
+        TermLogger::init(
+            LevelFilter::Trace,
+            Config::default(),
+            TerminalMode::Stdout,
+            ColorChoice::Auto,
+        )
+        .unwrap();
     }
 
     #[test]

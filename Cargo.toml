@@ -67,9 +67,9 @@ time = { version="0.3", features=["macros", "parsing", "formatting"], optional=t
 
 [dev-dependencies]
 colored = "3.0"
-env_logger = { version = "0.11", default-features = false, features = ["auto-color"] }
 hex-literal = "0.4"
 pem = "3.0"
+simplelog = { version = "0.12", default-features = false, features = ["termcolor"] }
 trybuild = "1.0"
 
 [package.metadata.cargo_check_external_types]
