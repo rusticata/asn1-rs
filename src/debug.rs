@@ -156,7 +156,6 @@ pub fn trace_input<'a, T, E, F>(
 ) -> impl FnMut(Input<'a>) -> IResult<Input<'a>, T, E>
 where
     F: FnMut(Input<'a>) -> IResult<Input<'a>, T, E>,
-    T: 'a,
 {
     f
 }
@@ -169,7 +168,6 @@ pub fn trace_input<'a, T, E, F>(
 ) -> impl FnMut(Input<'a>) -> IResult<Input<'a>, T, E>
 where
     F: FnMut(Input<'a>) -> IResult<Input<'a>, T, E>,
-    T: 'a,
     E: Display,
 {
     use nom::Input as _;
@@ -187,7 +185,7 @@ where
         let res = f(input);
         match &res {
             Ok((rem, _)) => {
-                debug_assert!(rem.start() > start);
+                debug_assert!(rem.start() >= start);
                 log_trace!(
                     "{msg} ⤶ (start={}) Parsed {} bytes, {} remaining",
                     start,
@@ -222,11 +220,16 @@ mod tests {
     use hex_literal::hex;
 
     fn init() {
-        use simplelog::{ColorChoice, Config, LevelFilter, TermLogger, TerminalMode};
+        use simplelog::{ColorChoice, ConfigBuilder, LevelFilter, TermLogger, TerminalMode};
+
+        let config = ConfigBuilder::new()
+            .set_location_level(LevelFilter::Off)
+            .build();
+
         // ignore error, this is for unit tests only
         let _ = TermLogger::init(
             LevelFilter::Trace,
-            Config::default(),
+            config,
             TerminalMode::Stdout,
             ColorChoice::Auto,
         );
@@ -234,24 +237,23 @@ mod tests {
 
     #[test]
     fn debug_ber_parser_any() {
-        //
         init();
 
         //--- parse_ber_any
 
-        log::debug!("Unit test: parse_ber_any (OK)");
+        log::debug!("-- Unit test: parse_ber_any (OK)");
         let input = &hex!("02 01 02 ff ff");
         let (rem, result) = parse_ber_any(Input::from(input)).expect("parsing failed");
         assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
         assert_eq!(result.header.tag(), Tag::Integer);
 
-        log::debug!("Unit test: parse_ber_any (Fail: not enough bytes)");
+        log::debug!("-- Unit test: parse_ber_any (Fail: not enough bytes)");
         let input = &hex!("02 08 02 ff ff");
         let _ = parse_ber_any(Input::from(input)).expect_err("not enough bytes");
 
         //--- Any::parse_ber
 
-        log::debug!("Unit test: Any::parse_ber (OK)");
+        log::debug!("-- Unit test: Any::parse_ber (OK)");
         let input = &hex!("02 01 02 ff ff");
         let (rem, result) = Any::parse_ber(Input::from(input)).expect("parsing failed");
         assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
@@ -260,37 +262,41 @@ mod tests {
 
     #[test]
     fn debug_der_parser_any() {
-        //
         init();
 
         //--- parse_der_any
 
-        log::debug!("Unit test: parse_der_any (OK)");
+        log::debug!("-- Unit test: parse_der_any (OK)");
         let input = &hex!("02 01 02 ff ff");
         // let (rem, result) = Any::parse_ber(Input::from(input)).expect("parsing failed");
         let (rem, result) = parse_der_any(Input::from(input)).expect("parsing failed");
         assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
         assert_eq!(result.header.tag(), Tag::Integer);
 
-        log::debug!("Unit test: parse_ber_any (Fail: not enough bytes)");
+        log::debug!("-- Unit test: parse_ber_any (Fail: not enough bytes)");
         let input = &hex!("02 08 02 ff ff");
         let _ = parse_der_any(Input::from(input)).expect_err("not enough bytes");
 
-        log::debug!("Unit test: parse_ber_any (Fail: indefinite length)");
+        log::debug!("-- Unit test: parse_ber_any (Fail: indefinite length)");
         let input = &hex!("02 80 00 00 ff");
         let _ = parse_der_any(Input::from(input)).expect_err("indefinite length");
 
         //--- Any::parse_der
 
-        log::debug!("Unit test: Any::parse_der (OK)");
+        log::debug!("-- Unit test: Any::parse_der (OK)");
         let input = &hex!("02 01 02 ff ff");
         let (rem, result) = Any::parse_der(Input::from(input)).expect("parsing failed");
         assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
         assert_eq!(result.header.tag(), Tag::Integer);
+    }
+
+    #[test]
+    fn debug_der_parser_uint() {
+        init();
 
         //--- Integer::parse_der
 
-        log::debug!("Unit test: Integer::parse_der (OK)");
+        log::debug!("-- Unit test: Integer::parse_der (OK)");
         let input = &hex!("02 01 02 ff ff");
         let (rem, result) = Integer::parse_der(Input::from(input)).expect("parsing failed");
         assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
@@ -298,11 +304,66 @@ mod tests {
 
         //--- <u32>::parse_der
 
-        log::debug!("Unit test: <u32>::parse_der (OK)");
+        log::debug!("-- Unit test: <u32>::parse_der (OK)");
         let input = &hex!("02 01 02 ff ff");
         let (rem, result) = <u32>::parse_der(Input::from(input)).expect("parsing failed");
         assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
         assert_eq!(result, 2);
+
+        log::debug!("-- Unit test: <u32>::parse_der (Fail: wrong tag)");
+        let input = &hex!("01 01 ff");
+        let _ = <u32>::parse_der(Input::from(input)).expect_err("wrong tag");
+
+        log::debug!("-- Unit test: <u32>::parse_der (Fail: negative integer)");
+        let input = &hex!("02 01 ff");
+        let _ = <u32>::parse_der(Input::from(input)).expect_err("negative integer");
+
+        log::debug!("-- Unit test: <u32>::parse_der (Fail: leading zeroes)");
+        let input = &hex!("02 02 00 04");
+        let _ = <u32>::parse_der(Input::from(input)).expect_err("leading zeroes");
+    }
+
+    #[test]
+    fn debug_der_parser_option_uint() {
+        init();
+
+        type T = Option<u32>;
+
+        //--- <Option<u32>>::parse_der
+        log::debug!("-- Unit test: <u32>::parse_der (OK: Some)");
+        let input = &hex!("02 01 02 ff ff");
+        let (rem, result) = <T>::parse_der(Input::from(input)).expect("parsing failed");
+        assert_eq!(rem.as_bytes2(), &[0xff, 0xff]);
+        assert_eq!(result, Some(2));
+
+        log::debug!("-- Unit test: <u32>::parse_der (OK: None)");
+        let input = &hex!("01 01 00 ff ff");
+        let (rem, result) = <T>::parse_der(Input::from(input)).expect("parsing failed");
+        assert_eq!(rem.as_bytes2(), input);
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn debug_der_parser_tagged_explicit_bool() {
+        init();
+
+        type T<'a> = TaggedExplicit<bool, BerError<Input<'a>>, 0>;
+
+        log::debug!("-- untagged value -> should fail");
+        let input: &[u8] = &hex! {"0101ff"};
+        let _res = T::parse_der(input.into()).expect_err("parsing should have failed");
+
+        log::debug!("-- tagged value, correct tag -> Ok");
+        let input: &[u8] = &hex! {"a0 03 0101ff"};
+        let _res = T::parse_der(input.into()).expect("parsing failed");
+
+        log::debug!("-- tagged value, incorrect tag -> Fail");
+        let input: &[u8] = &hex! {"a1 03 0101ff"};
+        let _res = T::parse_der(input.into()).expect_err("parsing should have failed");
+
+        log::debug!("-- tagged value, correct tag but incorrect class -> Fail");
+        let input: &[u8] = &hex! {"60 03 0101ff"};
+        let _res = T::parse_der(input.into()).expect_err("parsing should have failed");
     }
 
     #[test]
@@ -316,18 +377,20 @@ mod tests {
     fn debug_from_ber_failures() {
         init();
 
-        // wrong type
         log::debug!("-- wrong type");
         assert!(<Vec<u16>>::from_ber(&hex!("02 01 00")).is_err());
     }
 
     #[test]
     fn debug_from_ber_sequence_indefinite() {
+        init();
+
+        log::debug!("-- BER sequence indefinite (as Sequence)");
         let input = &hex!("30 80 02 03 01 00 01 00 00");
         let (rem, result) = Sequence::from_ber(input).expect("parsing failed");
         assert_eq!(result.as_ref(), &input[2..7]);
         assert_eq!(rem, &[]);
-        eprintln!("--");
+        log::debug!("-- BER sequence indefinite (as Vec)");
         let (rem, result) = <Vec<u32>>::from_ber(input).expect("parsing failed");
         assert_eq!(&result, &[65537]);
         assert_eq!(rem, &[]);
@@ -335,11 +398,13 @@ mod tests {
 
     #[test]
     fn debug_from_ber_sequence_of() {
+        init();
+
         // parsing failure (wrong type)
         let input = &hex!("30 03 01 01 00");
-        eprintln!("--");
+        log::debug!("-- Fail: BER sequence of (as SequenceOf)");
         let _ = <SequenceOf<u32>>::from_ber(input).expect_err("parsing should fail");
-        eprintln!("--");
+        log::debug!("-- Fail: BER sequence of (as Vec)");
         let _ = <Vec<u32>>::from_ber(input).expect_err("parsing should fail");
     }
 

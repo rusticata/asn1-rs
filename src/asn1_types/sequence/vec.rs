@@ -4,7 +4,7 @@ use alloc::vec::Vec;
 use core::convert::TryFrom;
 use core::fmt::Debug;
 
-use self::debug::{macros::log_error, trace, trace_generic};
+use self::debug::{trace, trace_generic};
 
 // // XXX this compiles but requires bound TryFrom :/
 // impl<'a, 'b, T> TryFrom<&'b Any<'a>> for Vec<T>
@@ -53,24 +53,10 @@ where
     type Error = Error;
 
     fn try_from(any: Any<'a>) -> Result<Self> {
-        trace_generic(
-            core::any::type_name::<Self>(),
-            "T::from(Any)",
-            |any| {
-                any.tag().assert_eq(Self::TAG)?;
-                any.header.assert_constructed()?;
-                let res_items: Result<Vec<T>> =
-                    SetIterator::<T, BerMode>::new(any.data.as_bytes2()).collect();
-                if res_items.is_err() {
-                    log_error!(
-                        "{} ≠ Conversion from Any failed",
-                        core::any::type_name::<T>()
-                    );
-                }
-                res_items
-            },
-            any,
-        )
+        any.tag().assert_eq(Self::TAG)?;
+        any.header.assert_constructed()?;
+
+        SetIterator::<T, BerMode>::new(any.data.as_bytes2()).collect()
     }
 }
 
