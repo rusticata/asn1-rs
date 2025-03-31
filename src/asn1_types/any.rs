@@ -8,8 +8,6 @@ use alloc::string::{String, ToString};
 use core::convert::TryFrom;
 use nom::bytes::streaming::take;
 
-use self::debug::trace;
-
 /// The `Any` object is not strictly an ASN.1 type, but holds a generic description of any object
 /// that could be encoded.
 ///
@@ -491,7 +489,7 @@ pub(crate) fn parse_der_any(input: Input) -> IResult<Input, Any, BerError<Input>
 impl<'a> FromBer<'a> for Any<'a> {
     #[inline]
     fn from_ber(bytes: &'a [u8]) -> ParseResult<'a, Self> {
-        trace("Any", wrap_ber_parser(parse_ber_any), bytes)
+        wrap_ber_parser(parse_ber_any)(bytes)
     }
 }
 
@@ -520,7 +518,7 @@ impl<'i> BerParser<'i> for Any<'i> {
 impl<'a> FromDer<'a> for Any<'a> {
     #[inline]
     fn from_der(bytes: &'a [u8]) -> ParseResult<'a, Self> {
-        trace("Any", wrap_ber_parser(parse_der_any), bytes)
+        wrap_ber_parser(parse_der_any)(bytes)
     }
 }
 
