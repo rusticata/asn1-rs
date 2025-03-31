@@ -5,6 +5,7 @@ use nom::Err;
 use crate::{BerError, BerParser, DerParser, InnerError, Input, Tag, Tagged};
 
 use core::convert::TryFrom;
+use core::fmt::Display;
 
 impl<T, const N: usize> Tagged for [T; N] {
     const CONSTRUCTED: bool = true;
@@ -14,7 +15,7 @@ impl<T, const N: usize> Tagged for [T; N] {
 impl<'i, T, E, const N: usize> BerParser<'i> for [T; N]
 where
     T: BerParser<'i, Error = E>,
-    E: ParseError<Input<'i>> + From<BerError<Input<'i>>>,
+    E: Display + ParseError<Input<'i>> + From<BerError<Input<'i>>>,
 {
     type Error = E;
 
@@ -32,7 +33,7 @@ where
 impl<'i, T, E, const N: usize> DerParser<'i> for [T; N]
 where
     T: DerParser<'i, Error = E>,
-    E: ParseError<Input<'i>> + From<BerError<Input<'i>>>,
+    E: Display + ParseError<Input<'i>> + From<BerError<Input<'i>>>,
 {
     type Error = E;
 

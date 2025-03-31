@@ -1,40 +1,43 @@
 use asn1_rs::*;
+use displaydoc::Display;
 use hex_literal::hex;
+use thiserror::Error;
+
+#[derive(Debug, Display, PartialEq, Error)]
+pub enum MyError {
+    /// Not Yet Implemented
+    NotYetImplemented,
+}
+
+impl<I> nom::error::ParseError<I> for MyError {
+    fn from_error_kind(_input: I, _kind: nom::error::ErrorKind) -> Self {
+        MyError::NotYetImplemented
+    }
+
+    fn append(_input: I, _kind: nom::error::ErrorKind, _other: Self) -> Self {
+        MyError::NotYetImplemented
+    }
+}
+
+impl<'a> From<(asn1_rs::Input<'a>, asn1_rs::Error)> for MyError {
+    fn from(_value: (asn1_rs::Input<'a>, asn1_rs::Error)) -> Self {
+        MyError::NotYetImplemented
+    }
+}
+
+impl<'a> From<(asn1_rs::Input<'a>, BerError<Input<'a>>)> for MyError {
+    fn from(_value: (asn1_rs::Input<'a>, BerError<Input<'a>>)) -> Self {
+        MyError::NotYetImplemented
+    }
+}
+
+impl<'a> From<BerError<Input<'a>>> for MyError {
+    fn from(_value: BerError<Input<'a>>) -> Self {
+        MyError::NotYetImplemented
+    }
+}
 
 fn derive_berparser_custom_error() {
-    #[derive(Debug, PartialEq)]
-    pub enum MyError {
-        NotYetImplemented,
-    }
-
-    impl<I> nom::error::ParseError<I> for MyError {
-        fn from_error_kind(_input: I, _kind: nom::error::ErrorKind) -> Self {
-            MyError::NotYetImplemented
-        }
-
-        fn append(_input: I, _kind: nom::error::ErrorKind, _other: Self) -> Self {
-            MyError::NotYetImplemented
-        }
-    }
-
-    impl<'a> From<(asn1_rs::Input<'a>, asn1_rs::Error)> for MyError {
-        fn from(_value: (asn1_rs::Input<'a>, asn1_rs::Error)) -> Self {
-            MyError::NotYetImplemented
-        }
-    }
-
-    impl<'a> From<(asn1_rs::Input<'a>, BerError<Input<'a>>)> for MyError {
-        fn from(_value: (asn1_rs::Input<'a>, BerError<Input<'a>>)) -> Self {
-            MyError::NotYetImplemented
-        }
-    }
-
-    impl<'a> From<BerError<Input<'a>>> for MyError {
-        fn from(_value: BerError<Input<'a>>) -> Self {
-            MyError::NotYetImplemented
-        }
-    }
-
     #[derive(Debug, PartialEq, Eq, BerParserSequence)]
     #[error(MyError)]
     // #[debug_derive]
@@ -49,33 +52,6 @@ fn derive_berparser_custom_error() {
 }
 
 fn derive_berparser_map_err() {
-    #[derive(Debug, PartialEq)]
-    pub enum MyError {
-        NotYetImplemented,
-    }
-
-    impl<I> nom::error::ParseError<I> for MyError {
-        fn from_error_kind(_input: I, _kind: nom::error::ErrorKind) -> Self {
-            MyError::NotYetImplemented
-        }
-
-        fn append(_input: I, _kind: nom::error::ErrorKind, _other: Self) -> Self {
-            MyError::NotYetImplemented
-        }
-    }
-
-    impl From<Error> for MyError {
-        fn from(_value: Error) -> Self {
-            MyError::NotYetImplemented
-        }
-    }
-
-    impl<'a> From<BerError<Input<'a>>> for MyError {
-        fn from(_value: BerError<Input<'a>>) -> Self {
-            MyError::NotYetImplemented
-        }
-    }
-
     #[derive(Debug, PartialEq, Eq, BerParserSequence)]
     #[error(MyError)]
     // #[debug_derive]

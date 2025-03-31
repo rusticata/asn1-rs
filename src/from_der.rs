@@ -137,7 +137,7 @@ where
     Self: DynTagged,
 {
     /// The Error type for parsing errors.
-    type Error: ParseError<Input<'i>> + From<BerError<Input<'i>>>;
+    type Error: Display + ParseError<Input<'i>> + From<BerError<Input<'i>>>;
 
     /// Attempt to parse a new DER object from data.
     ///

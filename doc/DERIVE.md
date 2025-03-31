@@ -462,16 +462,24 @@ Derived parsers can use the `error` attribute to specify the error type of the p
 The custom error type must implement the following traits, so the derived parsers will transparently convert errors using the [`Into`] trait:
 - `From<` [`BerError`] `<Input>>`: convert from errors for primitive/default `asn1_rs` types
 - [`ParseError`](crate::nom::error::ParseError) (`nom` type): common trait for `nom` errors
+- `Display`: required to implement `core::error::Error`
 
 
 
 Example:
 ```rust
 # use asn1_rs::*;
+# use core::fmt;
 #
 #[derive(Debug, PartialEq)]
 pub enum MyError {
     NotYetImplemented,
+}
+
+impl fmt::Display for MyError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        f.write_str("Not Yet Implemented")
+    }
 }
 
 impl From<BerError<Input<'_>>> for MyError {

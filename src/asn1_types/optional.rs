@@ -1,3 +1,5 @@
+use core::fmt::Display;
+
 use nom::error::ParseError;
 
 use crate::ber::{GetObjectContent, MAX_RECURSION};
@@ -33,7 +35,7 @@ where
 impl<'a, T, E> BerParser<'a> for Option<T>
 where
     T: BerParser<'a, Error = E>,
-    E: ParseError<Input<'a>> + From<BerError<Input<'a>>>,
+    E: Display + ParseError<Input<'a>> + From<BerError<Input<'a>>>,
 {
     type Error = E;
 
@@ -77,7 +79,7 @@ where
 impl<'a, T, E> DerParser<'a> for Option<T>
 where
     T: DerParser<'a, Error = E>,
-    E: ParseError<Input<'a>> + From<BerError<Input<'a>>>,
+    E: Display + ParseError<Input<'a>> + From<BerError<Input<'a>>>,
 {
     type Error = E;
 
