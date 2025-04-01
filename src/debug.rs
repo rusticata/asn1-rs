@@ -229,7 +229,7 @@ mod tests {
         let config = ConfigBuilder::new()
             .set_location_level(LevelFilter::Off)
             .set_target_level(LevelFilter::Off)
-            .set_thread_level(LevelFilter::Off)
+            // .set_thread_level(LevelFilter::Off)
             .build();
 
         // ignore error, this is for unit tests only
