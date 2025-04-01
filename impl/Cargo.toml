@@ -1,6 +1,6 @@
 [package]
 name = "asn1-rs-impl"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Pierre Chifflier <chifflier@wzdftpd.net>"]
 description = "Implementation details for the `asn1-rs` crate"
 license = "MIT OR Apache-2.0"
