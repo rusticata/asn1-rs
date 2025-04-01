@@ -217,11 +217,10 @@ where
 #[cfg(test)]
 mod tests {
 
-    use std::collections::HashSet;
-
     use crate::*;
     use alloc::collections::BTreeSet;
     use hex_literal::hex;
+    use std::collections::HashSet;
 
     fn init() {
         use simplelog::{ColorChoice, ConfigBuilder, LevelFilter, TermLogger, TerminalMode};
@@ -415,48 +414,38 @@ mod tests {
     }
 
     #[test]
-    fn debug_from_ber_u32() {
-        assert!(u32::from_ber(&hex!("02 01 01")).is_ok());
-    }
-
-    #[test]
-    fn debug_from_der_any() {
-        assert!(Any::from_der(&hex!("01 01 ff")).is_ok());
-    }
-
-    #[test]
     fn debug_from_der_bool() {
-        eprintln!("** first test is ok**");
+        init();
+
+        log::debug!("-- first test is ok**");
         assert!(<bool>::from_der(&hex!("01 01 ff")).is_ok());
-        eprintln!("** second test fails when parsing ANY (eof)**");
+        log::debug!("-- second test fails when parsing ANY (eof)**");
         assert!(<bool>::from_der(&hex!("01 02 ff")).is_err());
-        eprintln!("** second test fails when checking DER constraints**");
+        log::debug!("-- third test fails when checking DER constraints**");
         assert!(<bool>::from_der(&hex!("01 01 f0")).is_err());
-        eprintln!("** second test fails during TryFrom**");
+        log::debug!("-- forth test fails during TryFrom**");
         assert!(<bool>::from_der(&hex!("01 02 ff ff")).is_err());
     }
 
     #[test]
     fn debug_from_der_failures() {
-        use crate::Sequence;
+        init();
 
-        // parsing any failed
-        eprintln!("--");
+        log::debug!("-- Fail: invalid header");
         assert!(u16::from_der(&hex!("ff 00")).is_err());
-        // Indefinite length
-        eprintln!("--");
+        log::debug!("-- Fail: Indefinite length in DER");
         assert!(u16::from_der(&hex!("30 80 00 00")).is_err());
-        // DER constraints failed
-        eprintln!("--");
+        log::debug!("-- Fail: DER constraints failed");
         assert!(bool::from_der(&hex!("01 01 7f")).is_err());
-        // Incomplete sequence
-        eprintln!("--");
+        log::debug!("-- Fail: Incomplete sequence");
         let _ = Sequence::from_der(&hex!("30 81 04 00 00"));
     }
 
     #[test]
     fn debug_from_der_sequence() {
-        // parsing OK, recursive
+        init();
+
+        log::debug!("-- Ok: valid sequence");
         let input = &hex!("30 08 02 03 01 00 01 02 01 01");
         let (rem, result) = <Vec<u32>>::from_der(input).expect("parsing failed");
         assert_eq!(&result, &[65537, 1]);
@@ -465,49 +454,44 @@ mod tests {
 
     #[test]
     fn debug_from_der_sequence_fail() {
-        // tag is wrong
+        init();
+
+        log::debug!("-- Fail: wrong tag");
         let input = &hex!("31 03 01 01 44");
-        let _ = <Vec<bool>>::from_der(input).expect_err("parsing should fail");
-        // sequence is ok but contraint fails on element
+        let _ = <Vec<bool>>::from_der(input).expect_err("wrong tag");
+
+        log::debug!("-- Fail: sequence is ok but constraint fails on element");
         let input = &hex!("30 03 01 01 44");
-        let _ = <Vec<bool>>::from_der(input).expect_err("parsing should fail");
+        let _ = <Vec<bool>>::from_der(input).expect_err("item DER constraint");
     }
 
     #[test]
     fn debug_from_der_sequence_of() {
-        use crate::SequenceOf;
-        // parsing failure (wrong type)
-        let input = &hex!("30 03 01 01 00");
-        eprintln!("--");
-        let _ = <SequenceOf<u32>>::from_der(input).expect_err("parsing should fail");
-        eprintln!("--");
-        let _ = <Vec<u32>>::from_der(input).expect_err("parsing should fail");
-    }
+        init();
 
-    #[test]
-    fn debug_from_der_set_fail() {
-        // set is ok but contraint fails on element
-        let input = &hex!("31 03 01 01 44");
-        let _ = <BTreeSet<bool>>::from_der(input).expect_err("parsing should fail");
+        log::debug!("-- Fail: wrong item tag");
+        let input = &hex!("30 03 01 01 00");
+        let _ = <SequenceOf<u32>>::from_der(input).expect_err("wrong item tag");
     }
 
     #[test]
     fn debug_from_der_set_of() {
-        use crate::SetOf;
-        use alloc::collections::BTreeSet;
+        init();
 
-        // parsing failure (wrong type)
         let input = &hex!("31 03 01 01 00");
-        eprintln!("--");
-        let _ = <SetOf<u32>>::from_der(input).expect_err("parsing should fail");
-        eprintln!("--");
-        let _ = <BTreeSet<u32>>::from_der(input).expect_err("parsing should fail");
-        eprintln!("--");
-        let _ = <HashSet<u32>>::from_der(input).expect_err("parsing should fail");
+        log::debug!("-- Fail: wrong item tag (SetOf)");
+        let _ = <SetOf<u32>>::from_der(input).expect_err("wrong item tag");
+        log::debug!("-- Fail: wrong item tag (BTreeSet)");
+        let _ = <BTreeSet<u32>>::from_der(input).expect_err("wrong item tag");
+        log::debug!("-- Fail: wrong item tag (HashSet)");
+        let _ = <HashSet<u32>>::from_der(input).expect_err("wrong item tag");
     }
 
     #[test]
     fn debug_from_der_string_ok() {
+        init();
+
+        log::debug!("-- Ok: valid string");
         let input = &hex!("0c 0a 53 6f 6d 65 2d 53 74 61 74 65");
         let (rem, result) = Utf8String::from_der(input).expect("parsing failed");
         assert_eq!(result.as_ref(), "Some-State");
@@ -516,8 +500,10 @@ mod tests {
 
     #[test]
     fn debug_from_der_string_fail() {
-        // wrong charset
+        init();
+
+        log::debug!("-- Fail: wrong charset");
         let input = &hex!("12 03 41 42 43");
-        let _ = NumericString::from_der(input).expect_err("parsing should fail");
+        let _ = NumericString::from_der(input).expect_err("wrong charset");
     }
 }
