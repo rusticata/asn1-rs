@@ -59,6 +59,7 @@ fn compile_pass_misc() {
     let t = trybuild::TestCases::new();
     t.pass("tests/run-pass/custom*.rs");
     t.pass("tests/run-pass/der_*.rs");
+    t.pass("tests/run-pass/data_outlives_object.rs");
 }
 
 #[test]

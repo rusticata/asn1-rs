@@ -69,6 +69,19 @@ macro_rules! asn1_string {
                 use alloc::string::ToString;
                 self.data.to_string()
             }
+
+            /// Return a reference to the raw string, if shared
+            ///
+            /// Note: unlike `.as_ref()`, this function can return a reference that can
+            /// outlive the current object (if the raw data does).
+            #[inline]
+            pub fn as_raw_str(&self) -> Option<&'a str> {
+                match self.data {
+                    alloc::borrow::Cow::Borrowed(s) => Some(s),
+                    _ => None,
+                }
+            }
+
         }
 
         impl<'a> AsRef<str> for $name<'a> {

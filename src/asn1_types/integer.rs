@@ -374,6 +374,18 @@ impl<'a> Integer<'a> {
         Any::from_tag_and_data(Self::TAG, self.data.as_ref().into())
     }
 
+    /// Return a reference to the raw data, if shared
+    ///
+    /// Note: unlike `.as_ref()`, this function can return a reference that can
+    /// outlive the current object (if the raw data does).
+    #[inline]
+    pub fn as_raw_slice(&self) -> Option<&'a [u8]> {
+        match self.data {
+            Cow::Borrowed(s) => Some(s),
+            _ => None,
+        }
+    }
+
     /// Returns a `BigInt` built from this `Integer` value.
     #[cfg(feature = "bigint")]
     #[cfg_attr(docsrs, doc(cfg(feature = "bigint")))]
