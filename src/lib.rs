@@ -247,6 +247,9 @@ pub use nom::{Err, IResult, Needed};
 
 pub use bitvec;
 
+#[cfg(feature = "bigint")]
+pub use num_bigint;
+
 #[doc(hidden)]
 pub mod exports {
     pub use alloc::borrow;
