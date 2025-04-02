@@ -98,6 +98,18 @@ impl<'a> Sequence<'a> {
         self.content
     }
 
+    /// Return a reference to the raw sequence data, if shared
+    ///
+    /// Note: unlike `.as_ref()`, this function can return a reference that can
+    /// outlive the current object (if the raw data does).
+    #[inline]
+    pub fn as_raw_slice(&self) -> Option<&'a [u8]> {
+        match self.content {
+            Cow::Borrowed(s) => Some(s),
+            Cow::Owned(_) => None,
+        }
+    }
+
     /// Apply the parsing function to the sequence content, consuming the sequence
     ///
     /// Note: this function expects the caller to take ownership of content.
@@ -162,6 +174,60 @@ impl<'a> Sequence<'a> {
             Cow::Owned(_) => unreachable!(),
         };
         let (_, res) = op(data)?;
+        Ok((rem, res))
+    }
+
+    /// Same as [`Sequence::parse_der_and_then`], but using BER encoding (no constraints).
+    pub fn parse_ber_and_then<F, O, E>(input: Input<'a>, op: F) -> IResult<Input<'a>, O, E>
+    where
+        F: FnOnce(Header<'a>, Input<'a>) -> IResult<Input<'a>, O, E>,
+        E: From<BerError<Input<'a>>>,
+    {
+        let orig_input = input.clone();
+        let (rem, any) = Any::parse_ber(input).map_err(Err::convert)?;
+        if any.tag() != Tag::Sequence {
+            return Err(Err::Error(
+                BerError::unexpected_tag(orig_input, Some(Tag::Sequence), any.tag()).into(),
+            ))?;
+        }
+        let (_, res) = op(any.header, any.data)?;
+        Ok((rem, res))
+    }
+
+    /// Parse a DER sequence and apply the provided parsing function to content
+    ///
+    /// After parsing, the sequence object and header are discarded.
+    ///
+    /// ```
+    /// use asn1_rs::{BerError, DerParser, Input, IResult, Sequence};
+    ///
+    /// // Parse a SEQUENCE {
+    /// //      a INTEGER (0..255),
+    /// //      b INTEGER (0..4294967296)
+    /// // }
+    /// // and return only `(a,b)
+    /// fn parser(i: Input) -> IResult<Input, (u8, u32), BerError<Input>> {
+    ///     Sequence::parse_der_and_then(i, |_, i| {
+    ///             let (i, a) = u8::parse_der(i)?;
+    ///             let (i, b) = u32::parse_der(i)?;
+    ///             Ok((i, (a, b)))
+    ///         }
+    ///     )
+    /// }
+    /// ```
+    pub fn parse_der_and_then<F, O, E>(input: Input<'a>, op: F) -> IResult<Input<'a>, O, E>
+    where
+        F: FnOnce(Header<'a>, Input<'a>) -> IResult<Input<'a>, O, E>,
+        E: From<BerError<Input<'a>>>,
+    {
+        let orig_input = input.clone();
+        let (rem, any) = Any::parse_der(input).map_err(Err::convert)?;
+        if any.tag() != Tag::Sequence {
+            return Err(Err::Error(
+                BerError::unexpected_tag(orig_input, Some(Tag::Sequence), any.tag()).into(),
+            ))?;
+        }
+        let (_, res) = op(any.header, any.data)?;
         Ok((rem, res))
     }
 
