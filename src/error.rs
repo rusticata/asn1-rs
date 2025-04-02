@@ -189,15 +189,22 @@ impl<I: Input> BerError<I> {
 }
 
 impl<'i> BerError<crate::Input<'i>> {
+    /// Build a new `BerError` from input reference and inner error
     pub const fn err_input<'a: 'i, 'r>(input: &'r crate::Input<'a>, inner: InnerError) -> Self {
         BerError::new(input.const_clone(), inner)
     }
 
+    /// Builda new `nom::Err::Error<BerError>` from input reference and inner error
     pub const fn nom_err_input<'a: 'i, 'r>(
         input: &'r crate::Input<'a>,
         inner: InnerError,
     ) -> nom::Err<Self> {
         nom::Err::Error(BerError::new(input.const_clone(), inner))
+    }
+
+    /// Consume the error and return error location and inner error
+    pub fn consume(self) -> (crate::Input<'i>, InnerError) {
+        (self.input, self.inner_error)
     }
 }
 

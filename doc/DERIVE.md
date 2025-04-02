@@ -566,9 +566,11 @@ pub struct StructWithAttr {
 
 ### Accessing initial object content
 
-To access a reference to the object's initial input (for ex the entire sequence content) using a custom parser,
+To access a reference to the object's initial input (the entire sequence/set content) using a custom parser,
 the object (not the field) must be marked using `asn1("orig_input")`. The original input will be stored in
 a variable named `orig_input` and can be accessed in the custom parser (_only for closures_).
+
+Note that the sequence header is always available as `header` (even if not using `orig_input`) for closures.
 
 Example:
 ```rust
@@ -577,7 +579,7 @@ Example:
 #[asn1(parse = "DER", encode = "", orig_input)]
 pub struct StructKeepInputRef<'a> {
     a: u32,
-    // Keep a reference to the sequence's original input
+    // Keep a reference to the sequence's original content
     #[asn1(parse = "|input| Ok((input, orig_input))")]
     orig_input: Input<'a>,
 }
