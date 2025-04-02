@@ -975,8 +975,7 @@ fn get_field_berparser(f: &FieldInfo, asn1_type: Asn1Type) -> TokenStream {
                     } else {
                         // clone rem, #map_err may consume it
                         let rem_copy = rem.clone();
-                        let (_, obj_header): (_, asn1_rs::Header) = #from(rem_copy.clone())#map_err?;
-                        let rem = rem_copy;
+                        let (_, obj_header): (_, asn1_rs::Header) = #from(rem_copy)#map_err?;
                         if obj_header.tag().0 == #tag {
                             let (rem, t): (_, asn1_rs::TaggedValue::<
                                 _,
@@ -984,7 +983,7 @@ fn get_field_berparser(f: &FieldInfo, asn1_type: Asn1Type) -> TokenStream {
                                 #tag_kind,
                                 {#class},
                                 #tag>
-                            ) = #from(rem.clone())#map_err?;
+                            ) = #from(rem)#map_err?;
                             (rem, Some(t.into_inner()))
                         } else {
                             (rem, None)
@@ -1004,7 +1003,7 @@ fn get_field_berparser(f: &FieldInfo, asn1_type: Asn1Type) -> TokenStream {
                         #tag_kind,
                         {#class},
                         #tag>
-                    ) = #from(rem.clone())#map_err?;
+                    ) = #from(rem)#map_err?;
                     (rem, t.into_inner())
                 };
                 #default
@@ -1013,7 +1012,7 @@ fn get_field_berparser(f: &FieldInfo, asn1_type: Asn1Type) -> TokenStream {
     } else {
         // not tagged
         quote! {
-            let (rem, #name) = #from(rem.clone())#map_err?;
+            let (rem, #name) = #from(rem)#map_err?;
             #default
         }
     }
