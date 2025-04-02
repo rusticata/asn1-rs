@@ -375,7 +375,7 @@ impl Container {
             gen impl<#lft> #parser<#lft> for @Self where #(#wh),* {
                 type Error = #error;
 
-                fn #from_ber_content(header: &'_ Header<#lft>, input: Input<#lft>) -> IResult<Input<#lft>, Self, Self::Error> {
+                fn #from_ber_content(header: &'_ asn1_rs::Header<#lft>, input: asn1_rs::Input<#lft>) -> asn1_rs::nom::IResult<Input<#lft>, Self, Self::Error> {
                     #fn_content
                 }
             }
@@ -395,8 +395,8 @@ impl Container {
             quote!(
                 // Tagged Explicit must be constructed (X.690 8.14.2)
                 if !header.constructed() {
-                    return Err(Err::Error(
-                        BerError::new(rem, InnerError::ConstructExpected).into(),
+                    return Err(nom::Err::Error(
+                        asn1_rs::BerError::new(rem, asn1_rs::InnerError::ConstructExpected).into(),
                     ));
                 }
             )
