@@ -18,7 +18,7 @@ pub fn derive_ber_alias(s: synstructure::Structure) -> TokenStream {
     let ast = s.ast();
 
     let container = match &ast.data {
-        Data::Struct(ds) => Container::from_datastruct(ds, ast, ContainerType::Alias),
+        Data::Struct(ds) => Container::from_datastruct(ds, ast, ContainerType::Alias).unwrap(),
         _ => panic!("Unsupported type, cannot derive"),
     };
 
@@ -46,7 +46,7 @@ pub fn derive_berparser_alias(s: synstructure::Structure) -> Result<TokenStream>
     let ast = s.ast();
 
     let container = match &ast.data {
-        Data::Struct(ds) => Container::from_datastruct(ds, ast, ContainerType::Alias),
+        Data::Struct(ds) => Container::from_datastruct(ds, ast, ContainerType::Alias)?,
         _ => panic!("Unsupported type, cannot derive"),
     };
 
@@ -81,7 +81,7 @@ pub fn derive_der_alias(s: synstructure::Structure) -> TokenStream {
     let ast = s.ast();
 
     let container = match &ast.data {
-        Data::Struct(ds) => Container::from_datastruct(ds, ast, ContainerType::Alias),
+        Data::Struct(ds) => Container::from_datastruct(ds, ast, ContainerType::Alias).unwrap(),
         _ => panic!("Unsupported type, cannot derive"),
     };
 
@@ -113,7 +113,7 @@ pub fn derive_derparser_alias(s: synstructure::Structure) -> Result<TokenStream>
     let ast = s.ast();
 
     let container = match &ast.data {
-        Data::Struct(ds) => Container::from_datastruct(ds, ast, ContainerType::Alias),
+        Data::Struct(ds) => Container::from_datastruct(ds, ast, ContainerType::Alias)?,
         _ => panic!("Unsupported type, cannot derive"),
     };
 

@@ -26,7 +26,7 @@ impl<'s> DeriveSequence<'s> {
         let ast = s.ast();
 
         let container = match &ast.data {
-            Data::Struct(ds) => Container::from_datastruct(ds, ast, container_type),
+            Data::Struct(ds) => Container::from_datastruct(ds, ast, container_type)?,
             _ => {
                 return Err(Error::new_spanned(
                     &ast.ident,
@@ -112,7 +112,7 @@ pub(crate) fn derive_ber_container(
     let ast = s.ast();
 
     let container = match &ast.data {
-        Data::Struct(ds) => Container::from_datastruct(ds, ast, container_type),
+        Data::Struct(ds) => Container::from_datastruct(ds, ast, container_type).unwrap(),
         _ => panic!("Unsupported type, cannot derive"),
     };
 
@@ -149,7 +149,7 @@ pub fn derive_der_container(
     let ast = s.ast();
 
     let container = match &ast.data {
-        Data::Struct(ds) => Container::from_datastruct(ds, ast, container_type),
+        Data::Struct(ds) => Container::from_datastruct(ds, ast, container_type).unwrap(),
         _ => panic!("Unsupported type, cannot derive"),
     };
 
@@ -190,7 +190,7 @@ pub(crate) fn derive_berparser_container(
     let ast = s.ast();
 
     let container = match &ast.data {
-        Data::Struct(ds) => Container::from_datastruct(ds, ast, container_type),
+        Data::Struct(ds) => Container::from_datastruct(ds, ast, container_type)?,
         _ => {
             return Err(Error::new_spanned(
                 &ast.ident,
@@ -234,7 +234,7 @@ pub(crate) fn derive_tober_container(
     let ast = s.ast();
 
     let container = match &ast.data {
-        Data::Struct(ds) => Container::from_datastruct(ds, ast, container_type),
+        Data::Struct(ds) => Container::from_datastruct(ds, ast, container_type)?,
         _ => panic!("Unsupported type, cannot derive"),
     };
 

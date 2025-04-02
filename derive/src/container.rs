@@ -1,10 +1,12 @@
+use std::convert::TryFrom;
+
 use proc_macro2::{Literal, Span, TokenStream};
 use quote::{quote, ToTokens};
 use syn::parse::ParseStream;
 use syn::spanned::Spanned;
 use syn::{
-    parse_quote, Attribute, DataStruct, DeriveInput, Field, Fields, Ident, Lifetime, LitInt, Meta,
-    Type, WherePredicate,
+    parse_quote, Attribute, DataStruct, DeriveInput, Expr, Field, Fields, Ident, Lifetime, LitInt,
+    LitStr, Meta, Type, WherePredicate,
 };
 
 use crate::asn1_type::Asn1Type;
@@ -95,7 +97,7 @@ impl Container {
         ds: &DataStruct,
         ast: &DeriveInput,
         container_type: ContainerType,
-    ) -> Self {
+    ) -> syn::Result<Self> {
         let mut is_any = false;
         match (container_type, &ds.fields) {
             (ContainerType::Alias, Fields::Unnamed(f)) => {
@@ -120,7 +122,11 @@ impl Container {
             _ => (),
         }
 
-        let fields = ds.fields.iter().map(FieldInfo::from).collect();
+        let fields = ds
+            .fields
+            .iter()
+            .map(FieldInfo::try_from)
+            .collect::<Result<Vec<_>, syn::Error>>()?;
 
         // get lifetimes from generics
         let lfts: Vec<_> = ast.generics.lifetimes().collect();
@@ -143,13 +149,14 @@ impl Container {
             })
             .cloned();
 
-        Container {
+        let container = Container {
             container_type,
             fields,
             where_predicates,
             error,
             is_any,
-        }
+        };
+        Ok(container)
     }
 
     pub fn gen_tryfrom(&self) -> TokenStream {
@@ -687,10 +694,16 @@ pub struct FieldInfo {
     pub optional: bool,
     pub tag: Option<(Asn1TagKind, Asn1TagClass, u16)>,
     pub map_err: Option<TokenStream>,
+    pub parse: Option<Expr>,
+    // TODO: implement this
+    #[allow(unused)]
+    pub encode: Option<Expr>,
 }
 
-impl From<&Field> for FieldInfo {
-    fn from(field: &Field) -> Self {
+impl TryFrom<&Field> for FieldInfo {
+    type Error = syn::Error;
+
+    fn try_from(field: &Field) -> Result<Self, Self::Error> {
         // parse attributes and keep supported ones
         let mut optional = false;
         let mut tag = None;
@@ -700,6 +713,8 @@ impl From<&Field> for FieldInfo {
             .ident
             .as_ref()
             .map_or_else(|| Ident::new("_", Span::call_site()), |s| s.clone());
+        let mut parse = None;
+        let mut encode = None;
         for attr in &field.attrs {
             let ident = match attr.meta.path().get_ident() {
                 Some(ident) => ident.to_string(),
@@ -730,18 +745,42 @@ impl From<&Field> for FieldInfo {
                     let (class, value) = attr.parse_args_with(parse_tag_args).unwrap();
                     tag = Some((Asn1TagKind::Implicit, class, value));
                 }
+                "asn1" => {
+                    // see example at <https://docs.rs/syn/latest/syn/meta/struct.ParseNestedMeta.html>
+                    attr.parse_nested_meta(|meta| {
+                        if meta.path.is_ident("parse") {
+                            let value = meta.value()?;
+                            let lit: LitStr = value.parse()?;
+                            let e: Expr = lit.parse()?;
+                            parse = Some(e);
+                        } else if meta.path.is_ident("encode") {
+                            let value = meta.value()?;
+                            let lit: LitStr = value.parse()?;
+                            let e: Expr = lit.parse()?;
+                            encode = Some(e);
+                            return Err(meta.error("Attribute 'encode' is not yet supported"));
+                        } else {
+                            return Err(meta.error("Invalid or unknown attribute"));
+                        }
+                        return Ok(());
+                    })?;
+                }
                 // ignore unknown attributes
                 _ => (),
             }
         }
-        FieldInfo {
+
+        let f = FieldInfo {
             name,
             type_: field.ty.clone(),
             default,
             optional,
             tag,
             map_err,
-        }
+            parse,
+            encode,
+        };
+        Ok(f)
     }
 }
 
@@ -782,11 +821,21 @@ fn derive_ber_sequence_content(
 }
 
 fn get_field_parser(f: &FieldInfo, asn1_type: Asn1Type, custom_errors: bool) -> TokenStream {
+    let name = &f.name;
+
+    // if a 'parse' attribute was specified, use it
+    if let Some(e) = &f.parse {
+        return quote! {
+            let parse = #e;
+            let (rem, #name) = parse(rem)?;
+        };
+    }
+
+    // else, derive parser
     let from = match asn1_type {
         Asn1Type::Ber => quote! {FromBer::from_ber},
         Asn1Type::Der => quote! {FromDer::from_der},
     };
-    let name = &f.name;
     let default = f
         .default
         .as_ref()
@@ -876,8 +925,17 @@ fn get_field<'a>(fields: &'a [FieldInfo], ident: Option<&Ident>) -> Option<&'a F
 
 // This is an adapted version of `get_field_parser` to use types related to `BerParser`
 fn get_field_berparser(f: &FieldInfo, asn1_type: Asn1Type) -> TokenStream {
-    // eprintln!("{:?}", f);
     let name = &f.name;
+
+    // if a 'parse' attribute was specified, use it
+    if let Some(e) = &f.parse {
+        return quote! {
+            let parse = #e;
+            let (rem, #name) = parse(rem)?;
+        };
+    }
+
+    // else, derive parser
     let from = match asn1_type {
         Asn1Type::Ber => quote! {BerParser::parse_ber},
         Asn1Type::Der => quote! {DerParser::parse_der},
