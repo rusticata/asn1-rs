@@ -6,6 +6,7 @@ pub struct Options {
     pub debug: bool,
     pub error: Option<Attribute>,
     pub tag_kind: Option<Asn1TagKind>,
+    pub orig_input: bool,
 
     pub parsers: Vec<Asn1Type>,
     pub encoders: Vec<Asn1Type>,
@@ -41,6 +42,8 @@ impl Options {
                         let value = meta.value()?;
                         let asn1_types = Asn1Type::parse_multi(value)?;
                         options.encoders = asn1_types.into_iter().collect();
+                    } else if meta.path.is_ident("orig_input") {
+                        options.orig_input = true;
                     } else {
                         return Err(meta.error("Invalid or unknown attribute"));
                     }

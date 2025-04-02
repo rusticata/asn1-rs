@@ -122,7 +122,7 @@ impl<'a> From<&'a Vec<u8>> for Input<'a> {
 
 impl fmt::Display for Input<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Input(start={} end={}", self.start(), self.end())
+        write!(f, "Input(start={} end={})", self.start(), self.end())
     }
 }
 

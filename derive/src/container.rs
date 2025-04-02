@@ -294,6 +294,12 @@ impl Container {
         // Container::from_datastruct takes care of this.
         let mut wh = self.where_predicates.clone();
 
+        let orig_input = if options.orig_input {
+            Some(quote! { let orig_input = input.clone(); })
+        } else {
+            None
+        };
+
         let fn_content = if self.container_type == ContainerType::Alias {
             // special case: is this an alias for Any
             if self.is_any {
@@ -348,6 +354,7 @@ impl Container {
             let assert_constructed = self.gen_assert_constructed();
 
             quote! {
+                #orig_input
                 let rem = input;
                 //
                 #assert_constructed

@@ -528,6 +528,61 @@ pub struct T4 {
 
 *Note*: when deriving BER and DER parsers, errors paths are different (`TryFrom` returns the error type, while [`FromDer`] returns a [`ParseResult`]). Some code will be inserted by the `map_err` attribute to handle this transparently and keep the same function signature.
 
+## Custom parsers
+
+When deriving a `Sequence` or `Set`, parsers for struct fields can be specified using the `asn1(parse="")` attribute. When specified, this attribute must contain a closure or a function name that will be used to
+parse data instead of the default derived parsers.
+
+The custom parser will receive current `input` object, and must return a `IResult<Input, T, BerError<Input>>` object that will be either stored into the field (if `Ok`) or returned (if `Err`).
+
+### Examples (custom parsers)
+
+Custom parsing function, using closure:
+```rust
+# use asn1_rs::*;
+#[derive(Sequence)]
+pub struct AAParseClosure {
+    // ignore input and return a hardcoded value
+    #[asn1(parse = "|input| Ok((input, 0xff))")]
+    a: u32,
+}
+```
+
+Custom parsing function, using function:
+```rust
+# use asn1_rs::*;
+# use nom::IResult;
+fn parse_val(input: Input) -> IResult<Input, u32, BerError<Input>> {
+    eprintln!("input: {input}");
+    Ok((input, 0))
+}
+//
+#[derive(Debug, PartialEq, Sequence)]
+pub struct StructWithAttr {
+    #[asn1(parse = "parse_val")]
+    a: u32,
+}
+```
+
+### Accessing initial object content
+
+To access a reference to the object's initial input (for ex the entire sequence content) using a custom parser,
+the object (not the field) must be marked using `asn1("orig_input")`. The original input will be stored in
+a variable named `orig_input` and can be accessed in the custom parser (_only for closures_).
+
+Example:
+```rust
+# use asn1_rs::*;
+#[derive(Debug, PartialEq, Sequence)]
+#[asn1(parse = "DER", encode = "", orig_input)]
+pub struct StructKeepInputRef<'a> {
+    a: u32,
+    // Keep a reference to the sequence's original input
+    #[asn1(parse = "|input| Ok((input, orig_input))")]
+    orig_input: Input<'a>,
+}
+```
+
 
 # Deprecated attributes
 

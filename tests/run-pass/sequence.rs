@@ -57,6 +57,24 @@ fn derive_sequence_attribute_parse() {
     assert_eq!(res, AAParseFunction { a: 0xff });
 }
 
+fn derive_sequence_attribute_orig_input() {
+    #[derive(Debug, PartialEq, Sequence)]
+    #[asn1(parse = "DER", encode = "", orig_input)]
+    pub struct StructKeepInputRef<'a> {
+        a: u32,
+        // test using closure
+        #[asn1(parse = "|input| Ok((input, orig_input))")]
+        orig_input: Input<'a>,
+    }
+
+    let input = Input::from_slice(&hex!("30 04 020200aa"));
+    let (rem, res) = StructKeepInputRef::parse_der(input).expect("parsing failed");
+    assert!(rem.is_empty());
+    assert_eq!(res.a, 0xaa);
+    assert_eq!(res.orig_input.start(), 2);
+    assert_eq!(res.orig_input.end(), 6);
+}
+
 #[cfg(feature = "std")]
 mod with_std {
     use super::*;
@@ -95,6 +113,7 @@ mod with_std {
 fn main() {
     derive_sequence_simple();
     derive_sequence_attribute_parse();
+    derive_sequence_attribute_orig_input();
 
     #[cfg(feature = "std")]
     {
