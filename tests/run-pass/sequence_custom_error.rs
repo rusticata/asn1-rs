@@ -76,7 +76,7 @@ fn derive_sequence_map_err() {
 
     // Compile-time test: check that we can access original error input
     #[derive(Debug, PartialEq, Sequence)]
-    #[debug_derive]
+    // #[debug_derive]
     pub struct T5 {
         #[map_err(|e: BerError<Input>| BerError::err_input(e.input(), InnerError::Unsupported))]
         pub a: u32,

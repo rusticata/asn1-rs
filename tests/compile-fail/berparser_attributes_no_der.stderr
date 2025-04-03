@@ -12,5 +12,6 @@ error[E0599]: no variant or associated item named `parse_der` found for enum `My
            candidate #1: `derive_choice_explicit_attributes_no_der::_::asn1_rs::DerParser`
 help: there is an associated function `parse_ber` with a similar name
    |
-22 |     let _ = MyEnum::parse_ber(Input::from(Input::from(bytes))).expect("parsing DER failed");
-   |                     ~~~~~~~~~
+22 -     let _ = MyEnum::parse_der(Input::from(Input::from(bytes))).expect("parsing DER failed");
+22 +     let _ = MyEnum::parse_ber(Input::from(Input::from(bytes))).expect("parsing DER failed");
+   |
