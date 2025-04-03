@@ -375,7 +375,7 @@ impl Container {
             gen impl<#lft> #parser<#lft> for @Self where #(#wh),* {
                 type Error = #error;
 
-                fn #from_ber_content(header: &'_ asn1_rs::Header<#lft>, input: asn1_rs::Input<#lft>) -> asn1_rs::nom::IResult<Input<#lft>, Self, Self::Error> {
+                fn #from_ber_content(header: &'_ asn1_rs::Header<#lft>, input: asn1_rs::Input<#lft>) -> asn1_rs::nom::IResult<asn1_rs::Input<#lft>, Self, Self::Error> {
                     #fn_content
                 }
             }
