@@ -943,6 +943,7 @@ fn get_field_berparser(f: &FieldInfo, asn1_type: Asn1Type) -> TokenStream {
     }
 
     // else, derive parser
+    let parser = asn1_type.parser();
     let from = match asn1_type {
         Asn1Type::Ber => quote! {BerParser::parse_ber},
         Asn1Type::Der => quote! {DerParser::parse_der},
@@ -979,7 +980,7 @@ fn get_field_berparser(f: &FieldInfo, asn1_type: Asn1Type) -> TokenStream {
                         if obj_header.tag().0 == #tag {
                             let (rem, t): (_, asn1_rs::TaggedValue::<
                                 _,
-                                <#f_ty as asn1_rs::BerParser>::Error,
+                                <#f_ty as asn1_rs::#parser>::Error,
                                 #tag_kind,
                                 {#class},
                                 #tag>
@@ -999,7 +1000,7 @@ fn get_field_berparser(f: &FieldInfo, asn1_type: Asn1Type) -> TokenStream {
                 let (rem, #name) = {
                     let (rem, t): (_, asn1_rs::TaggedValue::<
                         _,
-                        <#f_ty as asn1_rs::BerParser>::Error,
+                        <#f_ty as asn1_rs::#parser>::Error,
                         #tag_kind,
                         {#class},
                         #tag>
