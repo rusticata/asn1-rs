@@ -1,3 +1,5 @@
+#[cfg(not(feature = "std"))]
+use alloc::string::String;
 use alloc::vec::Vec;
 use core::fmt;
 use core::iter::{Cloned, Enumerate};
@@ -180,6 +182,16 @@ impl<'a> nom::Input for Input<'a> {
         } else {
             Err(Needed::new(count - self.data.len()))
         }
+    }
+}
+
+impl nom::HexDisplay for Input<'_> {
+    fn to_hex(&self, chunk_size: usize) -> String {
+        self.data.to_hex(chunk_size)
+    }
+
+    fn to_hex_from(&self, chunk_size: usize, from: usize) -> String {
+        self.data.to_hex_from(chunk_size, from)
     }
 }
 
