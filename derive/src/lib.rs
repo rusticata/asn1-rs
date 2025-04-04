@@ -189,9 +189,11 @@ synstructure::decl_derive!([Choice, attributes(
 
 synstructure::decl_derive!([Enumerated, attributes(
     debug_derive,
+    error,
 )] => derive_enumerated);
 
 synstructure::decl_derive!([Alias, attributes(
     debug_derive,
+    error,
     asn1,
 )] => derive_alias);
