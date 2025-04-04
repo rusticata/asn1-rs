@@ -354,7 +354,7 @@ impl_int!(usize => isize);
 /// let v = 4.to_der_vec().unwrap();
 /// assert_eq!(&v, &[2, 1, 4]);
 /// ```
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Integer<'a> {
     pub(crate) data: Cow<'a, [u8]>,
 }
