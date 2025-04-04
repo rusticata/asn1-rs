@@ -184,6 +184,7 @@ synstructure::decl_derive!([Choice, attributes(
     tagged_explicit,
     tagged_implicit,
     tag,
+    error,
     asn1,
 )] => derive_choice);
 
