@@ -729,11 +729,11 @@ impl TryFrom<&Field> for FieldInfo {
             };
             match ident.as_str() {
                 "map_err" => {
-                    let expr: syn::Expr = attr.parse_args().expect("could not parse map_err");
+                    let expr: syn::Expr = attr.parse_args()?;
                     map_err = Some(quote! { #expr });
                 }
                 "default" => {
-                    let expr: syn::Expr = attr.parse_args().expect("could not parse default");
+                    let expr: syn::Expr = attr.parse_args()?;
                     default = Some(quote! { #expr });
                     optional = true;
                 }

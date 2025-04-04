@@ -40,7 +40,7 @@ impl<'a> Any<'a> {
 
     /// Create a new `Any` from a tag, and BER/DER content
     #[inline]
-    pub fn from_tag_and_data(tag: Tag, data: Input<'a>) -> Self {
+    pub const fn from_tag_and_data(tag: Tag, data: Input<'a>) -> Self {
         let constructed = matches!(tag, Tag::Sequence | Tag::Set);
         Any {
             header: Header {

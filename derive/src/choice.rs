@@ -219,13 +219,13 @@ impl<'s> DeriveChoice<'s> {
             match tag_kind {
                 Asn1TagKind::Explicit => quote! {
                     #tag => {
-                        let (rem, #bi) = #parser::#parse_ber(rem)#map_err?;
+                        let (rem, #bi) = asn1_rs::#parser::#parse_ber(rem)#map_err?;
                         Ok((rem, #construct))
                     }
                 },
                 Asn1TagKind::Implicit => quote! {
                     #tag => {
-                        let (rem, #bi) = #parser::#from_ber_content(header, rem)#map_err?;
+                        let (rem, #bi) = asn1_rs::#parser::#from_ber_content(header, rem)#map_err?;
                         Ok((rem, #construct))
                     }
                 },
