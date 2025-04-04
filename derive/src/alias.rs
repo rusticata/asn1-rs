@@ -182,7 +182,7 @@ impl<'s> DeriveAlias<'s> {
         let map_err = self
             .error
             .as_ref()
-            .map(|_| quote! { .map_err(Err::convert) });
+            .map(|_| quote! { .map_err(asn1_rs::nom::Err::convert) });
 
         let fn_content = quote! {
                 let (rem, obj) = #parser::#from_ber_content(header, input)#map_err?;
