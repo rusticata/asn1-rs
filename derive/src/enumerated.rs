@@ -3,7 +3,7 @@ use crate::container::*;
 use crate::options::Options;
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
-use syn::{Data, Error, Expr, ExprLit, Ident, Lifetime, Lit, Result};
+use syn::{Attribute, Data, Error, Expr, ExprLit, Ident, Lifetime, Lit, Result};
 
 pub fn derive_enumerated(s: synstructure::Structure) -> TokenStream {
     match DeriveEnumerated::new(&s) {
@@ -18,6 +18,8 @@ pub struct DeriveEnumerated<'s> {
     ident: Ident,
     synstruct: &'s synstructure::Structure<'s>,
     variants: Vec<EnumVariant>,
+
+    error: Option<Attribute>,
 }
 
 pub struct EnumVariant {
@@ -35,7 +37,18 @@ impl<'s> DeriveEnumerated<'s> {
             ));
         };
 
-        // TODO: check that enum has 'repr' attribute for some unsigned integer class
+        // TODO: check that enum has 'repr' attribute for some unsigned integer class?
+
+        // get custom attributes on container
+        let error = ast
+            .attrs
+            .iter()
+            .find(|attr| {
+                attr.meta
+                    .path()
+                    .is_ident(&Ident::new("error", Span::call_site()))
+            })
+            .cloned();
 
         let ident = ast.ident.clone();
         let options = Options::from_struct(s)?;
@@ -46,23 +59,17 @@ impl<'s> DeriveEnumerated<'s> {
             ident,
             synstruct: s,
             variants,
+            error,
         };
         Ok(s)
     }
 
     fn to_tokens(&self) -> TokenStream {
-        let Self {
-            variants,
-            options,
-            synstruct,
-            ..
-        } = self;
-
-        let dyntagged = derive_enumerated_dyntagged(variants, options, synstruct);
-        let berparser = derive_enumerated_parser(Asn1Type::Ber, variants, options, synstruct);
-        let derparser = derive_enumerated_parser(Asn1Type::Der, variants, options, synstruct);
-        let berencode = derive_enumerated_encode(Asn1Type::Ber, variants, options, synstruct);
-        let derencode = derive_enumerated_encode(Asn1Type::Der, variants, options, synstruct);
+        let dyntagged = self.derive_enumerated_dyntagged();
+        let berparser = self.derive_enumerated_parser(Asn1Type::Ber);
+        let derparser = self.derive_enumerated_parser(Asn1Type::Der);
+        let berencode = self.derive_enumerated_encode(Asn1Type::Ber);
+        let derencode = self.derive_enumerated_encode(Asn1Type::Der);
 
         let ts = quote! {
             #dyntagged
@@ -78,62 +85,58 @@ impl<'s> DeriveEnumerated<'s> {
         }
         ts
     }
-}
 
-fn derive_enumerated_dyntagged(
-    _variants: &[EnumVariant],
-    _options: &Options,
-    s: &synstructure::Structure,
-) -> TokenStream {
-    s.gen_impl(quote! {
-        gen impl asn1_rs::DynTagged for @Self {
-            fn accept_tag(tag: asn1_rs::Tag) -> bool { tag == asn1_rs::Tag::Enumerated }
+    fn derive_enumerated_dyntagged(&self) -> TokenStream {
+        self.synstruct.gen_impl(quote! {
+            gen impl asn1_rs::DynTagged for @Self {
+                fn accept_tag(tag: asn1_rs::Tag) -> bool { tag == asn1_rs::Tag::Enumerated }
 
-            fn class(&self) -> asn1_rs::Class { asn1_rs::Class::Universal }
+                fn class(&self) -> asn1_rs::Class { asn1_rs::Class::Universal }
 
-            fn constructed(&self) -> bool { false }
+                fn constructed(&self) -> bool { false }
 
-            fn tag(&self) -> asn1_rs::Tag { asn1_rs::Tag::Enumerated }
-        }
-    })
-}
-
-fn derive_enumerated_parser(
-    asn1_type: Asn1Type,
-    variants: &[EnumVariant],
-    options: &Options,
-    s: &synstructure::Structure,
-) -> TokenStream {
-    if !options.parsers.contains(&asn1_type) {
-        if options.debug {
-            eprintln!("// Parsers: skipping asn1_type {:?}", asn1_type);
-        }
-        return quote! {};
+                fn tag(&self) -> asn1_rs::Tag { asn1_rs::Tag::Enumerated }
+            }
+        })
     }
 
-    let from_ber_content = asn1_type.from_ber_content();
-    let parser = asn1_type.parser();
-    let lft = Lifetime::new("'ber", Span::call_site());
+    fn derive_enumerated_parser(&self, asn1_type: Asn1Type) -> TokenStream {
+        if !self.options.parsers.contains(&asn1_type) {
+            if self.options.debug {
+                eprintln!("// Parsers: skipping asn1_type {:?}", asn1_type);
+            }
+            return quote! {};
+        }
 
-    let match_branches = variants.iter().map(|v| {
-        //
-        let discriminant = v.discriminant;
-        let ident = &v.ident;
-        quote! { #discriminant => Self::#ident, }
-    });
+        let from_ber_content = asn1_type.from_ber_content();
+        let parser = asn1_type.parser();
+        let lft = Lifetime::new("'ber", Span::call_site());
 
-    let assert_primitive = quote! {
-        header.assert_primitive_input(&input).map_err(asn1_rs::nom::Err::Error)?;
-    };
+        // if using custom error, we need to map errors before return
+        let map_err = self
+            .error
+            .as_ref()
+            .map(|_| quote! { .map_err(asn1_rs::nom::Err::convert) });
 
-    // error type
-    let error = if let Some(attr) = &options.error {
-        get_attribute_meta(attr).expect("Invalid error attribute format")
-    } else {
-        quote! { asn1_rs::BerError<asn1_rs::Input<#lft>> }
-    };
+        let match_branches = self.variants.iter().map(|v| {
+            //
+            let discriminant = v.discriminant;
+            let ident = &v.ident;
+            quote! { #discriminant => Self::#ident, }
+        });
 
-    s.gen_impl(quote! {
+        let assert_primitive = quote! {
+            header.assert_primitive_input(&input).map_err(|e| asn1_rs::nom::Err::convert(asn1_rs::nom::Err::Error(e)))?;
+        };
+
+        // error type
+        let error = if let Some(attr) = &self.options.error {
+            get_attribute_meta(attr).expect("Invalid error attribute format")
+        } else {
+            quote! { asn1_rs::BerError<asn1_rs::Input<#lft>> }
+        };
+
+        self.synstruct.gen_impl(quote! {
         extern crate asn1_rs;
 
         gen impl<#lft> asn1_rs::#parser<#lft> for @Self {
@@ -141,7 +144,7 @@ fn derive_enumerated_parser(
             fn #from_ber_content(header: &'_ asn1_rs::Header<#lft>, input: asn1_rs::Input<#lft>) -> asn1_rs::nom::IResult<asn1_rs::Input<#lft>, Self, Self::Error> {
                 #assert_primitive
                 // let rem = input.clone();
-                let (rem, enumerated) = asn1_rs::Enumerated::#from_ber_content(header, input.clone())?;
+                let (rem, enumerated) = asn1_rs::Enumerated::#from_ber_content(header, input.clone())#map_err?;
                 let v = match enumerated.0 {
                     #(#match_branches)*
                     _ => {
@@ -154,90 +157,71 @@ fn derive_enumerated_parser(
             }
         }
     })
-}
-
-fn derive_enumerated_encode(
-    asn1_type: Asn1Type,
-    variants: &[EnumVariant],
-    options: &Options,
-    s: &synstructure::Structure,
-) -> TokenStream {
-    if !options.encoders.contains(&asn1_type) {
-        if options.debug {
-            eprintln!("// Encoders: skipping asn1_type {:?}", asn1_type);
-        }
-        return quote! {};
     }
 
-    let tober = asn1_type.tober();
-
-    let impl_tober_content_len = enumerated_gen_tober_content_len(asn1_type, options, s);
-    let impl_tober_tag_info = enumerated_gen_tober_tag_info(asn1_type, variants, options, s);
-    let impl_tober_write_content =
-        enumerated_gen_tober_write_content(asn1_type, variants, options, s);
-
-    s.gen_impl(quote! {
-        extern crate asn1_rs;
-
-        #[cfg(feature = "std")]
-        gen impl asn1_rs::#tober for @Self {
-            type Encoder = asn1_rs::BerGenericEncoder;
-
-            #impl_tober_content_len
-            #impl_tober_tag_info
-            #impl_tober_write_content
+    fn derive_enumerated_encode(&self, asn1_type: Asn1Type) -> TokenStream {
+        if !self.options.encoders.contains(&asn1_type) {
+            if self.options.debug {
+                eprintln!("// Encoders: skipping asn1_type {:?}", asn1_type);
+            }
+            return quote! {};
         }
-    })
-}
 
-fn enumerated_gen_tober_content_len(
-    asn1_type: Asn1Type,
-    _options: &Options,
-    _s: &synstructure::Structure<'_>,
-) -> TokenStream {
-    let content_len = asn1_type.content_len_tokens();
+        let tober = asn1_type.tober();
 
-    let impl_tober_content_len = quote! {
-        fn #content_len(&self) -> asn1_rs::Length {
-            let e = asn1_rs::Enumerated::new(*self as u32);
-            e.#content_len()
-        }
-    };
-    impl_tober_content_len
-}
+        let impl_tober_content_len = self.enumerated_gen_tober_content_len(asn1_type);
+        let impl_tober_tag_info = self.enumerated_gen_tober_tag_info(asn1_type);
+        let impl_tober_write_content = self.enumerated_gen_tober_write_content(asn1_type);
 
-fn enumerated_gen_tober_tag_info(
-    asn1_type: Asn1Type,
-    _variants: &[EnumVariant],
-    _options: &Options,
-    _s: &synstructure::Structure<'_>,
-) -> TokenStream {
-    let tag_info = asn1_type.tag_info_tokens();
+        self.synstruct.gen_impl(quote! {
+            extern crate asn1_rs;
 
-    let impl_tober_tag_info = quote! {
-        fn #tag_info(&self) -> (asn1_rs::Class, bool, asn1_rs::Tag) {
-            use asn1_rs::DynTagged;
-            (self.class(), self.constructed(), self.tag())
-        }
-    };
-    impl_tober_tag_info
-}
+            #[cfg(feature = "std")]
+            gen impl asn1_rs::#tober for @Self {
+                type Encoder = asn1_rs::BerGenericEncoder;
 
-fn enumerated_gen_tober_write_content(
-    asn1_type: Asn1Type,
-    _variants: &[EnumVariant],
-    _options: &Options,
-    _s: &synstructure::Structure<'_>,
-) -> TokenStream {
-    let write_content = asn1_type.compose("_write_content");
+                #impl_tober_content_len
+                #impl_tober_tag_info
+                #impl_tober_write_content
+            }
+        })
+    }
 
-    let impl_tober_write_content = quote! {
-        fn #write_content<W: std::io::Write>(&self, writer: &mut W) -> asn1_rs::SerializeResult<usize> {
-            let e = asn1_rs::Enumerated::new(*self as u32);
-            e.#write_content(writer)
-        }
-    };
-    impl_tober_write_content
+    fn enumerated_gen_tober_content_len(&self, asn1_type: Asn1Type) -> TokenStream {
+        let content_len = asn1_type.content_len_tokens();
+
+        let impl_tober_content_len = quote! {
+            fn #content_len(&self) -> asn1_rs::Length {
+                let e = asn1_rs::Enumerated::new(*self as u32);
+                e.#content_len()
+            }
+        };
+        impl_tober_content_len
+    }
+
+    fn enumerated_gen_tober_tag_info(&self, asn1_type: Asn1Type) -> TokenStream {
+        let tag_info = asn1_type.tag_info_tokens();
+
+        let impl_tober_tag_info = quote! {
+            fn #tag_info(&self) -> (asn1_rs::Class, bool, asn1_rs::Tag) {
+                use asn1_rs::DynTagged;
+                (self.class(), self.constructed(), self.tag())
+            }
+        };
+        impl_tober_tag_info
+    }
+
+    fn enumerated_gen_tober_write_content(&self, asn1_type: Asn1Type) -> TokenStream {
+        let write_content = asn1_type.compose("_write_content");
+
+        let impl_tober_write_content = quote! {
+            fn #write_content<W: std::io::Write>(&self, writer: &mut W) -> asn1_rs::SerializeResult<usize> {
+                let e = asn1_rs::Enumerated::new(*self as u32);
+                e.#write_content(writer)
+            }
+        };
+        impl_tober_write_content
+    }
 }
 
 fn parse_enum_variants(s: &synstructure::Structure<'_>) -> Result<Vec<EnumVariant>> {
