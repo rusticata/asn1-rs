@@ -7,8 +7,8 @@ use nom::{Err, IResult, Input as _};
 
 use crate::debug::{trace_generic, trace_input};
 use crate::{
-    parse_der_any, wrap_ber_parser, Any, BerError, DynTagged, Error, Header, Input, ParseResult,
-    Result,
+    parse_der_any, wrap_ber_parser, Any, BerError, DerMode, DynTagged, Error, GetObjectContent,
+    Header, Input, ParseResult, Result, MAX_RECURSION,
 };
 
 /// Base trait for DER object parsers
@@ -194,5 +194,24 @@ where
         let (rem, data) = take(length)(rem)?;
         let (_, obj) = Self::from_der_content(&header, data).map_err(Err::convert)?;
         Ok((rem, Some(obj)))
+    }
+
+    /// Parse object header (validating tag) and return header and content as `Input`
+    fn parse_der_as_input(
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, (Header<'i>, Input<'i>), Self::Error> {
+        trace_input("DerParser::parse_der_as_input", |input| {
+            let (rem, header) = Header::parse_der(input.clone()).map_err(Err::convert)?;
+            if !Self::accept_tag(header.tag) {
+                return Err(Err::Error(
+                    // FIXME: expected Tag is `None`, so the error will not be helpful
+                    BerError::unexpected_tag(input, None, header.tag).into(),
+                ));
+            }
+            let (rem, data) =
+                DerMode::get_object_content(&header, rem, MAX_RECURSION).map_err(Err::convert)?;
+
+            Ok((rem, (header, data)))
+        })(input)
     }
 }

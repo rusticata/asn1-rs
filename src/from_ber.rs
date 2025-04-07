@@ -96,7 +96,7 @@ where
     ///
     /// Header tag must match expected tag
     fn parse_ber(input: Input<'i>) -> IResult<Input<'i>, Self, Self::Error> {
-        trace_input("DerParser::parse_ber", |input| {
+        trace_input("BerParser::parse_ber", |input| {
             let (rem, header) = Header::parse_ber(input.clone()).map_err(Err::convert)?;
             if !Self::accept_tag(header.tag) {
                 return Err(Err::Error(
@@ -138,6 +138,25 @@ where
             BerMode::get_object_content(&header, rem, MAX_RECURSION).map_err(Err::convert)?;
         let (_, obj) = Self::from_ber_content(&header, data).map_err(Err::convert)?;
         Ok((rem, Some(obj)))
+    }
+
+    /// Parse object header (validating tag) and return header and content as `Input`
+    fn parse_ber_as_input(
+        input: Input<'i>,
+    ) -> IResult<Input<'i>, (Header<'i>, Input<'i>), Self::Error> {
+        trace_input("BerParser::parse_ber_as_input", |input| {
+            let (rem, header) = Header::parse_ber(input.clone()).map_err(Err::convert)?;
+            if !Self::accept_tag(header.tag) {
+                return Err(Err::Error(
+                    // FIXME: expected Tag is `None`, so the error will not be helpful
+                    BerError::unexpected_tag(input, None, header.tag).into(),
+                ));
+            }
+            let (rem, data) =
+                BerMode::get_object_content(&header, rem, MAX_RECURSION).map_err(Err::convert)?;
+
+            Ok((rem, (header, data)))
+        })(input)
     }
 }
 
