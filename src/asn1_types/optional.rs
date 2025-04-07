@@ -66,9 +66,7 @@ where
         header: &'_ Header<'a>,
         input: Input<'a>,
     ) -> IResult<Input<'a>, Self, Self::Error> {
-        if input.is_empty() {
-            return Ok((input, None));
-        }
+        // do not map empty input to None: in this method, we have parsed a header
         if !T::accept_tag(header.tag) {
             return Ok((input, None));
         }
