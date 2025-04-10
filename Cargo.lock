@@ -4,7 +4,7 @@ version = 3
 
 [[package]]
 name = "asn1-rs"
-version = "0.8.0"
+version = "0.8.0-beta.1"
 dependencies = [
  "asn1-rs-derive",
  "asn1-rs-impl",

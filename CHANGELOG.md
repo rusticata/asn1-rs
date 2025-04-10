@@ -11,10 +11,11 @@
 ## 0.8.0
 
 This is a major upgrade, with breaking changes!
-The main changes for this version are generic types for input, and the new traits `BerParser`
-and `DerParser`. These traits define a cleaner implementation of parsing functions for
-header and content, allowing better implementation of tagged values, of content parsing, and
-of serialization functions.
+The main changes for this version are a custom input type `Input` for input,
+and the new traits `BerParser` and `DerParser`. These traits define a cleaner
+implementation of parsing functions for header and content, allowing better
+implementation of tagged values, of content parsing, and of serialization
+functions.
 
 The previous traits (`FromBer` and `FromDer`) have been kept for compatibility, but will
 become obsolete and will be replaced in future upgrades. This version is a transition version.
@@ -22,13 +23,45 @@ become obsolete and will be replaced in future upgrades. This version is a trans
 Some efforts have been done to make upgrade easier, but a few things are broken or changed and
 will require manual upgrade.
 
+The main improvements brought by the changes are:
+- _much easier tracking of parsing errors_: the `Input` type keeps an offset relative to start of input,
+  making it easier to identify the bytes in the encoded object
+- _better support for implicit tags_: the new traits `BerParser` and `DerParser` keep a clean separation of header
+  and data, so now all types implementing these traits can be used with any kind of tags in an easier way
+- _better derive attributes_: `Sequence`, `Set` and `Alias` are better
+  implementations of previous attributes, and new attributes are available:
+  `Choice`, `Enumerated`
+- _Serialization support_: serialization is now not only experimental (and limited to DER), it is available
+  on all objects, and globally implementation by all new custom derive attributes.
+- _Support for constructed strings_ (BER): constructed restricted character strings, bit strings and octet
+  strings are now supported.
+
 Breaking changes:
 - `BerParser` and `DerParser` constants have been renamed to `BerMode` and `DerMode`
+- Most parsers and objects use `Input` type (instead of `&[u8]`)
+- Error type has changed to `BerError<Input<'_>>` and now has a lifetime.
+  While this can cause difficulties for users, it really helps finding errors in the input data
+
+Important changes:
+- MSRV is now 1.65
+- `bitvec` is now a mandatory dependency
+- `FromDer` and `FromBer` are no more the main traits. They are superseded by `DerParser` and `BerParser`
+- Error type `Error` is not yet removed, but will be removed or replaced by `BerError` in the future
+- Parsing methods do not rely anymore on `TryFrom<Any>`
+- Custom derive attributes use the `#[cfg(feature="std")` condition for generator encoders. **This may change in the future**
+- The `debug` and `trace` features now use the `log` framework
+- Many new parsers: tuples (for SEQUENCE), arrays (for SEQUENCE OF`), `enum` (for CHOICE or ENUMERATED), iterators, etc.
 
 Upgrade notes:
-- `Any` now has a generic type parameter, defaulting to `&[u8]`
+- To parse a slice, use the `from()` method to convert to `Input`: `<T>::parse_ber(Input::from(bytes))`
+- `Any.data` now has type `Input`. Use `.as_bytes2()` to get `&[u8]`
 - A new error type `BerError` has been introduced
-- when using generic input, it may be necessary to cast input as `&[u8]`
+- `Any.data()` now has type `Input`
+  - Use `.as_bytes2()` to get `&[u8]`
+- `BitString` do not have a lifetime parameter anymore
+- `bitstring.data` is replaced by `bitstring.as_raw_slice()`
+
+Full changelog is quite huge and not included here. It is available on GitHub.
 
 ## 0.7.0
 
