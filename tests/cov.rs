@@ -67,7 +67,7 @@ fn methods_error() {
     use nom::error::ParseError;
     let e = Error::from_error_kind(&[] as &[u8], nom::error::ErrorKind::Fail);
     let e = <asn1_rs::Error as ParseError<_>>::append(&[] as &[u8], nom::error::ErrorKind::Eof, e);
-    let s = format!("{}", e);
+    let s = format!("{e}");
     assert!(s.starts_with("nom error:"));
     //
     let e1 = Error::from(nom::Err::Error(Error::BerTypeError));
@@ -75,15 +75,15 @@ fn methods_error() {
     assert!(e1 != e2);
     //
     let e = SerializeError::from(Error::BerTypeError);
-    let s = format!("{}", e);
+    let s = format!("{e}");
     assert!(s.starts_with("ASN.1 error:"));
     //
     let e = SerializeError::InvalidClass { class: 4 };
-    let s = format!("{}", e);
+    let s = format!("{e}");
     assert!(s.starts_with("Invalid Class"));
     //
     let e = SerializeError::from(io::Error::new(io::ErrorKind::Other, "msg"));
-    let s = format!("{}", e);
+    let s = format!("{e}");
     assert!(s.starts_with("I/O error:"));
 }
 

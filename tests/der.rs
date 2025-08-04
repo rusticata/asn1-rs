@@ -648,5 +648,5 @@ fn from_der_tagged_optional_cov() {
     assert!(r.is_err());
 
     let p = OptTaggedParser::from(Tag(1));
-    let _ = format!("{:?}", p);
+    let _ = format!("{p:?}");
 }

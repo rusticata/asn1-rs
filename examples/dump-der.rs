@@ -127,7 +127,7 @@ fn main() -> std::result::Result<(), Box<dyn Error>> {
             _ => (),
         }
         let filename = arg;
-        eprintln!("File: {}", filename);
+        eprintln!("File: {filename}");
         let content = fs::read(&filename)?;
         // check for PEM file
         if filename.ends_with(".pem") || content.starts_with(b"----") {
@@ -163,7 +163,7 @@ fn print_der(i: &[u8], depth: usize, ctx: &Context) {
             }
         }
         Err(e) => {
-            eprintln!("Error while parsing at depth {}: {:?}", depth, e);
+            eprintln!("Error while parsing at depth {depth}: {e:?}");
         }
     }
 }
@@ -355,7 +355,7 @@ fn print_der_any(start: usize, any: Any, depth: usize, ctx: &Context) {
                         print_der_any(item_input.start(), item, item_depth, ctx);
                     }
                     Err(e) => {
-                        eprintln!("Error while parsing at depth {}: {:?}", item_depth, e);
+                        eprintln!("Error while parsing at depth {item_depth}: {e:?}");
                     }
                 }
             }
@@ -369,7 +369,7 @@ fn print_der_any(start: usize, any: Any, depth: usize, ctx: &Context) {
                         print_der_any(item_input.start(), item, item_depth, ctx);
                     }
                     Err(e) => {
-                        eprintln!("Error while parsing at depth {}: {:?}", item_depth, e);
+                        eprintln!("Error while parsing at depth {item_depth}: {e:?}");
                     }
                 }
             }
