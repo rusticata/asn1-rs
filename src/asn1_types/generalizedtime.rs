@@ -252,7 +252,7 @@ impl fmt::Display for GeneralizedTime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let dt = &self.0;
         let fsec = match self.0.millisecond {
-            Some(v) => format!(".{}", v),
+            Some(v) => format!(".{v}"),
             None => String::new(),
         };
         match dt.tz {
@@ -325,7 +325,7 @@ const _: () = {
         fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             let fractional = match self.0.millisecond {
                 None => "".to_string(),
-                Some(v) => format!(".{}", v),
+                Some(v) => format!(".{v}"),
             };
             let num_digits = fractional.len();
             write!(

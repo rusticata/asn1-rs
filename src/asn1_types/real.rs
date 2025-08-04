@@ -319,7 +319,7 @@ fn decode_real(header: &Header, bytes: &[u8]) -> Result<Real, InnerError> {
                 }
                     }
             c => {
-                Err(InnerError::invalid_value(header.tag,&format!("Invalid NR ({})", c)))
+                Err(InnerError::invalid_value(header.tag,&format!("Invalid NR ({c})")))
             }
         }
     }
@@ -359,7 +359,7 @@ const _: () = {
                     if *base == 10 {
                         // using character form
                         let sign = if *exponent == 0 { "+" } else { "" };
-                        let s = format!("\x03{}E{}{}", mantissa, sign, exponent);
+                        let s = format!("\x03{mantissa}E{sign}{exponent}");
                         return target.write(s.as_bytes()).map_err(Into::into);
                     }
                     if *base != 2 {

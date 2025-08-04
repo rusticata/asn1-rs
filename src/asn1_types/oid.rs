@@ -243,7 +243,7 @@ impl<'a> Oid<'a> {
         } else {
             let mut ret = String::with_capacity(self.asn1.len() * 3);
             for (i, o) in self.asn1.iter().enumerate() {
-                ret.push_str(&format!("{:02x}", o));
+                ret.push_str(&format!("{o:02x}"));
                 if i + 1 != self.asn1.len() {
                     ret.push(' ');
                 }

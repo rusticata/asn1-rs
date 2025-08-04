@@ -58,7 +58,7 @@ impl fmt::Display for Class {
             Class::ContextSpecific => "CONTEXT-SPECIFIC",
             Class::Private => "PRIVATE",
         };
-        write!(f, "{}", s)
+        write!(f, "{s}")
     }
 }
 

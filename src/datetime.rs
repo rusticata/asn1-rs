@@ -89,7 +89,7 @@ impl fmt::Display for ASN1DateTime {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let fractional = match self.millisecond {
             None => "".to_string(),
-            Some(v) => format!(".{}", v),
+            Some(v) => format!(".{v}"),
         };
         write!(
             f,
