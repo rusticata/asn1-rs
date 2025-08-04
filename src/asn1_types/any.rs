@@ -328,29 +328,29 @@ impl<'a> Any<'a> {
     impl_any_into!(videotexstring => VideotexString<'a>, "VideotexString");
     impl_any_into!(visiblestring => VisibleString<'a>, "VisibleString");
 
-    impl_any_as!(as_anysequence => AnySequence, "SEQUENCE");
+    impl_any_as!(as_anysequence => AnySequence<'_>, "SEQUENCE");
     impl_any_as!(as_bitstring => BitString, "BITSTRING");
-    impl_any_as!(as_bmpstring => BmpString, "BMPString");
+    impl_any_as!(as_bmpstring => BmpString<'_>, "BMPString");
     impl_any_as!(as_bool => bool, "BOOLEAN");
     impl_any_as!(as_boolean => Boolean, "BOOLEAN");
-    impl_any_as!(as_embedded_pdv => EmbeddedPdv, "EMBEDDED PDV");
+    impl_any_as!(as_embedded_pdv => EmbeddedPdv<'_>, "EMBEDDED PDV");
     impl_any_as!(as_endofcontent => EndOfContent, "END OF CONTENT (not a real ASN.1 type)");
     impl_any_as!(as_enumerated => Enumerated, "ENUMERATED");
     impl_any_as!(as_generalizedtime => GeneralizedTime, "GeneralizedTime");
-    impl_any_as!(as_generalstring => GeneralString, "GeneralString");
-    impl_any_as!(as_graphicstring => GraphicString, "GraphicString");
+    impl_any_as!(as_generalstring => GeneralString<'_>, "GeneralString");
+    impl_any_as!(as_graphicstring => GraphicString<'_>, "GraphicString");
     impl_any_as!(as_i8 => i8, "INTEGER");
     impl_any_as!(as_i16 => i16, "INTEGER");
     impl_any_as!(as_i32 => i32, "INTEGER");
     impl_any_as!(as_i64 => i64, "INTEGER");
     impl_any_as!(as_i128 => i128, "INTEGER");
-    impl_any_as!(as_ia5string => Ia5String, "IA5String");
-    impl_any_as!(as_integer => Integer, "INTEGER");
+    impl_any_as!(as_ia5string => Ia5String<'_>, "IA5String");
+    impl_any_as!(as_integer => Integer<'_>, "INTEGER");
     impl_any_as!(as_null => Null, "NULL");
-    impl_any_as!(as_numericstring => NumericString, "NumericString");
-    impl_any_as!(as_objectdescriptor => ObjectDescriptor, "OBJECT IDENTIFIER");
-    impl_any_as!(as_octetstring => OctetString, "OCTET STRING");
-    impl_any_as!(as_oid => Oid, "OBJECT IDENTIFIER");
+    impl_any_as!(as_numericstring => NumericString<'_>, "NumericString");
+    impl_any_as!(as_objectdescriptor => ObjectDescriptor<'_>, "OBJECT IDENTIFIER");
+    impl_any_as!(as_octetstring => OctetString<'_>, "OCTET STRING");
+    impl_any_as!(as_oid => Oid<'_>, "OBJECT IDENTIFIER");
     impl_any_as!(as_real => Real, "REAL");
     /// Attempt to create ASN.1 type `RELATIVE-OID` from this object.
     pub fn as_relative_oid(&'a self) -> Result<Oid<'a>> {
@@ -358,22 +358,22 @@ impl<'a> Any<'a> {
         let asn1 = Cow::Borrowed(self.data.as_bytes2());
         Ok(Oid::new_relative(asn1))
     }
-    impl_any_as!(as_printablestring => PrintableString, "PrintableString");
-    impl_any_as!(as_sequence => Sequence, "SEQUENCE");
-    impl_any_as!(as_set => Set, "SET");
+    impl_any_as!(as_printablestring => PrintableString<'_>, "PrintableString");
+    impl_any_as!(as_sequence => Sequence<'_>, "SEQUENCE");
+    impl_any_as!(as_set => Set<'_>, "SET");
     impl_any_as!(as_str => &str, "UTF8String");
     impl_any_as!(as_string => String, "UTF8String");
-    impl_any_as!(as_teletexstring => TeletexString, "TeletexString");
+    impl_any_as!(as_teletexstring => TeletexString<'_>, "TeletexString");
     impl_any_as!(as_u8 => u8, "INTEGER");
     impl_any_as!(as_u16 => u16, "INTEGER");
     impl_any_as!(as_u32 => u32, "INTEGER");
     impl_any_as!(as_u64 => u64, "INTEGER");
     impl_any_as!(as_u128 => u128, "INTEGER");
-    impl_any_as!(as_universalstring => UniversalString, "UniversalString");
+    impl_any_as!(as_universalstring => UniversalString<'_>, "UniversalString");
     impl_any_as!(as_utctime => UtcTime, "UTCTime");
-    impl_any_as!(as_utf8string => Utf8String, "UTF8String");
-    impl_any_as!(as_videotexstring => VideotexString, "VideotexString");
-    impl_any_as!(as_visiblestring => VisibleString, "VisibleString");
+    impl_any_as!(as_utf8string => Utf8String<'_>, "UTF8String");
+    impl_any_as!(as_videotexstring => VideotexString<'_>, "VideotexString");
+    impl_any_as!(as_visiblestring => VisibleString<'_>, "VisibleString");
 
     /// Attempt to create an `Option<T>` from this object.
     pub fn as_optional<'b, T>(&'b self) -> Result<Option<T>>
