@@ -62,7 +62,7 @@ nom = { version="8.0", default-features=false, features=["std"] }
 num-bigint = { version = "0.4", optional = true }
 num-traits = "0.2.14"
 rusticata-macros = "5.0"
-thiserror = "2.0.0"
+thiserror = "2.0.16"
 time = { version="0.3", features=["macros", "parsing", "formatting"], optional=true }
 
 [dev-dependencies]
