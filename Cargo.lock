@@ -11,7 +11,7 @@ dependencies = [
  "bitvec",
  "colored",
  "cookie-factory",
- "deranged",
+ "deranged 0.5.3",
  "displaydoc",
  "hex-literal",
  "log",
@@ -95,6 +95,12 @@ checksum = "9c9e6a11ca8224451684bc0d7d5a7adbf8f2fd6887261a1cfc3c0432f9d4068e"
 dependencies = [
  "powerfmt",
 ]
+
+[[package]]
+name = "deranged"
+version = "0.5.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d630bccd429a5bb5a64b5e94f693bfc48c9f8566418fda4c494cc94f911f87cc"
 
 [[package]]
 name = "displaydoc"
@@ -494,7 +500,7 @@ version = "0.3.41"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a7619e19bc266e0f9c5e6686659d394bc57973859340060a69221e57dbc0c40"
 dependencies = [
- "deranged",
+ "deranged 0.4.0",
  "itoa",
  "num-conv",
  "powerfmt",
