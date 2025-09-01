@@ -150,7 +150,7 @@ impl<'a> Set<'a> {
     /// //      b INTEGER (0..4294967296)
     /// // }
     /// // and return only `(a,b)
-    /// fn parser(i: &[u8]) -> ParseResult<(u8, u32)> {
+    /// fn parser(i: &[u8]) -> ParseResult<'_, (u8, u32)> {
     ///     Set::from_der_and_then(i, |i| {
     ///             let (i, a) = u8::from_der(i)?;
     ///             let (i, b) = u32::from_der(i)?;
