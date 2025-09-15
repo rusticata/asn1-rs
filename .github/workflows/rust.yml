@@ -20,7 +20,14 @@ jobs:
       - uses: actions/checkout@v5
         with:
           ref: ${{ github.head_ref }}
+      - name: Cache tools
+        id: cache-prek-tools
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin
+          key: prek-tools
       - name: Install tools used in prek
+        if: steps.cache-prek-tools.outputs.cache-hit != 'true'
         run: |
           cargo install --locked cargo-rdme
       - name: Install prek
