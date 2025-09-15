@@ -21,6 +21,9 @@ jobs:
           - stable
           - 1.65.0
           - nightly
+        features:
+          - --features=default
+          - --all-features
     steps:
       - uses: actions/checkout@v5
       - name: Install ${{ matrix.rust }} toolchain
@@ -29,7 +32,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
       - name: Cargo update
         run: cargo update
-      - run: RUSTFLAGS="-D warnings" cargo check
+      - run: RUSTFLAGS="-D warnings" cargo check ${{ matrix.features }}
 
   test_features:
     name: Test suite (with features)
