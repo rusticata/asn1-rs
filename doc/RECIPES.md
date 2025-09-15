@@ -101,7 +101,7 @@ For ex, to parse a `[3] EXPLICIT INTEGER`:
 # use asn1_rs::*;
 # let parser = |input| -> Result<(), Error> {
 let (rem, result) = TaggedExplicit::<u32, Error, 0>::from_der(input)?;
-// result has type TaggedValue. Use `.as_ref()` or `.into_inner()` 
+// result has type TaggedValue. Use `.as_ref()` or `.into_inner()`
 // to access content
 let tag = result.tag();
 let class = result.class();
@@ -135,7 +135,7 @@ To parse a value, accepting any class or tag, use `TaggedParser`.
 # use asn1_rs::*;
 # let parser = |input| -> Result<(), Error> {
 let (rem, result) = TaggedParser::<Explicit, u32>::from_der(input)?;
-// result has type TaggedParser. Use `.as_ref()` or `.into_inner()` 
+// result has type TaggedParser. Use `.as_ref()` or `.into_inner()`
 // to access content
 let tag = result.tag();
 let class = result.class();
@@ -175,7 +175,7 @@ For ex, to parse a `[3] EXPLICIT INTEGER`:
 # use asn1_rs::*;
 # let parser = |input| -> Result<(), Error> {
 let (rem, result) = TaggedExplicit::<u32, Error, 0>::from_der(input)?;
-// result has type TaggedValue. Use `.as_ref()` or `.into_inner()` 
+// result has type TaggedValue. Use `.as_ref()` or `.into_inner()`
 // to access content
 let tag = result.tag();
 let class = result.class();
@@ -209,7 +209,7 @@ To parse a value, accepting any class or tag, use `TaggedParser`.
 # use asn1_rs::*;
 # let parser = |input| -> Result<(), Error> {
 let (rem, result) = TaggedParser::<Implicit, u32>::from_der(input)?;
-// result has type TaggedParser. Use `.as_ref()` or `.into_inner()` 
+// result has type TaggedParser. Use `.as_ref()` or `.into_inner()`
 // to access content
 let tag = result.tag();
 let class = result.class();

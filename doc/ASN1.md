@@ -20,7 +20,7 @@ The following table describes how to declare and use ASN.1 types in `asn1-rs`. S
 My-Type ::= BIT STRING
 ```
 
-</td>	
+</td>
 <td>
 
 ```rust
@@ -39,7 +39,7 @@ type MyType = BitString;
 My-Type ::= BOOLEAN
 ```
 
-</td>	
+</td>
 <td>
 
 ```rust
@@ -64,7 +64,7 @@ My-Type ::= CHOICE {
     codedNumeric INTEGER}
 ```
 
-</td>	
+</td>
 <td>
 
 ```rust
@@ -90,7 +90,7 @@ pub enum MessageType<'a> {
 My-Type ::= ENUMERATED { a, b, c }
 ```
 
-</td>	
+</td>
 <td>
 
 Generic values:
@@ -128,7 +128,7 @@ UInt32 ::= INTEGER (0..4294967295)
 Int32 ::= INTEGER (-2147483648..2147483647)
 ```
 
-</td>	
+</td>
 <td>
 
 If integer has known constraints (sign / max), native types can be used:
@@ -149,7 +149,7 @@ type Int32 = i32;
 My-Type ::= INTEGER
 ```
 
-</td>	
+</td>
 <td>
 
 Variable-length integer:
@@ -171,7 +171,7 @@ let value = Integer::from(4);
 My-Type ::= NULL
 ```
 
-</td>	
+</td>
 <td>
 
 ```rust
@@ -194,7 +194,7 @@ type MyType = Null;
 My-Type ::= OBJECT IDENTIFIER
 ```
 
-</td>	
+</td>
 <td>
 
 The `Oid` type is Copy-on-Write:
@@ -215,7 +215,7 @@ let oid = oid!(1.2.44.233);
 My-Type ::= OCTET STRING
 ```
 
-</td>	
+</td>
 <td>
 
 To use a shared reference (zero-copy) on data:
@@ -240,7 +240,7 @@ type MyType<'a> = OctetString<'a>;
 My-Type ::= REAL
 ```
 
-</td>	
+</td>
 <td>
 
 ```rust
@@ -264,7 +264,7 @@ type MyType = Real;
 My-Type ::= RELATIVE-OID
 ```
 
-</td>	
+</td>
 <td>
 
 Relative object identifiers are also implemented using `Oid` (Copy-on-Write):
@@ -285,7 +285,7 @@ let oid = oid!(rel 44.233);
 My-Type ::= UTF8String
 ```
 
-</td>	
+</td>
 <td>
 
 ```rust
@@ -319,7 +319,7 @@ String-B ::= BMPString
 String-Un ::= UTF8String
 ```
 
-</td>	
+</td>
 <td>
 
 Copy-on-Write versions:
@@ -353,7 +353,7 @@ type StringUn<'a> = UniversalString<'a>;
 My-Type ::= CHARACTER STRING
 ```
 
-</td>	
+</td>
 <td>
 
 _Not Supported_
@@ -370,7 +370,7 @@ Time-U ::= UTCTime
 Time-G ::= GeneralizedTime
 ```
 
-</td>	
+</td>
 <td>
 
 Owned versions:
@@ -395,7 +395,7 @@ My-Type4 ::= DATE-TIME
 My-Type5 ::= DURATION
 ```
 
-</td>	
+</td>
 <td>
 
 _Not Yet Supported_
@@ -414,7 +414,7 @@ My-Type ::= SEQUENCE {
 }
 ```
 
-</td>	
+</td>
 <td>
 
 Use custom derive:
@@ -452,7 +452,7 @@ _Note_: when parsing a tuple, all subtypes parsers must return the same type of 
 My-Type ::= SEQUENCE OF INTEGER
 ```
 
-</td>	
+</td>
 <td>
 
 Generic Version:
@@ -485,7 +485,7 @@ My-Type ::= SET {
 }
 ```
 
-</td>	
+</td>
 <td>
 
 Use custom derive:
@@ -522,7 +522,7 @@ type MyType<'a> = AnySet<'a>; // generic ordered collection of any type
 My-Type ::= SET OF INTEGER
 ```
 
-</td>	
+</td>
 <td>
 
 Generic Version:
@@ -553,7 +553,7 @@ My-Type ::= SEQUENCE {
 }
 ```
 
-</td>	
+</td>
 <td>
 
 When parsing a single type:
@@ -590,7 +590,7 @@ My-Type1 ::= [1] BOOLEAN
 My-Type2 ::= [APPLICATION 2] INTEGER
 ```
 
-</td>	
+</td>
 <td>
 
 Using tagged types:
@@ -630,7 +630,7 @@ My-Type1 ::= [1] BOOLEAN
 My-Type2 ::= [APPLICATION 2] INTEGER
 ```
 
-</td>	
+</td>
 <td>
 
 Using tagged types:
@@ -666,7 +666,7 @@ _Note_: `TaggedValue` is more flexible, but requires more type annotations.
 
 _Not strictly an ASN.1 type_
 
-</td>	
+</td>
 <td>
 
 ```rust
