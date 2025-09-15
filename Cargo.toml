@@ -42,7 +42,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 [features]
 default = ["std"]
 bigint = ["num-bigint"]
-datetime = ["deranged", "time"]
+datetime = ["time"]
 debug = ["std", "log"]
 serialize = ["cookie-factory"]
 std = []
@@ -53,9 +53,6 @@ asn1-rs-derive = { version="0.7", path="./derive" }
 asn1-rs-impl = { version="0.3", path="./impl" }
 bitvec = { version="1.0" }
 cookie-factory = { version="0.3.0", optional=true }
-# Note: pin version of deranged to 0.4.0 to work around build failure
-# See https://github.com/jhpratt/deranged/issues/21
-deranged = { version = "0.5.0", optional = true }
 displaydoc = "0.2.2"
 log = { version = "0.4", default-features = false, optional = true }
 nom = { version="8.0", default-features=false, features=["std"] }
