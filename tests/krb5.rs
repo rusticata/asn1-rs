@@ -9,8 +9,6 @@ use asn1_rs::*;
 use hex_literal::hex;
 use nom::Parser;
 
-const PRINCIPAL_NAME: &[u8] = &hex!("30 81 11 a0 03 02 01 00 a1 0a 30 81 07 1b 05 4a 6f 6e 65 73");
-
 /// PrincipalName   ::= SEQUENCE {
 ///         name-type       [0] Int32,
 ///         name-string     [1] SEQUENCE OF KerberosString
@@ -93,7 +91,7 @@ impl ToDer for PrincipalName {
 
 #[test]
 fn krb5_principalname() {
-    let input = PRINCIPAL_NAME;
+    let input = &hex!("30 81 11 a0 03 02 01 00 a1 0a 30 81 07 1b 05 4a 6f 6e 65 73");
     let (rem, res) = PrincipalName::from_der(input).expect("parsing failed");
     assert!(rem.is_empty());
     let expected = PrincipalName {
