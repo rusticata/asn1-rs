@@ -12,6 +12,25 @@ env:
   # ^ sync with https://github.com/awslabs/cargo-check-external-types/blob/main/rust-toolchain.toml
 
 jobs:
+  pre_commit:
+    timeout-minutes: 5
+    name: prek
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.head_ref }}
+      - name: Install tools used in prek
+        run: |
+          cargo install --locked cargo-rdme
+      - name: Install prek
+        uses: ./.github/actions/install-prek
+        id: prek
+        with:
+          skip-prek-hooks: false
+      - name: Run prek
+        run: prek --all-files --verbose --hook-stage manual
+
   check:
     name: Check
     runs-on: ubuntu-latest
