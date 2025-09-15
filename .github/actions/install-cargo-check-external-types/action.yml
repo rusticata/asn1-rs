@@ -1,0 +1,29 @@
+---
+name: 'Install cargo-check-external-types'
+description: 'Installs cargo-check-external-types'
+inputs:
+  rust_version:
+    description: "Nightly version to use"
+    required: true
+  save-cache:
+    description: "Whether to save cache"
+    default: true
+runs:
+  using: "composite"
+  steps:
+    - name: Get cargo-check-external-types version
+      shell: bash
+      run: |
+        CHECK_EXT_TYPES_VERSION=$(curl -s https://api.github.com/repos/awslabs/cargo-check-external-types/releases/latest | jq '.tag_name' | sed 's/v//')
+        echo "cargo-check-external-types version: $CHECK_EXT_TYPES_VERSION"
+        echo "CHECK_EXT_TYPES_VERSION=$CHECK_EXT_TYPES_VERSION" >> $GITHUB_ENV
+    - name: Cache cargo-check-external-types
+      id: cache-cargo-check-external-types
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/bin/cargo-check-external-types
+        key: cargo-check-external-types-${{ env.CHECK_EXT_TYPES_VERSION }}
+    - name: Install cargo-check-external-types
+      shell: bash
+      run: cargo install --locked cargo-check-external-types
+      if: steps.cache-cargo-check-external-types.outputs.cache-hit != 'true'
