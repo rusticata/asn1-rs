@@ -19,7 +19,7 @@ jobs:
       matrix:
         rust:
           - stable
-          - 1.65.0
+          - 1.67.1
           - nightly
         features:
           - --features=default
@@ -32,7 +32,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
       - name: Cargo update (fix for MSRV)
         run: cargo update -p time --precise 0.3.41
-        if: matrix.rust == '1.65.0'
+        if: matrix.rust == '1.67.1'
       - run: RUSTFLAGS="-D warnings" cargo check --locked ${{ matrix.features }}
 
   test_features:
