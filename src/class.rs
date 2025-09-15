@@ -39,6 +39,7 @@ impl Class {
         }
     }
 
+    #[allow(clippy::panic)]
     pub const fn new_unwrap(value: u8) -> Self {
         match value {
             0b00 => Class::Universal,
