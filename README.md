@@ -5,7 +5,7 @@
 [![crates.io](https://img.shields.io/crates/v/asn1-rs.svg)](https://crates.io/crates/asn1-rs)
 [![Download numbers](https://img.shields.io/crates/d/asn1-rs.svg)](https://crates.io/crates/asn1-rs)
 [![Github CI](https://github.com/rusticata/asn1-rs/workflows/Continuous%20integration/badge.svg)](https://github.com/rusticata/asn1-rs/actions)
-[![Minimum rustc version](https://img.shields.io/badge/rustc-1.65.0+-lightgray.svg)](#rust-version-requirements)
+[![Minimum rustc version](https://img.shields.io/badge/rustc-1.67.1+-lightgray.svg)](#rust-version-requirements)
 
 # asn1-rs
 
@@ -54,7 +54,7 @@ of `nom::IResult`. This means that most `nom` combinators (`map`, `many0`, etc.)
 combination to objects and methods from this crate. Reading the nom documentation may
 help understanding how to write and combine parsers and use the output.
 
-**Minimum Supported Rust Version**: 1.65.0
+**Minimum Supported Rust Version**: 1.67.1
 
 **`no_std` support**: `asn1-rs` supports `#[no_std]` (with a requirement on `alloc`).
 
