@@ -35,6 +35,7 @@ jobs:
         id: prek
         with:
           skip-prek-hooks: false
+          save-cache: true
       - name: Run prek
         run: prek --all-files --verbose --hook-stage manual
 

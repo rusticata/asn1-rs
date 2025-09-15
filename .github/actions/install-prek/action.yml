@@ -8,6 +8,9 @@ inputs:
   skip-prek-hooks:
     description: "Skip some prek hooks from installation"
     default: ""
+  save-cache:
+    description: "Whether to save prek cache"
+    required: true
 runs:
   using: "composite"
   steps:
@@ -19,3 +22,8 @@ runs:
       run: |
         curl --proto '=https' --tlsv1.2 -LsSf https://github.com/j178/prek/releases/download/v${PREK_VERSION}/prek-installer.sh | sh
       working-directory: ${{ github.workspace }}
+    - uses: actions/cache@v4
+      id: cache
+      with:
+        path: ~/.cache/prek
+        key: ${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
