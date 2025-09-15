@@ -1,0 +1,26 @@
+---
+name: 'Install cargo-rdme'
+description: 'Installs cargo-rdme'
+inputs:
+  save-cache:
+    description: "Whether to save cache"
+    default: true
+runs:
+  using: "composite"
+  steps:
+    - name: Get cargo-rdme version
+      shell: bash
+      run: |
+        RDME_VERSION=$(curl -s https://api.github.com/repos/orium/cargo-rdme/releases/latest | jq '.tag_name' | sed 's/v//')
+        echo "cargo-rdme version: $RDME_VERSION"
+        echo "RDME_VERSION=$RDME_VERSION" >> $GITHUB_ENV
+    - name: Cache cargo-rdme
+      id: cache-cargo-rdme
+      uses: actions/cache@v4
+      with:
+        path: ~/.cargo/bin/cargo-rdme
+        key: cargo-rdme-${{ env.RDME_VERSION }}
+    - name: Install cargo-rdme
+      shell: bash
+      run: cargo install cargo-rdme
+      if: steps.cache-cargo-rdme.outputs.cache-hit != 'true'
