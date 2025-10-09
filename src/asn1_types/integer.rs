@@ -41,9 +41,6 @@ fn trim_slice(bytes: &[u8]) -> &[u8] {
 /// Decode an unsigned integer into a byte array of the requested size
 /// containing a big endian integer.
 fn decode_array_uint<const N: usize>(bytes: &[u8]) -> Result<[u8; N]> {
-    if is_highest_bit_set(bytes) {
-        return Err(Error::IntegerNegative);
-    }
     let input = trim_slice(bytes);
 
     if input.len() > N {
