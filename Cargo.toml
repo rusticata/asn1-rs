@@ -17,7 +17,6 @@ include = [
   "CONTRIBUTING.md",
   "LICENSE-*",
   "README.md",
-  ".gitignore",
   "Cargo.toml",
   "doc/*.md",
   "examples/*.rs",
