@@ -41,7 +41,7 @@
 //! combination to objects and methods from this crate. Reading the nom documentation may
 //! help understanding how to write and combine parsers and use the output.
 //!
-//! **Minimum Supported Rust Version**: 1.67.1
+//! **Minimum Supported Rust Version**: 1.68
 //!
 //! **`no_std` support**: `asn1-rs` supports `#[no_std]` (with a requirement on `alloc`).
 //!
