@@ -150,7 +150,8 @@ const _: () = {
                 v.push((u >> 8) as u8);
                 v.push((u & 0xff) as u8);
             }
-            target.write(&v).map_err(Into::into)
+            target.write_all(&v)?;
+            Ok(v.len())
         }
 
         fn ber_tag_info(&self) -> (Class, bool, Tag) {

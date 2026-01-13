@@ -144,7 +144,7 @@ const _: () = {
         fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             self.data
                 .chars()
-                .try_for_each(|c| target.write(&(c as u32).to_be_bytes()[..]).map(|_| ()))?;
+                .try_for_each(|c| target.write_all(&(c as u32).to_be_bytes()[..]))?;
             Ok(self.data.len() * 4)
         }
 

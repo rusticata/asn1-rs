@@ -73,7 +73,8 @@ const _: () = {
 
         fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             let i = Integer::from(self.0);
-            target.write(&i.data).map_err(Into::into)
+            target.write_all(&i.data)?;
+            Ok(i.data.len())
         }
 
         fn ber_tag_info(&self) -> (Class, bool, Tag) {

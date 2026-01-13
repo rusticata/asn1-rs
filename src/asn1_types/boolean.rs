@@ -101,7 +101,8 @@ const _: () = {
         }
 
         fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
-            target.write(&[self.value]).map_err(Into::into)
+            target.write_all(&[self.value])?;
+            Ok(1)
         }
 
         fn ber_tag_info(&self) -> (Class, bool, Tag) {
@@ -118,7 +119,8 @@ const _: () = {
 
         fn der_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             let value = if self.value != 0 { 0xff } else { 0x00 };
-            target.write(&[value]).map_err(Into::into)
+            target.write_all(&[value])?;
+            Ok(1)
         }
 
         fn der_tag_info(&self) -> (Class, bool, Tag) {
@@ -183,7 +185,8 @@ const _: () = {
 
         fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             let value = if *self { 0xff } else { 0x00 };
-            target.write(&[value]).map_err(Into::into)
+            target.write_all(&[value])?;
+            Ok(1)
         }
 
         fn ber_tag_info(&self) -> (Class, bool, Tag) {
@@ -200,7 +203,8 @@ const _: () = {
 
         fn der_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             let value = if *self { 0xff } else { 0x00 };
-            target.write(&[value]).map_err(Into::into)
+            target.write_all(&[value])?;
+            Ok(1)
         }
 
         fn der_tag_info(&self) -> (Class, bool, Tag) {

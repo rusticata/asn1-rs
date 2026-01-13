@@ -348,8 +348,14 @@ const _: () = {
         fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
             match self {
                 Real::Zero => Ok(0),
-                Real::Infinity => target.write(&[0x40]).map_err(Into::into),
-                Real::NegInfinity => target.write(&[0x41]).map_err(Into::into),
+                Real::Infinity => {
+                    target.write_all(&[0x40])?;
+                    Ok(1)
+                }
+                Real::NegInfinity => {
+                    target.write_all(&[0x41])?;
+                    Ok(1)
+                }
                 Real::Binary {
                     mantissa,
                     base,
@@ -360,7 +366,8 @@ const _: () = {
                         // using character form
                         let sign = if *exponent == 0 { "+" } else { "" };
                         let s = format!("\x03{mantissa}E{sign}{exponent}");
-                        return target.write(s.as_bytes()).map_err(Into::into);
+                        target.write_all(s.as_bytes())?;
+                        return Ok(s.len());
                     }
                     if *base != 2 {
                         return Err(Self::TAG.invalid_value("Invalid base for REAL").into());
@@ -416,17 +423,21 @@ const _: () = {
                     };
                     first |= (len_e - 1) & 0x3;
                     // write first byte
-                    let mut n = target.write(&[first])?;
+                    target.write_all(&[first])?;
+                    let mut n = 1;
                     // write exponent
                     // special case: number of bytes from exponent is > 3 and cannot fit in 2 bits
                     #[allow(clippy::identity_op)]
                     if len_e == 4 {
                         let b = len_e & 0xff;
-                        n += target.write(&[b])?;
+                        target.write_all(&[b])?;
+                        n += 1;
                     }
                     // we only need to write e.len() bytes
                     let bytes = e.to_be_bytes();
-                    n += target.write(&bytes[(4 - len_e) as usize..])?;
+                    let buf = &bytes[(4 - len_e) as usize..];
+                    target.write_all(buf)?;
+                    n += buf.len();
                     // write mantissa
                     let bytes = m.to_be_bytes();
                     let mut idx = 0;
@@ -436,7 +447,9 @@ const _: () = {
                         }
                         idx += 1;
                     }
-                    n += target.write(&bytes[idx..])?;
+                    let buf = &bytes[idx..];
+                    target.write_all(buf)?;
+                    n += buf.len();
                     Ok(n)
                 }
             }
