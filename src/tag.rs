@@ -31,7 +31,6 @@ impl display Tag {
     Set = 17,
     NumericString = 18,
     PrintableString = 19,
-    T61String = 20,
     TeletexString = 20,
     VideotexString = 21,
 
@@ -50,6 +49,9 @@ impl display Tag {
 }
 
 impl Tag {
+    #[allow(non_upper_case_globals)]
+    pub const T61String: Tag = Self::TeletexString;
+
     pub const fn assert_eq(&self, tag: Tag) -> Result<()> {
         if self.0 == tag.0 {
             Ok(())
