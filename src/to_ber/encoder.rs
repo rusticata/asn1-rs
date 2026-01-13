@@ -41,13 +41,15 @@ pub trait BerEncoder {
         if tag.0 < 31 {
             // tag is primitive, and uses one byte
             let b0 = (class << 6) | cs | (tag.0 as u8);
-            target.write(&[b0])
+            target.write_all(&[b0])?;
+            Ok(1)
         } else {
             // tag number must be encoded in long form
 
             // first byte
             let b0 = (class << 6) | cs | 0b1_1111;
-            let mut sz = target.write(&[b0])?;
+            target.write_all(&[b0])?;
+            let mut sz = 1;
 
             // now write bytes from right (last) to left
             let mut val = tag.0;
@@ -70,7 +72,9 @@ pub trait BerEncoder {
                 val >>= 7;
             }
 
-            sz += target.write(&buffer[current_index..])?;
+            let buf = &buffer[current_index..];
+            target.write_all(buf)?;
+            sz += buf.len();
             Ok(sz)
         }
     }
@@ -83,11 +87,15 @@ pub trait BerEncoder {
     ) -> Result<usize, io::Error> {
         const INDEFINITE: u8 = 0b1000_0000;
         match length {
-            Length::Indefinite => target.write(&[INDEFINITE]),
+            Length::Indefinite => {
+                target.write_all(&[INDEFINITE])?;
+                Ok(1)
+            }
             Length::Definite(n) => {
                 if n <= 127 {
                     // short form
-                    target.write(&[n as u8])
+                    target.write_all(&[n as u8])?;
+                    Ok(1)
                 } else {
                     // long form
                     let b = n.to_be_bytes();
@@ -100,8 +108,10 @@ pub trait BerEncoder {
                     let b = &b[idx..];
                     // first byte: 0x80 + length of length
                     let b0 = 0x80 | (b.len() as u8);
-                    let sz = target.write(&[b0])?;
-                    let sz = sz + target.write(b)?;
+                    target.write_all(&[b0])?;
+                    let sz = 1;
+                    target.write_all(b)?;
+                    let sz = sz + b.len();
                     Ok(sz)
                 }
             }

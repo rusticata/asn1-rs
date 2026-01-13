@@ -156,7 +156,8 @@ macro_rules! impl_int {
 
                 fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
                     let int = Integer::from(*self);
-                    target.write(&int.data).map_err(Into::into)
+                    target.write_all(&int.data)?;
+                    Ok(int.data.len())
                 }
 
                 fn ber_tag_info(&self) -> (Class, bool, Tag) {
@@ -175,7 +176,8 @@ macro_rules! impl_int {
 
                 fn der_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
                     let int = Integer::from(*self);
-                    target.write(&int.data).map_err(Into::into)
+                    target.write_all(&int.data)?;
+                    Ok(int.data.len())
                 }
 
                 fn der_tag_info(&self) -> (Class, bool, Tag) {
@@ -252,7 +254,8 @@ macro_rules! impl_uint {
 
                 fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
                     let int = Integer::from(*self);
-                    target.write(&int.data).map_err(Into::into)
+                    target.write_all(&int.data)?;
+                    Ok(int.data.len())
                 }
 
                 fn ber_tag_info(&self) -> (Class, bool, Tag) {
@@ -271,7 +274,8 @@ macro_rules! impl_uint {
 
                 fn der_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
                     let int = Integer::from(*self);
-                    target.write(&int.data).map_err(Into::into)
+                    target.write_all(&int.data)?;
+                    Ok(int.data.len())
                 }
 
                 fn der_tag_info(&self) -> (Class, bool, Tag) {
@@ -647,7 +651,8 @@ const _: () = {
         }
 
         fn ber_write_content<W: Write>(&self, target: &mut W) -> SerializeResult<usize> {
-            target.write(&self.data).map_err(Into::into)
+            target.write_all(&self.data)?;
+            Ok(self.data.len())
         }
 
         fn ber_tag_info(&self) -> (Class, bool, Tag) {

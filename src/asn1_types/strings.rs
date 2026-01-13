@@ -185,7 +185,8 @@ macro_rules! asn1_string {
                 }
 
                 fn ber_write_content<W: Write>(&self, target: &mut W) -> $crate::SerializeResult<usize> {
-                    target.write(self.data.as_bytes()).map_err(Into::into)
+                    target.write_all(self.data.as_bytes())?;
+                    Ok(self.data.len())
                 }
 
                 fn ber_tag_info(&self) -> ($crate::Class, bool, $crate::Tag) {
@@ -202,7 +203,8 @@ macro_rules! asn1_string {
                 }
 
                 fn der_write_content<W: Write>(&self, target: &mut W) -> $crate::SerializeResult<usize> {
-                    target.write(self.data.as_bytes()).map_err(Into::into)
+                    target.write_all(self.data.as_bytes())?;
+                    Ok(self.data.len())
                 }
 
                 fn der_tag_info(&self) -> ($crate::Class, bool, $crate::Tag) {
