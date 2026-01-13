@@ -127,4 +127,4 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v5
       - id: cargo-rdme
-        uses: rusticata/ci-action-check-external-types@v1
+        uses: rusticata/ci-action-check-external-types@ebed73f388d7deab7d4692626ae85e5d32ddb9a1 # toolchain 2025-10-18
