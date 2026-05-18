@@ -23,6 +23,14 @@ This is considered as low-severity.
 
 Thanks to Domen Puncer Kugler <domen.puncerkugler@nccgroup.com> for the report.
 
+- Bump dependency on time, and update Cargo.lock to use 0.3.47
+  Previous versions of `time` are affected by 'RUSTSEC-2026-0009' and cause `cargo audit` to fail
+
+  Note: features from this advisory are **not** used in `asn1-rs`, which is not affected. This
+  changed is only required because it causes failures in CI runs of dependant software.
+
+  As a side-effect, `time` requires an update of the MSRV, which is now **1.68**
+
 ## 0.7.1
 
 ### Changed/Fixed
