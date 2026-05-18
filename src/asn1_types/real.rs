@@ -21,6 +21,8 @@ pub enum Real {
     },
     /// Infinity (∞).
     Infinity,
+    /// Not-a-number (NaN)
+    NaN,
     /// Negative infinity (−∞).
     NegInfinity,
     /// Zero
@@ -36,6 +38,8 @@ impl Real {
             } else {
                 Self::NegInfinity
             }
+        } else if f.is_nan() {
+            Self::NaN
         } else if f.abs() == 0.0 {
             Self::Zero
         } else {
@@ -137,6 +141,7 @@ impl Real {
                 f * exp
             }
             Real::Zero => 0.0_f64,
+            Real::NaN => f64::NAN,
             Real::Infinity => f64::INFINITY,
             Real::NegInfinity => f64::NEG_INFINITY,
         }
@@ -249,6 +254,7 @@ impl<'a, 'b> TryFrom<&'b Any<'a>> for Real {
             match first {
                 0x40 => Ok(Real::Infinity),
                 0x41 => Ok(Real::NegInfinity),
+                0x42 => Ok(Real::NaN),
                 _ => Err(any.tag().invalid_value("Invalid float special value")),
             }
         } else {
@@ -296,7 +302,7 @@ impl ToDer for Real {
     fn to_der_len(&self) -> Result<usize> {
         match self {
             Real::Zero => Ok(0),
-            Real::Infinity | Real::NegInfinity => Ok(1),
+            Real::Infinity | Real::NegInfinity | Real::NaN => Ok(1),
             Real::Binary { .. } => {
                 let mut sink = std::io::sink();
                 let n = self
@@ -322,6 +328,7 @@ impl ToDer for Real {
             Real::Zero => Ok(0),
             Real::Infinity => writer.write(&[0x40]).map_err(Into::into),
             Real::NegInfinity => writer.write(&[0x41]).map_err(Into::into),
+            Real::NaN => writer.write(&[0x42]).map_err(Into::into),
             Real::Binary {
                 mantissa,
                 base,
