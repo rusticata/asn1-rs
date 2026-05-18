@@ -21,6 +21,8 @@ pub enum Real {
     },
     /// Infinity (∞).
     Infinity,
+    /// Not-a-number (NaN)
+    NaN,
     /// Negative infinity (−∞).
     NegInfinity,
     /// Zero
@@ -36,6 +38,8 @@ impl Real {
             } else {
                 Self::NegInfinity
             }
+        } else if f.is_nan() {
+            Self::NaN
         } else if f.abs() == 0.0 {
             Self::Zero
         } else {
@@ -137,6 +141,7 @@ impl Real {
                 f * exp
             }
             Real::Zero => 0.0_f64,
+            Real::NaN => f64::NAN,
             Real::Infinity => f64::INFINITY,
             Real::NegInfinity => f64::NEG_INFINITY,
         }
@@ -296,6 +301,7 @@ fn decode_real(header: &Header, bytes: &[u8]) -> Result<Real, InnerError> {
         match first {
             0x40 => Ok(Real::Infinity),
             0x41 => Ok(Real::NegInfinity),
+            0x42 => Ok(Real::NaN),
             _ => Err(InnerError::invalid_value(
                 header.tag,
                 "Invalid float special value",
@@ -336,7 +342,7 @@ const _: () = {
         fn ber_content_len(&self) -> Length {
             match self {
                 Real::Zero => Length::Definite(0),
-                Real::Infinity | Real::NegInfinity => Length::Definite(1),
+                Real::Infinity | Real::NegInfinity | Real::NaN => Length::Definite(1),
                 Real::Binary { .. } => {
                     let mut sink = io::sink();
                     let n = self.ber_write_content(&mut sink).unwrap_or(0);
@@ -354,6 +360,10 @@ const _: () = {
                 }
                 Real::NegInfinity => {
                     target.write_all(&[0x41])?;
+                    Ok(1)
+                }
+                Real::NaN => {
+                    target.write_all(&[0x42])?;
                     Ok(1)
                 }
                 Real::Binary {
