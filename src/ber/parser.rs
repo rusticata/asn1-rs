@@ -110,7 +110,7 @@ pub(crate) fn bytes_to_u64(s: &[u8]) -> core::result::Result<u64, Error> {
     Ok(u)
 }
 
-pub(crate) fn parse_identifier(i: &[u8]) -> ParseResult<(u8, u8, u32, &[u8])> {
+pub(crate) fn parse_identifier(i: &[u8]) -> ParseResult<'_, (u8, u8, u32, &[u8])> {
     if i.is_empty() {
         Err(Err::Incomplete(Needed::new(1)))
     } else {
@@ -146,7 +146,7 @@ pub(crate) fn parse_identifier(i: &[u8]) -> ParseResult<(u8, u8, u32, &[u8])> {
 }
 
 /// Return the MSB and the rest of the first byte, or an error
-pub(crate) fn parse_ber_length_byte(i: &[u8]) -> ParseResult<(u8, u8)> {
+pub(crate) fn parse_ber_length_byte(i: &[u8]) -> ParseResult<'_, (u8, u8)> {
     if i.is_empty() {
         Err(Err::Incomplete(Needed::new(1)))
     } else {
