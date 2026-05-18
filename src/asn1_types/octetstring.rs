@@ -156,7 +156,7 @@ impl<'i> BerParser<'i> for &'i [u8] {
         // However, we are implementing for a shared slice, so it cannot use constructed form
         // (which requires allocation)
         if header.is_constructed() {
-            return Err(BerError::nom_err_input(&input, InnerError::LifetimeError))?;
+            Err(BerError::nom_err_input(&input, InnerError::LifetimeError))?;
         }
         let (rem, data) = input.take_split(input.len());
         Ok((rem, data.as_bytes2()))

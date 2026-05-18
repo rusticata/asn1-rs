@@ -186,7 +186,7 @@ impl<'a> Sequence<'a> {
         let orig_input = input.clone();
         let (rem, any) = Any::parse_ber(input).map_err(Err::convert)?;
         if any.tag() != Tag::Sequence {
-            return Err(Err::Error(
+            Err(Err::Error(
                 BerError::unexpected_tag(orig_input, Some(Tag::Sequence), any.tag()).into(),
             ))?;
         }
@@ -223,7 +223,7 @@ impl<'a> Sequence<'a> {
         let orig_input = input.clone();
         let (rem, any) = Any::parse_der(input).map_err(Err::convert)?;
         if any.tag() != Tag::Sequence {
-            return Err(Err::Error(
+            Err(Err::Error(
                 BerError::unexpected_tag(orig_input, Some(Tag::Sequence), any.tag()).into(),
             ))?;
         }
