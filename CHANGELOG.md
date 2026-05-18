@@ -8,6 +8,21 @@
 
 ### Thanks
 
+## 0.7.2
+
+### Changed/Fixed
+
+- Fix potential denial of service when `REAL` from `NaN`
+
+Encoding of "Real" type does not handle NaN (Not a Number) special case,
+and attempting to call `Real::new(f64::NaN)` will:
+- on a release build, enter an infinite loop (due to an underflow in exponent encoding)
+- on a debug build, trigger a panic
+
+This is considered as low-severity.
+
+Thanks to Domen Puncer Kugler <domen.puncerkugler@nccgroup.com> for the report.
+
 ## 0.7.1
 
 ### Changed/Fixed
