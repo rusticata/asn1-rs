@@ -44,7 +44,7 @@ of `nom::IResult`. This means that most `nom` combinators (`map`, `many0`, etc.)
 combination to objects and methods from this crate. Reading the nom documentation may
 help understanding how to write and combine parsers and use the output.
 
-**Minimum Supported Rust Version**: 1.63.0
+**Minimum Supported Rust Version**: 1.68
 
 # Recipes
 

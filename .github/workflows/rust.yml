@@ -19,7 +19,7 @@ jobs:
       matrix:
         rust:
           - stable
-          - 1.63.0
+          - 1.68
           - nightly
     steps:
       - uses: actions/checkout@v4
@@ -30,8 +30,8 @@ jobs:
       - name: Cargo update
         run: cargo update
       - name: Cargo update (fix for MSRV)
-        run: cargo update -p time --precise 0.3.20
-        if: matrix.rust == '1.63.0'
+        run: cargo update -p time --precise 0.3.41
+        if: matrix.rust == '1.68'
       - run: RUSTFLAGS="-D warnings" cargo check
 
   test_features:
