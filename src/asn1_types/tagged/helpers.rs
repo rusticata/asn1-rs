@@ -77,7 +77,7 @@ where
         let Any { header, data } = any;
         let header = Header {
             tag: T::TAG,
-            ..header.clone()
+            ..header
         };
         f(data.as_bytes2(), tag, header)
     })
