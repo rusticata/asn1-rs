@@ -153,7 +153,7 @@ where
         let any = Any {
             header: Header {
                 tag: T::TAG,
-                ..any.header.clone()
+                ..any.header
             },
             data: any.data,
         };
