@@ -254,35 +254,48 @@ fn decode_real(header: &Header, bytes: &[u8]) -> Result<Real, InnerError> {
                 ))
             }
         };
-        let e = match b {
+        // The exponent is scaled by log2(B'). `e` spans the full range of i32
+        // when four exponent octets are present, so the multiplication has to
+        // be checked.
+        let scale = match b {
             // base 2
-            0 => e,
+            0 => 1,
             // base 8
-            1 => e * 3,
+            1 => 3,
             // base 16
-            2 => e * 4,
+            2 => 4,
             _ => return Err(InnerError::invalid_value(header.tag, "Illegal REAL base")),
         };
+        let e = e
+            .checked_mul(scale)
+            .ok_or_else(|| InnerError::invalid_value(header.tag, "Exponent out of range (REAL)"))?;
         if rem.len() > 8 {
             return Err(InnerError::invalid_value(
                 header.tag,
                 "Mantissa too large (REAL)",
             ));
         }
-        let mut p = 0;
+        // X.690 8.5.7.5 defines N as an *unsigned* binary number. Accumulating
+        // into a signed integer would read the top bit of an eight-octet
+        // mantissa as a sign, and negating the result would overflow.
+        let mut n = 0_u64;
         for b in rem {
-            p = (p << 8) | (*b as i64);
+            n = (n << 8) | (*b as u64);
         }
         // sign bit
-        let p = if first & 0x40 != 0 { -p } else { p };
+        let p = if first & 0x40 != 0 {
+            -(n as f64)
+        } else {
+            n as f64
+        };
         // scale bits
         let sf = (first >> 2) & 0x03;
         let p = match sf {
-            0 => p as f64,
+            0 => p,
             sf => {
                 // 2^sf: cannot overflow, sf is between 0 and 3
                 let scale = 2_f64.powi(sf as _);
-                (p as f64) * scale
+                p * scale
             }
         };
         Ok(Real::Binary {

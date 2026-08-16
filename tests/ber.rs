@@ -210,6 +210,58 @@ fn from_ber_real_binary() {
 }
 
 #[test]
+fn from_ber_real_binary_unsigned_mantissa() {
+    // X.690 8.5.7.5: N is an unsigned binary number, so the top bit of an
+    // eight-octet mantissa is part of the value and not a sign.
+    // 0x80: binary, S = +1, base 2, F = 0, one exponent octet. N = 2^63 + 1.
+    // The f64 literal rounds to 2^63, which is also the closest value the
+    // decoder can represent; what this checks is that the value is positive.
+    let input = &hex!("09 0a 80 00 80 00 00 00 00 00 00 01 ff ff");
+    let (rem, result) = Real::from_ber(input).expect("parsing failed");
+    assert!(result.f64() > 0.0);
+    assert_eq!(result, Real::binary(9_223_372_036_854_775_809.0, 2, 0));
+    assert_eq!(rem, &[0xff, 0xff]);
+}
+
+#[test]
+fn from_ber_real_binary_most_negative_mantissa() {
+    // 0xc0: binary, S = -1, base 2, F = 0, one exponent octet. N = 2^63, so the
+    // value is -2^63. Negating the mantissa must not overflow.
+    let input = &hex!("09 0a c0 00 80 00 00 00 00 00 00 00 ff ff");
+    let (rem, result) = Real::from_ber(input).expect("parsing failed");
+    assert!(result.f64() < 0.0);
+    assert_eq!(result, Real::binary(-9_223_372_036_854_775_808.0, 2, 0));
+    assert_eq!(rem, &[0xff, 0xff]);
+}
+
+#[test]
+fn from_ber_real_binary_exponent_out_of_range() {
+    // Scaling the exponent by 3 (base 8) or 4 (base 16) must not overflow i32.
+
+    // Truncated inputs: the exponent-format bits are 11, so 8.5.7.4 d) makes the
+    // next octet a length of 155 and these are too short to be valid.
+    let input = &hex!("09 06 9b 9b 9b 9b 9b 00");
+    assert!(Real::from_ber(input).is_err());
+    let input = &hex!("09 06 ab 9b 9b 9b 9b 00");
+    assert!(Real::from_ber(input).is_err());
+
+    // Well-formed variable-length exponents (8.5.7.4 d), base 8 with X = 43 and
+    // base 16 with X = 32. These are the shortest such inputs that reach the
+    // multiplication, which happens before the mantissa-length guard.
+    let input = &hex!(
+        "09 2e 93 2b 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+         00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+         00 00 00 00 00 00 00 01"
+    );
+    assert!(Real::from_ber(input).is_err());
+    let input = &hex!(
+        "09 23 a3 20 01 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+         00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 01"
+    );
+    assert!(Real::from_ber(input).is_err());
+}
+
+#[test]
 fn from_ber_real_f32() {
     const EPSILON: f32 = 0.00001;
     // binary, base = 2
