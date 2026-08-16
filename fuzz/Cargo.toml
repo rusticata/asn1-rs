@@ -43,3 +43,10 @@ path = "fuzz_targets/der_is_ber_subset.rs"
 test = false
 doc = false
 bench = false
+
+[[bin]]
+name = "parse_collections"
+path = "fuzz_targets/parse_collections.rs"
+test = false
+doc = false
+bench = false
