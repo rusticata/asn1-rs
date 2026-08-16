@@ -1,0 +1,45 @@
+[package]
+name = "asn1-rs-fuzz"
+version = "0.0.1"
+publish = false
+edition = "2021"
+
+[package.metadata]
+cargo-fuzz = true
+
+# Prevent this from interfering with workspaces
+[workspace]
+members = ["."]
+
+[dependencies]
+libfuzzer-sys = "0.4"
+
+[dependencies.asn1-rs]
+path = ".."
+# bigint/datetime/serialize gate whole conversion families (INTEGER -> BigInt,
+# UTCTime/GeneralizedTime -> time, encoders), so enable them for coverage.
+features = ["bigint", "datetime", "serialize", "std"]
+
+[profile.release]
+debug = 1
+
+[[bin]]
+name = "parse_ber_any"
+path = "fuzz_targets/parse_ber_any.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "parse_der_any"
+path = "fuzz_targets/parse_der_any.rs"
+test = false
+doc = false
+bench = false
+
+[[bin]]
+name = "der_is_ber_subset"
+path = "fuzz_targets/der_is_ber_subset.rs"
+test = false
+doc = false
+bench = false
