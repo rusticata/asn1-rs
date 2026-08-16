@@ -74,7 +74,8 @@ impl<'i> DerParser<'i> for Boolean {
 
 impl CheckDerConstraints for Boolean {
     fn check_constraints(any: &Any) -> Result<()> {
-        let c = any.data.as_bytes()[0];
+        // The contents octets shall consist of a single octet (X.690: 8.2.1)
+        let c = *any.data.as_bytes().first().ok_or(Error::InvalidLength)?;
         // X.690 section 11.1
         if !(c == 0 || c == 0xff) {
             return Err(Error::DerConstraintFailed(DerConstraint::InvalidBoolean));
@@ -135,7 +136,8 @@ impl_tryfrom_any!(bool);
 
 impl CheckDerConstraints for bool {
     fn check_constraints(any: &Any) -> Result<()> {
-        let c = any.data.as_bytes()[0];
+        // The contents octets shall consist of a single octet (X.690: 8.2.1)
+        let c = *any.data.as_bytes().first().ok_or(Error::InvalidLength)?;
         // X.690 section 11.1
         if !(c == 0 || c == 0xff) {
             return Err(Error::DerConstraintFailed(DerConstraint::InvalidBoolean));
