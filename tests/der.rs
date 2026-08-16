@@ -104,6 +104,39 @@ fn from_der_bool() {
 }
 
 #[test]
+fn from_der_bool_empty_content() {
+    // BOOLEAN with zero content octets (X.690: 8.2.1 requires exactly one)
+    let input = &hex!("01 00");
+    assert_eq!(
+        Boolean::from_der(input),
+        Err(Err::Error(Error::InvalidLength))
+    );
+    assert_eq!(
+        <bool>::from_der(input),
+        Err(Err::Error(Error::InvalidLength))
+    );
+}
+
+#[test]
+fn from_der_bool_zero_length_other_tag() {
+    // `FromDer` checks DER constraints before the tag, so a zero-length object
+    // of any tag reaches the same code: NULL, and an empty SEQUENCE
+    let input = &hex!("05 00");
+    assert!(Boolean::from_der(input).is_err());
+    assert!(<bool>::from_der(input).is_err());
+    let input = &hex!("30 00");
+    assert!(Boolean::from_der(input).is_err());
+    assert!(<bool>::from_der(input).is_err());
+}
+
+#[test]
+fn from_der_sequenceof_bool_empty_element() {
+    // SEQUENCE { BOOLEAN (zero content octets) }
+    let input = &hex!("30 02 01 00");
+    assert!(SequenceOf::<bool>::from_der(input).is_err());
+}
+
+#[test]
 fn from_der_enumerated() {
     let input = &hex!("0a 01 02");
     let (rem, result) = Enumerated::from_der(input).expect("parsing failed");
