@@ -43,13 +43,13 @@ The main traits for parsing are the [`BerParser`](https://docs.rs/asn1-rs/latest
 These traits provide methods to parse binary input wrapped in
 [`Input`](https://docs.rs/asn1-rs/latest/asn1_rs/input/struct.Input.html), and return either the remaining (unparsed) bytes and the
 parsed object, or an error.
-The [`Input`] types is a simple wrapper around `&[u8]` to keep information on data span. This is
+The [`Input`](https://docs.rs/asn1-rs/latest/asn1_rs/input/struct.Input.html) types is a simple wrapper around `&[u8]` to keep information on data span. This is
 especially useful to print information or to debug parsing errors.
 
 This crates also provides the [`FromBer`](https://docs.rs/asn1-rs/latest/asn1_rs/from_ber/trait.FromBer.html) and
 [`FromDer`](https://docs.rs/asn1-rs/latest/asn1_rs/from_der/trait.FromDer.html) traits for parsing (working on slices).
 
-The parsers follow the interface from [nom], and the [`ParseResult`] object is a specialized version
+The parsers follow the interface from [nom], and the [`ParseResult`](https://docs.rs/asn1-rs/latest/asn1_rs/error/type.ParseResult.html) object is a specialized version
 of `nom::IResult`. This means that most `nom` combinators (`map`, `many0`, etc.) can be used in
 combination to objects and methods from this crate. Reading the nom documentation may
 help understanding how to write and combine parsers and use the output.
@@ -60,9 +60,9 @@ help understanding how to write and combine parsers and use the output.
 
 ## Recipes
 
-See [doc::recipes] and [doc::derive] for more examples and recipes.
+See [`doc::recipes`](https://docs.rs/asn1-rs/latest/asn1_rs/doc/recipes/) and [`doc::derive`](https://docs.rs/asn1-rs/latest/asn1_rs/doc/derive/) for more examples and recipes.
 
-See [doc::debug] for advice and tools to debug parsers.
+See [`doc::debug`](https://docs.rs/asn1-rs/latest/asn1_rs/doc/debug/) for advice and tools to debug parsers.
 
 ### Examples
 
@@ -81,7 +81,7 @@ let (rem, obj2) = Integer::from_ber(&bytes).expect("parsing failed");
 assert_eq!(obj1, Integer::from_u32(65537));
 ```
 
-In the above example, the generic [`Integer`] type is used. This type can contain integers of any
+In the above example, the generic [`Integer`](https://docs.rs/asn1-rs/latest/asn1_rs/asn1_types/integer/struct.Integer.html) type is used. This type can contain integers of any
 size, but do not provide a simple API to manipulate the numbers.
 
 In most cases, the integer either has a limit, or is expected to fit into a primitive type.
@@ -156,7 +156,7 @@ an `IntegerTooLarge` error.
 
 To simplify the code needed to declare common/usual ASN.1 objects, custom derive attributes are provided.
 
-For example, to derive a `MyType SEQUENCE { a INTEGER }`, declare a `struct` and add the [`Sequence`](derive@derive::Sequence) attribute:
+For example, to derive a `MyType SEQUENCE { a INTEGER }`, declare a `struct` and add the [`Sequence`](https://docs.rs/asn1_rs_derive/latest/asn1_rs_derive/derive.Sequence.html) attribute:
 ```rust
 #[derive(Sequence)]
 pub struct MyType {
@@ -164,7 +164,7 @@ pub struct MyType {
 }
 ```
 
-See [doc::derive] for documentation and examples.
+See [`doc::derive`](https://docs.rs/asn1-rs/latest/asn1_rs/doc/derive/) for documentation and examples.
 
 
 ### Changes
