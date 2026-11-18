@@ -127,4 +127,4 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v6
       - id: cargo-check-external-types
-        uses: rusticata/ci-action-check-external-types@ebed73f388d7deab7d4692626ae85e5d32ddb9a1 # toolchain 2025-10-18
+        uses: rusticata/ci-action-check-external-types@8d23b7a7d95d4d1f7568da2e4babe3cd68d2bdcd # toolchain 2026-03-20
