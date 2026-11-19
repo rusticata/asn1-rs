@@ -55,7 +55,7 @@ cookie-factory = { version="0.3.0", optional=true }
 displaydoc = { version = "0.2.2", default-features = false }
 log = { version = "0.4", default-features = false, optional = true }
 nom = { version="8.0", default-features=false, features=["std"] }
-num-bigint = { version = "0.4", optional = true }
+num-bigint = { version = "0.5", optional = true }
 num-traits = "0.2.14"
 rusticata-macros = "5.0"
 thiserror = "2.0.18"
