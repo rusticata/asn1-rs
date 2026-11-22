@@ -260,6 +260,7 @@ impl<'a> Oid<'a> {
             oid: self,
             pos: 0,
             first: false,
+            second: None,
             n: PhantomData,
         }
     }
@@ -268,14 +269,8 @@ impl<'a> Oid<'a> {
     /// Returns `None` if at least one arc does not fit into `u64`.
     pub fn iter(&'_ self) -> Option<impl FusedIterator<Item = u64> + ExactSizeIterator + '_> {
         // Check that every arc fits into u64
-        let bytes = if self.relative {
-            &self.asn1
-        } else if self.asn1.is_empty() {
-            &[]
-        } else {
-            &self.asn1[1..]
-        };
-        let max_bits = bytes
+        let max_bits = self
+            .asn1
             .iter()
             .fold((0usize, 0usize), |(max, cur), c| {
                 let is_end = (c >> 7) == 0u8;
@@ -294,6 +289,7 @@ impl<'a> Oid<'a> {
             oid: self,
             pos: 0,
             first: false,
+            second: None,
             n: PhantomData,
         })
     }
@@ -320,39 +316,22 @@ impl<'a> Oid<'a> {
     }
 }
 
-trait Repr: Num + Shl<usize, Output = Self> + From<u8> {}
-impl<N> Repr for N where N: Num + Shl<usize, Output = N> + From<u8> {}
+trait Repr: Num + Shl<usize, Output = Self> + From<u8> + PartialOrd {}
+impl<N> Repr for N where N: Num + Shl<usize, Output = N> + From<u8> + PartialOrd {}
 
 struct SubIdentifierIterator<'a, N: Repr> {
     oid: &'a Oid<'a>,
     pos: usize,
     first: bool,
+    second: Option<N>,
     n: PhantomData<&'a N>,
 }
 
-impl<N: Repr> Iterator for SubIdentifierIterator<'_, N> {
-    type Item = N;
-
-    fn next(&mut self) -> Option<Self::Item> {
+impl<N: Repr> SubIdentifierIterator<'_, N> {
+    // decode objet sub-identifier according to the asn.1 standard
+    fn read_subidentifier(&mut self) -> N {
         use num_traits::identities::Zero;
 
-        if self.pos == self.oid.asn1.len() {
-            return None;
-        }
-        if !self.oid.relative {
-            if !self.first {
-                debug_assert!(self.pos == 0);
-                self.first = true;
-                return Some((self.oid.asn1[0] / 40).into());
-            } else if self.pos == 0 {
-                self.pos += 1;
-                if self.oid.asn1[0] == 0 && self.oid.asn1.len() == 1 {
-                    return None;
-                }
-                return Some((self.oid.asn1[0] % 40).into());
-            }
-        }
-        // decode objet sub-identifier according to the asn.1 standard
         let mut res = <N as Zero>::zero();
         for o in self.oid.asn1[self.pos..].iter() {
             self.pos += 1;
@@ -362,7 +341,41 @@ impl<N: Repr> Iterator for SubIdentifierIterator<'_, N> {
                 break;
             }
         }
-        Some(res)
+        res
+    }
+}
+
+impl<N: Repr> Iterator for SubIdentifierIterator<'_, N> {
+    type Item = N;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(second) = self.second.take() {
+            return Some(second);
+        }
+        if self.pos == self.oid.asn1.len() {
+            return None;
+        }
+        if !self.oid.relative && !self.first {
+            debug_assert!(self.pos == 0);
+            self.first = true;
+            if self.oid.asn1.as_ref() == [0] {
+                self.pos = 1;
+                return Some(N::from(0));
+            }
+            // The first sub-identifier is X*40+Y (X.690 8.19.4). X is 0, 1 or 2, and Y is
+            // only bounded when X < 2, so for X = 2 the value can use several octets.
+            let value = self.read_subidentifier();
+            let (first, second) = if value < N::from(40) {
+                (0, value)
+            } else if value < N::from(80) {
+                (1, value - N::from(40))
+            } else {
+                (2, value - N::from(80))
+            };
+            self.second = Some(second);
+            return Some(N::from(first));
+        }
+        Some(self.read_subidentifier())
     }
 }
 
@@ -370,21 +383,14 @@ impl<N: Repr> FusedIterator for SubIdentifierIterator<'_, N> {}
 
 impl<N: Repr> ExactSizeIterator for SubIdentifierIterator<'_, N> {
     fn len(&self) -> usize {
-        if self.oid.relative {
-            self.oid.asn1.iter().filter(|o| (*o >> 7) == 0u8).count()
+        let count = self.oid.asn1.iter().filter(|o| (*o >> 7) == 0u8).count();
+        if self.oid.relative || self.oid.asn1.as_ref() == [0] {
+            count
         } else if self.oid.asn1.is_empty() {
             0
-        } else if self.oid.asn1.len() == 1 {
-            if self.oid.asn1[0] == 0 {
-                1
-            } else {
-                2
-            }
         } else {
-            2 + self.oid.asn1[2..]
-                .iter()
-                .filter(|o| (*o >> 7) == 0u8)
-                .count()
+            // the first sub-identifier holds two arcs
+            count + 1
         }
     }
 }
@@ -483,6 +489,7 @@ macro_rules! oid {
 #[cfg(all(test, feature = "std"))]
 mod tests {
     use crate::{BerParser, DerParser, FromDer, Input, Length, Oid, ToDer};
+    use alloc::borrow::Cow;
     use hex_literal::hex;
 
     #[test]
@@ -558,6 +565,36 @@ mod tests {
         let expected = Oid::from(&[1, 2, 840, 113_549, 1, 1, 5]).unwrap();
         assert!(rem.is_empty());
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn parse_der_oid_first_arc_2() {
+        // 2.999.3: the first sub-identifier (999 + 80) needs two octets
+        let (_, oid) = Oid::from_der(&hex!("06 03 88 37 03")).expect("parsing failed");
+        assert_eq!(oid.to_id_string(), "2.999.3");
+        assert_eq!(oid.iter().unwrap().len(), 3);
+        // 2.47 still fits in one octet, but is above 2 * 40
+        let (_, oid) = Oid::from_der(&hex!("06 01 7f")).expect("parsing failed");
+        assert_eq!(oid.to_id_string(), "2.47");
+        let (_, oid) = Oid::from_der(&hex!("06 02 81 00")).expect("parsing failed");
+        assert_eq!(oid.to_id_string(), "2.48");
+    }
+
+    #[test]
+    fn oid_iter_len() {
+        for oid in [
+            oid! {1.2},
+            oid! {1.2.3},
+            oid! {1.2.840.113549.1},
+            oid! {2.5.4.3},
+            Oid::new(Cow::Borrowed(&hex!("88 37 03"))),
+        ] {
+            let iter = oid.iter().unwrap();
+            assert_eq!(iter.len(), oid.iter().unwrap().count(), "{oid}");
+        }
+        let zero = Oid::new(Cow::Borrowed(&[0]));
+        assert_eq!(zero.iter().unwrap().collect::<Vec<_>>(), [0]);
+        assert_eq!(zero.iter().unwrap().len(), 1);
     }
 
     #[cfg(feature = "std")]
